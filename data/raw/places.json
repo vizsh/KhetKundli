@@ -1,0 +1,561 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62.11 87bfad18",
+  "osm3s": {
+    "timestamp_osm_base": "2026-10-19T11:45:48Z",
+    "copyright": "The data included in this document is from www.openstreetmap.org. The data is made available under ODbL."
+  },
+  "elements": [
+
+{
+  "type": "node",
+  "id": 245642243,
+  "lat": 17.8420973,
+  "lon": 74.2827057,
+  "tags": {
+    "name": "Mol",
+    "place": "village",
+    "postal_code": "415504"
+  }
+},
+{
+  "type": "node",
+  "id": 245642744,
+  "lat": 17.9907746,
+  "lon": 74.4298834,
+  "tags": {
+    "name": "Phaltan",
+    "name:gu": "ફલટન",
+    "name:hi": "फलटन",
+    "name:kn": "ಫಲಟನ್",
+    "name:ml": "ഫാൽട്ടൻ",
+    "name:mr": "फलटन",
+    "name:ta": "பால்தான்",
+    "place": "town",
+    "population": "52100",
+    "postal_code": "415523",
+    "wikidata": "Q2341367",
+    "wikimedia_commons": "Category:Phaltan",
+    "wikipedia": "en:Phaltan"
+  }
+},
+{
+  "type": "node",
+  "id": 517126661,
+  "lat": 18.0387975,
+  "lon": 74.1869260,
+  "tags": {
+    "name": "Lonand",
+    "name:ml": "ലോനന്ദ്",
+    "name:mr": "लोणंद",
+    "place": "town",
+    "population": "5000",
+    "postal_code": "415521",
+    "wikidata": "Q65084699",
+    "wikipedia": "en:Lonand"
+  }
+},
+{
+  "type": "node",
+  "id": 517126662,
+  "lat": 18.1002478,
+  "lon": 74.2136809,
+  "tags": {
+    "name": "Nira",
+    "name:ml": "നീര",
+    "name:mr": "नीरा",
+    "place": "town",
+    "population": "5000",
+    "wikidata": "Q15262383",
+    "wikipedia": "en:Nira, Maharashtra"
+  }
+},
+{
+  "type": "node",
+  "id": 1611751009,
+  "lat": 17.9240799,
+  "lon": 74.2071339,
+  "tags": {
+    "name": "Adarki",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2315565493,
+  "lat": 18.1478834,
+  "lon": 74.5733979,
+  "tags": {
+    "name": "Baramati",
+    "name:en": "Baramati",
+    "name:hi": "बारामती",
+    "name:ja": "バーラーマティー",
+    "name:ml": "ബാരാമതി",
+    "name:mr": "बारामती",
+    "place": "town",
+    "population": "54400",
+    "wikidata": "Q712015",
+    "wikipedia": "en:Baramati"
+  }
+},
+{
+  "type": "node",
+  "id": 2328961318,
+  "lat": 17.8465618,
+  "lon": 74.2166174,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2328969042,
+  "lat": 17.8711673,
+  "lon": 74.2380375,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2328969050,
+  "lat": 17.8780579,
+  "lon": 74.1934528,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2328969222,
+  "lat": 17.8650201,
+  "lon": 74.2249806,
+  "tags": {
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 2328969592,
+  "lat": 17.8727125,
+  "lon": 74.1777941,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2328993376,
+  "lat": 17.8640077,
+  "lon": 74.3812061,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2331538868,
+  "lat": 18.0730712,
+  "lon": 74.4071518,
+  "tags": {
+    "name": "Late",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2622215839,
+  "lat": 18.0564157,
+  "lon": 74.2834041,
+  "tags": {
+    "name": "Ravadi BK",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2622215891,
+  "lat": 18.0562514,
+  "lon": 74.3349787,
+  "tags": {
+    "name": "Sakharwadi",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2623674929,
+  "lat": 18.0413855,
+  "lon": 74.3737879,
+  "tags": {
+    "name": "Phadtarwadi",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 2623687257,
+  "lat": 17.9850823,
+  "lon": 74.3128784,
+  "tags": {
+    "name": "Nandal",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 3199380663,
+  "lat": 17.9815915,
+  "lon": 74.5311171,
+  "tags": {
+    "name": "Pimprad",
+    "place": "village",
+    "source": "AMS"
+  }
+},
+{
+  "type": "node",
+  "id": 3199380730,
+  "lat": 17.9526912,
+  "lon": 74.5863921,
+  "tags": {
+    "name": "Barad",
+    "place": "village",
+    "source": "AMS"
+  }
+},
+{
+  "type": "node",
+  "id": 3199380848,
+  "lat": 17.9895123,
+  "lon": 74.4822794,
+  "tags": {
+    "name": "Vidni",
+    "place": "village",
+    "source": "AMS"
+  }
+},
+{
+  "type": "node",
+  "id": 3604516595,
+  "lat": 18.1331909,
+  "lon": 74.5106031,
+  "tags": {
+    "name": "Malegaon",
+    "name:en": "Malegaon",
+    "name:hi": "मालेगांव",
+    "name:mr": "मालेगाव",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 3604516596,
+  "lat": 18.1393748,
+  "lon": 74.4621641,
+  "tags": {
+    "name": "Pandare",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 3604516597,
+  "lat": 18.1172435,
+  "lon": 74.4607349,
+  "tags": {
+    "name": "Pawaimal",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 3604516598,
+  "lat": 18.1322196,
+  "lon": 74.5364633,
+  "tags": {
+    "name": "Sharadanagar",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 3605559929,
+  "lat": 18.0603450,
+  "lon": 74.4855918,
+  "tags": {
+    "name": "Sangavi",
+    "place": "village",
+    "postal_code": "413115"
+  }
+},
+{
+  "type": "node",
+  "id": 3910517576,
+  "lat": 18.0285468,
+  "lon": 74.2472088,
+  "tags": {
+    "name": "Taradgaon",
+    "place": "village",
+    "postal_code": "415528"
+  }
+},
+{
+  "type": "node",
+  "id": 5607868659,
+  "lat": 18.0657013,
+  "lon": 74.5417777,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 5633707699,
+  "lat": 17.8423793,
+  "lon": 74.5597337,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6057315209,
+  "lat": 18.0658021,
+  "lon": 74.3857606,
+  "tags": {
+    "name": "Jinti",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6150965651,
+  "lat": 17.9793193,
+  "lon": 74.5660686,
+  "tags": {
+    "name": "Nimbalak",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167568978,
+  "lat": 17.8842013,
+  "lon": 74.4509988,
+  "tags": {
+    "name": "Girvi",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167581038,
+  "lat": 17.9176653,
+  "lon": 74.4495397,
+  "tags": {
+    "name": "Nirugudi",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167581039,
+  "lat": 17.9303386,
+  "lon": 74.4319658,
+  "tags": {
+    "name": "Vinchurni",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167586816,
+  "lat": 17.9090848,
+  "lon": 74.4089727,
+  "tags": {
+    "name": "Mandhavkhadak",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167592631,
+  "lat": 17.9032680,
+  "lon": 74.3836017,
+  "tags": {
+    "name": "Dalwadi",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167592637,
+  "lat": 17.9182966,
+  "lon": 74.3547477,
+  "tags": {
+    "name": "Wakhari",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167592638,
+  "lat": 17.9241224,
+  "lon": 74.3393137,
+  "tags": {
+    "name": "Taradgaon",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167595333,
+  "lat": 17.9339257,
+  "lon": 74.3174993,
+  "tags": {
+    "name": "Taradgaon",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167873185,
+  "lat": 17.8296111,
+  "lon": 74.5085980,
+  "tags": {
+    "name": "Tondale",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6167873186,
+  "lat": 17.8512882,
+  "lon": 74.4421609,
+  "tags": {
+    "name": "Varugad",
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 6168004063,
+  "lat": 17.9294573,
+  "lon": 74.4650489,
+  "tags": {
+    "name": "Saskal",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6212902240,
+  "lat": 18.0845408,
+  "lon": 74.6478168,
+  "tags": {
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 6280872912,
+  "lat": 18.0464734,
+  "lon": 74.6179229,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 6471475869,
+  "lat": 18.1513524,
+  "lon": 74.1666858,
+  "tags": {
+    "name": "Kamathwadi",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 7129010551,
+  "lat": 17.8130087,
+  "lon": 74.2921686,
+  "tags": {
+    "name": "Diskal",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 8038795936,
+  "lat": 17.9547254,
+  "lon": 74.5864824,
+  "tags": {
+    "name": "Barad",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 9612813713,
+  "lat": 18.1283696,
+  "lon": 74.1593830,
+  "tags": {
+    "name": "Jeur",
+    "name:mr": "जेऊर",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 10101964005,
+  "lat": 17.8629098,
+  "lon": 74.6342468,
+  "tags": {
+    "name": "Manewasti Pachwad",
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 10101964006,
+  "lat": 17.8516664,
+  "lon": 74.6231639,
+  "tags": {
+    "name": "Manewadi",
+    "place": "hamlet"
+  }
+},
+{
+  "type": "node",
+  "id": 10101964007,
+  "lat": 17.8710993,
+  "lon": 74.6377444,
+  "tags": {
+    "name": "Kothale",
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 11937022327,
+  "lat": 18.1410596,
+  "lon": 74.5683156,
+  "tags": {
+    "place": "village"
+  }
+},
+{
+  "type": "node",
+  "id": 12921553383,
+  "lat": 18.0167436,
+  "lon": 74.2926240,
+  "tags": {
+    "name": "Kalaj",
+    "place": "village"
+  }
+}
+
+  ]
+}

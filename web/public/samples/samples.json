@@ -1,0 +1,23 @@
+[
+  {
+    "file": "/samples/s1.jpg",
+    "crop": "tomato",
+    "label": "Tomato leaf, Septoria leaf spot",
+    "credit": "MerielGJones, CC BY-SA 4.0",
+    "source": "https://commons.wikimedia.org/wiki/File:Septoria_leaf_spot_symptoms_on_tomato_leaf_(Septoria_lycopersici_on_Solanum_lycopersicum_leaf).jpg"
+  },
+  {
+    "file": "/samples/s2.jpg",
+    "crop": "capsicum",
+    "label": "Capsicum leaf, bacterial spot",
+    "credit": "Netty4299, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Bacterial_leaf_spot_on_pepper.jpg"
+  },
+  {
+    "file": "/samples/s3.jpg",
+    "crop": "tomato",
+    "label": "Tomato leaves, Septoria leaf spot (close-up)",
+    "credit": "Wolan268, CC0",
+    "source": "https://commons.wikimedia.org/wiki/File:Tomato_septoria_leaf_spot_3047.jpg"
+  }
+]

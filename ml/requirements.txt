@@ -1,0 +1,6 @@
+torch>=2.3
+torchvision>=0.18
+transformers>=4.44
+onnx>=1.16
+onnxruntime>=1.18
+pillow>=10.3

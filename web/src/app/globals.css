@@ -1,0 +1,225 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ------------------------------------------------------------------
+   The Living Record: manila board, ruled register paper, three inks.
+   ------------------------------------------------------------------ */
+:root {
+  /* board: the manila file the records live in */
+  --board: #cda868;
+  --board-deep: #b89252;
+  --board-edge: #8e6b33;
+  --board-ink: #2f2512;
+  --board-ink-2: #4f3f20;
+
+  /* paper: cool register stock, never cream */
+  --paper: #f4f5f0;
+  --paper-2: #e8eae2;
+  --paper-3: #dcdfd4;
+  --rule: #a9c1d8;
+  --rule-faint: #d2dee9;
+  --margin: #d9706b;
+
+  /* inks: provenance is carried by ink */
+  --ink: #1c1a17; /* typed, computed */
+  --ink-2: #45413a;
+  --ink-3: #5f5a50;
+  --ballpoint: #1e40c8; /* written by a person */
+  --stamp: #4a3aa8; /* verified, state */
+  --alert: #c8102e; /* red ink, alerts only */
+  --slip: #f6edc9; /* yellow carbon slip for ripples and demo inputs */
+
+  /* survey map */
+  --water: #2c68a8;
+  --canal: #4d86bd;
+  --road: #1c1a17;
+  --f-turmeric: #ead38c;
+  --f-leaf: #c6dbab;
+  --f-canal: #bcd4e2;
+  --f-aril: #eac4bb;
+  --f-lilac: #d4cae6;
+  --f-straw: #e2dac0;
+
+  /* harvest wave: paper to pomegranate */
+  --wave-0: #f4f5f0;
+  --wave-1: #ecd3c8;
+  --wave-2: #dc9a98;
+  --wave-3: #b84a5e;
+  --wave-4: #8a1a32;
+
+  --shadow-sheet: 0 1px 0 rgb(80 60 20 / 0.18), 0 6px 14px -6px rgb(60 40 10 / 0.38), 0 18px 32px -18px rgb(60 40 10 / 0.35);
+  --shadow-lift: 0 2px 0 rgb(80 60 20 / 0.16), 0 12px 24px -10px rgb(60 40 10 / 0.42);
+
+  /* shadcn semantic mapping */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--paper-2);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-2);
+  --muted-foreground: var(--ink-3);
+  --accent: var(--paper-2);
+  --accent-foreground: var(--ink);
+  --destructive: var(--alert);
+  --border: #c9cdc0;
+  --input: #c9cdc0;
+  --ring: var(--stamp);
+  --radius: 0.25rem;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-board: var(--board);
+  --color-board-deep: var(--board-deep);
+  --color-board-edge: var(--board-edge);
+  --color-board-ink: var(--board-ink);
+  --color-board-ink-2: var(--board-ink-2);
+  --color-paper: var(--paper);
+  --color-paper-2: var(--paper-2);
+  --color-paper-3: var(--paper-3);
+  --color-rule: var(--rule);
+  --color-margin: var(--margin);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-ballpoint: var(--ballpoint);
+  --color-stamp: var(--stamp);
+  --color-alert: var(--alert);
+  --color-slip: var(--slip);
+  --color-water: var(--water);
+
+  --font-sans: var(--font-anek-latin), var(--font-anek-deva), ui-sans-serif, system-ui, sans-serif;
+  --font-typed: var(--font-courier-prime), ui-monospace, monospace;
+  --font-marathi: var(--font-tiro-marathi), var(--font-anek-deva), serif;
+  --font-heading: var(--font-sans);
+  --font-mono: var(--font-typed);
+
+  --radius-sm: 2px;
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 6px;
+
+  --text-2xs: 0.6875rem;
+  --text-2xs--line-height: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    font-family: var(--font-sans);
+    font-feature-settings: "kern";
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    color: var(--ink);
+  }
+  ::selection {
+    background: color-mix(in oklab, var(--stamp) 22%, transparent);
+    color: var(--ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--stamp);
+    outline-offset: 2px;
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--ink) 28%, transparent) transparent;
+  }
+  a {
+    text-underline-offset: 3px;
+    text-decoration-thickness: 1px;
+  }
+}
+
+@layer components {
+  /* A sheet of register paper lying on the board. */
+  .sheet {
+    background-color: var(--paper);
+    box-shadow: var(--shadow-sheet);
+    border-radius: 2px;
+    position: relative;
+  }
+  /* Blue register ruling with a red margin line; --rule-gap sets the line pitch. */
+  .ruled {
+    --rule-gap: 28px;
+    background-image:
+      linear-gradient(to right, transparent calc(var(--margin-x, 44px) - 1px), var(--margin) calc(var(--margin-x, 44px) - 1px), var(--margin) var(--margin-x, 44px), transparent var(--margin-x, 44px)),
+      repeating-linear-gradient(to bottom, transparent 0, transparent calc(var(--rule-gap) - 1px), var(--rule-faint) calc(var(--rule-gap) - 1px), var(--rule-faint) var(--rule-gap));
+    background-position: 0 var(--rule-offset, 0);
+  }
+  .typed {
+    font-family: var(--font-typed);
+    letter-spacing: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  /* A person's hand: Kalam (Indian Type Foundry) covers Latin and Devanagari. */
+  .ballpoint {
+    color: var(--ballpoint);
+    font-family: var(--font-kalam), var(--font-anek-deva), cursive;
+    font-weight: 400;
+    letter-spacing: 0.005em;
+  }
+  /* Tear-off slip: a perforated top edge. */
+  .perforated {
+    -webkit-mask: radial-gradient(circle 3px at 6px 0, transparent 2.6px, #000 3px) 0 0 / 12px 100% repeat-x;
+    mask: radial-gradient(circle 3px at 6px 0, transparent 2.6px, #000 3px) 0 0 / 12px 100% repeat-x;
+  }
+  /* File-board fibre on the manila ground. */
+  .board-fibre {
+    background-color: var(--board);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='f'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.012 0.9' numOctaves='3' seed='11'/%3E%3CfeColorMatrix values='0 0 0 0 0.35  0 0 0 0 0.25  0 0 0 0 0.08  0 0 0 0.09 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23f)'/%3E%3C/svg%3E");
+  }
+  .label-form {
+    font-stretch: 82%;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    font-size: 0.6875rem;
+    line-height: 1rem;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
