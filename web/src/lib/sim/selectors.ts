@@ -73,6 +73,7 @@ export function registerFor(s: Season, day: number): RegisterLine[] {
         lines.push({ key: e.id, hour: e.hour, by: e.by, plot: e.plot, text: `${who} bahar regulated` });
         break;
       case "sale":
+        if (e.slip) lines.push({ key: e.id, hour: e.hour, by: e.by, plot: e.plot, alert: e.slip.aboveCard > 0, text: `${who} checked a sale slip on the phone: ${e.slip.aboveCard > 0 ? `₹${e.slip.aboveCard.toLocaleString("en-IN")} charged above the rate card` : "every deduction as agreed"}` });
         break;
       case "booking":
         break;
@@ -151,6 +152,10 @@ export function diffSeasons(a: Season, b: Season, day: number, label: string): R
   if (gradeOf(a) !== gradeOf(b)) items.push(`${heroId} expected grade ${gradeOf(a)} → ${gradeOf(b)} at harvest`);
   const runsA = a.runs.filter((r) => r.day >= day).length, runsB = b.runs.filter((r) => r.day >= day).length;
   if (runsA !== runsB) items.push(`Pooled runs re-planned: ${runsB} ahead (was ${runsA})`);
+  const slipSales = (s: Season) => s.eventsByPlot[hero].filter((e): e is Extract<PlotEvent, { type: "sale" }> => e.type === "sale" && !!e.slip);
+  for (const e of slipSales(b).filter((e) => !slipSales(a).some((x) => x.day === e.day && x.gross === e.gross && x.net === e.net))) {
+    items.push(`${heroId} sale slip of ${fmtDay(e.day)} checked on the phone: net ₹${Math.round(e.net).toLocaleString("en-IN")}${e.slip!.aboveCard > 0 ? `, ₹${e.slip!.aboveCard.toLocaleString("en-IN")} charged above the agreed rate card` : ", every deduction as agreed"}`);
+  }
   return { label, items };
 }
 

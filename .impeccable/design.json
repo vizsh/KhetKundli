@@ -1,0 +1,826 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-19T21:11:01.406Z",
+  "title": "Design System: KhetKundli",
+  "extensions": {
+    "colorMeta": {
+      "board": {
+        "role": "neutral",
+        "displayName": "Manila File Board",
+        "canonical": "#cda868",
+        "tonalRamp": [
+          "#120900",
+          "#312101",
+          "#543b03",
+          "#795710",
+          "#9d7a3a",
+          "#c39e5f",
+          "#eac484",
+          "#ffeccd"
+        ]
+      },
+      "board-deep": {
+        "role": "neutral",
+        "displayName": "Pressed Manila",
+        "canonical": "#b89252",
+        "tonalRamp": [
+          "#120900",
+          "#322000",
+          "#553a01",
+          "#7a560e",
+          "#9e7939",
+          "#c49e5e",
+          "#ecc483",
+          "#ffecce"
+        ]
+      },
+      "board-edge": {
+        "role": "neutral",
+        "displayName": "Manila Fold Edge",
+        "canonical": "#8e6b33",
+        "tonalRamp": [
+          "#120900",
+          "#322000",
+          "#563902",
+          "#79571c",
+          "#9d7942",
+          "#c39e66",
+          "#eac48b",
+          "#ffecd0"
+        ]
+      },
+      "board-ink": {
+        "role": "neutral",
+        "displayName": "Board Brown-Black",
+        "canonical": "#2f2512",
+        "tonalRamp": [
+          "#110a00",
+          "#2c220f",
+          "#493e2a",
+          "#675c47",
+          "#8b7f69",
+          "#afa38d",
+          "#d6c9b2",
+          "#faedd5"
+        ]
+      },
+      "board-ink-2": {
+        "role": "neutral",
+        "displayName": "Faded Board Ink",
+        "canonical": "#4f3f20",
+        "tonalRamp": [
+          "#120a00",
+          "#302102",
+          "#4d3d1e",
+          "#6c5b3c",
+          "#8f7e5d",
+          "#b5a280",
+          "#dbc8a5",
+          "#feeccb"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Cool Register Paper",
+        "canonical": "#f4f5f0",
+        "tonalRamp": [
+          "#0b0c08",
+          "#242421",
+          "#3f403c",
+          "#5d5e5a",
+          "#80817c",
+          "#a4a5a0",
+          "#cacbc6",
+          "#eeefea"
+        ]
+      },
+      "paper-2": {
+        "role": "neutral",
+        "displayName": "Register Grey-Green",
+        "canonical": "#e8eae2",
+        "tonalRamp": [
+          "#0b0c07",
+          "#23251f",
+          "#3f413a",
+          "#5d5e58",
+          "#7f817a",
+          "#a4a69e",
+          "#caccc4",
+          "#eef0e8"
+        ]
+      },
+      "paper-3": {
+        "role": "neutral",
+        "displayName": "Worn Register Tint",
+        "canonical": "#dcdfd4",
+        "tonalRamp": [
+          "#0a0c06",
+          "#23251d",
+          "#3f4138",
+          "#5c5f55",
+          "#7f8278",
+          "#a3a69c",
+          "#c9ccc1",
+          "#edf0e5"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Register Ruling Blue",
+        "canonical": "#a9c1d8",
+        "tonalRamp": [
+          "#000c1b",
+          "#122637",
+          "#2d4255",
+          "#4b6074",
+          "#6d8398",
+          "#90a8be",
+          "#b5cee5",
+          "#e2f0fe"
+        ]
+      },
+      "rule-faint": {
+        "role": "neutral",
+        "displayName": "Faint Ruling Blue",
+        "canonical": "#d2dee9",
+        "tonalRamp": [
+          "#050c13",
+          "#1c252d",
+          "#37414a",
+          "#555f68",
+          "#77828c",
+          "#9ba6b1",
+          "#c0ccd7",
+          "#e4f0fb"
+        ]
+      },
+      "margin": {
+        "role": "neutral",
+        "displayName": "Margin Red Rule",
+        "canonical": "#d9706b",
+        "tonalRamp": [
+          "#1f0001",
+          "#4b0007",
+          "#761319",
+          "#9a3837",
+          "#c35c58",
+          "#ec817b",
+          "#feb5af",
+          "#ffe9e6"
+        ]
+      },
+      "border": {
+        "role": "neutral",
+        "displayName": "Sheet Edge Grey",
+        "canonical": "#c9cdc0",
+        "tonalRamp": [
+          "#0a0c05",
+          "#23251c",
+          "#3e4137",
+          "#5c5f54",
+          "#7e8276",
+          "#a3a69a",
+          "#c9cdc0",
+          "#ecf1e3"
+        ]
+      },
+      "ink": {
+        "role": "primary",
+        "displayName": "Carbon Typed Black",
+        "canonical": "#1c1a17",
+        "tonalRamp": [
+          "#0d0b08",
+          "#262421",
+          "#423f3c",
+          "#605d5a",
+          "#82807c",
+          "#a7a4a0",
+          "#cdcac6",
+          "#f1eeea"
+        ]
+      },
+      "ink-2": {
+        "role": "primary",
+        "displayName": "Second Carbon",
+        "canonical": "#45413a",
+        "tonalRamp": [
+          "#0e0b06",
+          "#27231d",
+          "#433f38",
+          "#615d56",
+          "#848078",
+          "#a9a49c",
+          "#cfcac1",
+          "#f3eee5"
+        ]
+      },
+      "ink-3": {
+        "role": "primary",
+        "displayName": "Faded Carbon",
+        "canonical": "#5f5a50",
+        "tonalRamp": [
+          "#0e0b04",
+          "#28231b",
+          "#443f36",
+          "#625d53",
+          "#858075",
+          "#a9a499",
+          "#d0cabe",
+          "#f4eee2"
+        ]
+      },
+      "ballpoint": {
+        "role": "secondary",
+        "displayName": "Ballpoint Blue",
+        "canonical": "#1e40c8",
+        "tonalRamp": [
+          "#010035",
+          "#060077",
+          "#0f22ad",
+          "#254bd3",
+          "#4472fd",
+          "#7aa1fe",
+          "#b3caff",
+          "#e7effe"
+        ]
+      },
+      "stamp": {
+        "role": "tertiary",
+        "displayName": "Rubber Stamp Violet",
+        "canonical": "#4a3aa8",
+        "tonalRamp": [
+          "#0b002e",
+          "#230169",
+          "#3b2593",
+          "#5648b7",
+          "#766de0",
+          "#9996ff",
+          "#c3c4fe",
+          "#ecedff"
+        ]
+      },
+      "alert": {
+        "role": "alert",
+        "displayName": "Red Ink",
+        "canonical": "#c8102e",
+        "tonalRamp": [
+          "#1f0002",
+          "#4a010a",
+          "#7b0217",
+          "#b10025",
+          "#e13542",
+          "#ff7171",
+          "#ffb4b1",
+          "#fee9e7"
+        ]
+      },
+      "slip": {
+        "role": "neutral",
+        "displayName": "Yellow Carbon Slip",
+        "canonical": "#f6edc9",
+        "tonalRamp": [
+          "#0f0b00",
+          "#2b2404",
+          "#474021",
+          "#665e3e",
+          "#898060",
+          "#ada583",
+          "#d4cba8",
+          "#f8efcb"
+        ]
+      },
+      "water": {
+        "role": "data",
+        "displayName": "Survey River Blue",
+        "canonical": "#2c68a8",
+        "tonalRamp": [
+          "#000b1e",
+          "#002449",
+          "#014078",
+          "#225f9e",
+          "#4783c5",
+          "#6ca8ed",
+          "#a5ceff",
+          "#e4f0fe"
+        ]
+      },
+      "canal": {
+        "role": "data",
+        "displayName": "Canal Blue",
+        "canonical": "#4d86bd",
+        "tonalRamp": [
+          "#000c1c",
+          "#002545",
+          "#014272",
+          "#276195",
+          "#4c84bb",
+          "#70aae3",
+          "#a1d0fe",
+          "#e3f0fe"
+        ]
+      },
+      "f-turmeric": {
+        "role": "data",
+        "displayName": "Turmeric Field",
+        "canonical": "#ead38c",
+        "tonalRamp": [
+          "#100a00",
+          "#2d2300",
+          "#4e3e00",
+          "#705b0c",
+          "#947e38",
+          "#b9a35d",
+          "#e0c983",
+          "#ffeeba"
+        ]
+      },
+      "f-leaf": {
+        "role": "data",
+        "displayName": "Leaf Field",
+        "canonical": "#c6dbab",
+        "tonalRamp": [
+          "#070e00",
+          "#1b2901",
+          "#36461c",
+          "#53653a",
+          "#75885b",
+          "#99ad7f",
+          "#bfd3a4",
+          "#e2f8c7"
+        ]
+      },
+      "f-canal": {
+        "role": "data",
+        "displayName": "Canal Field",
+        "canonical": "#bcd4e2",
+        "tonalRamp": [
+          "#000d16",
+          "#132731",
+          "#2e434e",
+          "#4c616d",
+          "#6e8491",
+          "#91a9b6",
+          "#b7cfdd",
+          "#ddf2ff"
+        ]
+      },
+      "f-aril": {
+        "role": "data",
+        "displayName": "Aril Field",
+        "canonical": "#eac4bb",
+        "tonalRamp": [
+          "#1a0401",
+          "#371b15",
+          "#553730",
+          "#75554d",
+          "#99776f",
+          "#bf9b92",
+          "#e6c1b8",
+          "#ffe9e4"
+        ]
+      },
+      "f-lilac": {
+        "role": "data",
+        "displayName": "Lilac Field",
+        "canonical": "#d4cae6",
+        "tonalRamp": [
+          "#0e0719",
+          "#271f34",
+          "#433b52",
+          "#625971",
+          "#847b95",
+          "#a99fba",
+          "#cfc5e1",
+          "#f2ebff"
+        ]
+      },
+      "f-straw": {
+        "role": "data",
+        "displayName": "Straw Field",
+        "canonical": "#e2dac0",
+        "tonalRamp": [
+          "#100b00",
+          "#2a240f",
+          "#463f2a",
+          "#645d47",
+          "#878068",
+          "#aca48c",
+          "#d2cab1",
+          "#f7eed4"
+        ]
+      },
+      "wave-0": {
+        "role": "data",
+        "displayName": "Bare Paper (Harvest Wave 0)",
+        "canonical": "#f4f5f0",
+        "tonalRamp": [
+          "#8a1a32",
+          "#b84a5e",
+          "#dc9a98",
+          "#ecd3c8",
+          "#f4f5f0"
+        ]
+      },
+      "wave-1": {
+        "role": "data",
+        "displayName": "Blush (Harvest Wave 1)",
+        "canonical": "#ecd3c8",
+        "tonalRamp": [
+          "#8a1a32",
+          "#b84a5e",
+          "#dc9a98",
+          "#ecd3c8",
+          "#f4f5f0"
+        ]
+      },
+      "wave-2": {
+        "role": "data",
+        "displayName": "Rose (Harvest Wave 2)",
+        "canonical": "#dc9a98",
+        "tonalRamp": [
+          "#8a1a32",
+          "#b84a5e",
+          "#dc9a98",
+          "#ecd3c8",
+          "#f4f5f0"
+        ]
+      },
+      "wave-3": {
+        "role": "data",
+        "displayName": "Pomegranate (Harvest Wave 3)",
+        "canonical": "#b84a5e",
+        "tonalRamp": [
+          "#8a1a32",
+          "#b84a5e",
+          "#dc9a98",
+          "#ecd3c8",
+          "#f4f5f0"
+        ]
+      },
+      "wave-4": {
+        "role": "data",
+        "displayName": "Deep Aril (Harvest Wave 4)",
+        "canonical": "#8a1a32",
+        "tonalRamp": [
+          "#8a1a32",
+          "#b84a5e",
+          "#dc9a98",
+          "#ecd3c8",
+          "#f4f5f0"
+        ]
+      },
+      "leaf-good": {
+        "role": "data",
+        "displayName": "Leaf Green",
+        "canonical": "#5a9752",
+        "tonalRamp": [
+          "#5a9752",
+          "#87b874",
+          "#b4d39c",
+          "#d7e8c8",
+          "#f4f5f0"
+        ]
+      },
+      "turmeric-fair": {
+        "role": "data",
+        "displayName": "Fair Turmeric",
+        "canonical": "#e2c46a",
+        "tonalRamp": [
+          "#100a00",
+          "#2d2300",
+          "#4e3e01",
+          "#725b03",
+          "#9a7d19",
+          "#bfa247",
+          "#e6c86e",
+          "#ffeebc"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Poster Figure",
+        "purpose": "The one big number on the desk figure sheet; odometer digits. Anek at width 75%."
+      },
+      "headline": {
+        "displayName": "Action Headline",
+        "purpose": "Today's single action on the slip; farmer name and picking date are siblings."
+      },
+      "title": {
+        "displayName": "Sheet Title",
+        "purpose": "Sheet-head titles, paired with a Marathi title in Tiro."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Captions, ledger rows, explanations; 14–15px on the phone; locks to the rule pitch on ruled paper."
+      },
+      "label": {
+        "displayName": "Printed Form Label",
+        "purpose": "Uppercase printed labels on forms and column heads only; never a kicker above a heading."
+      },
+      "typed": {
+        "displayName": "Typed Value",
+        "purpose": "Courier Prime: every computed record value, date, time, ID, price and form code."
+      },
+      "ballpoint": {
+        "displayName": "Ballpoint Hand",
+        "purpose": "Kalam in Ballpoint Blue: entries a person made, voice transcripts."
+      },
+      "marathi-title": {
+        "displayName": "Marathi Title",
+        "purpose": "Tiro Devanagari Marathi beside English titles and on the today slip's Marathi action."
+      },
+      "marathi-body": {
+        "displayName": "Marathi Body",
+        "purpose": "Anek Devanagari partner line for every farmer-facing line; map and tab subtitles."
+      },
+      "stamp": {
+        "displayName": "Stamp Impression",
+        "purpose": "Uppercase rubber-stamp text at 9 / 10.5 / 13 / 18px."
+      }
+    },
+    "shadows": [
+      {
+        "name": "shadow-sheet",
+        "value": "0 1px 0 rgb(80 60 20 / 0.18), 0 6px 14px -6px rgb(60 40 10 / 0.38), 0 18px 32px -18px rgb(60 40 10 / 0.35)",
+        "purpose": "A sheet lying on the manila board; a stamp button while pressed."
+      },
+      {
+        "name": "shadow-lift",
+        "value": "0 2px 0 rgb(80 60 20 / 0.16), 0 12px 24px -10px rgb(60 40 10 / 0.42)",
+        "purpose": "Held above the paper: hover cards, floating slips, stamp buttons at rest."
+      },
+      {
+        "name": "tab-lip",
+        "value": "0 -1px 0 rgb(80 60 20 / 0.12)",
+        "purpose": "Top edge of the active file tab."
+      }
+    ],
+    "motion": [
+      {
+        "name": "stamp-press",
+        "value": "spring(stiffness 700, damping 26, mass 0.6); from scale 1.3, opacity 0.45, rotate −4° extra; to scale 1, opacity 0.92",
+        "purpose": "Every rubber stamp and dated impression pressing onto the sheet."
+      },
+      {
+        "name": "stamp-button-press",
+        "value": "100ms ease-out; translateY(2px); shadow-lift → shadow-sheet",
+        "purpose": "Pressing a StampButton into the board."
+      },
+      {
+        "name": "ink-spread",
+        "value": "120ms ease-out; scale 1 → 1.06, opacity 0.55 → 0",
+        "purpose": "Flash of ink on each StampButton pointer-down."
+      },
+      {
+        "name": "odometer",
+        "value": "React Bits Counter, 0.45–0.55s, bounce 0.12–0.15",
+        "purpose": "Date-stamp digits and poster figures roll rather than swap."
+      },
+      {
+        "name": "month-roll",
+        "value": "spring(stiffness 520, damping 34) with 2px blur",
+        "purpose": "The date stamp's month band rolling up or down."
+      },
+      {
+        "name": "re-ink",
+        "value": "200ms ease-out (opacity, filter)",
+        "purpose": "Marks and values re-inking when the day changes; future marks turning to pencil."
+      },
+      {
+        "name": "map-fill",
+        "value": "220ms ease-out (fill)",
+        "purpose": "Village areas re-shading on the survey map."
+      },
+      {
+        "name": "register-line",
+        "value": "180ms opacity",
+        "purpose": "Register entries appearing and leaving."
+      },
+      {
+        "name": "paper-slide",
+        "value": "spring(stiffness 380, damping 38); translateY 100% → 0",
+        "purpose": "Full-height phone sheets (Scan a leaf, Ask) sliding up like paper."
+      },
+      {
+        "name": "slip-slide",
+        "value": "spring(stiffness 420, damping 30–32); translateY −14px/8px → 0, slight tilt",
+        "purpose": "Today slip and ripple slip arriving."
+      },
+      {
+        "name": "tab-paper",
+        "value": "spring(stiffness 500, damping 40), shared layout",
+        "purpose": "The active file tab's paper moving between tabs."
+      },
+      {
+        "name": "hover-card",
+        "value": "140ms fade with 4px rise",
+        "purpose": "Map and chart hover cards."
+      },
+      {
+        "name": "tooltip-delay",
+        "value": "250ms",
+        "purpose": "Tooltip open delay."
+      },
+      {
+        "name": "listening-rings",
+        "value": "1.6s ease-out, infinite, staggered 0.5s, violet 2px",
+        "purpose": "Microphone orb while listening (skipped under reduced motion)."
+      },
+      {
+        "name": "season-clock",
+        "value": "0.65 simulated days per second; 0.035 during the 05:00–07:00 run on the Runs layer",
+        "purpose": "Vehicles and hours move only through simulated time."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "1ms for all animations and transitions",
+        "purpose": "prefers-reduced-motion: reduce; stamp presses, ink spreads and blur are skipped."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      },
+      {
+        "name": "phone-column",
+        "value": "480px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Stamp Button",
+      "kind": "button",
+      "refersTo": "stamp-button",
+      "description": "Primary action on the phone: a carbon ink block in a worn double rule that drops 2px and spreads ink when pressed. Carbon is for doing.",
+      "html": "<button class=\"ds-sb\" type=\"button\"><span class=\"ds-sb-rim\" aria-hidden=\"true\"></span><span class=\"ds-sb-rule\" aria-hidden=\"true\"></span><span class=\"ds-sb-label\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 7V5a2 2 0 0 1 2-2h2\"/><path d=\"M17 3h2a2 2 0 0 1 2 2v2\"/><path d=\"M21 17v2a2 2 0 0 1-2 2h-2\"/><path d=\"M7 21H5a2 2 0 0 1-2-2v-2\"/><path d=\"M7 12h10\"/></svg><span><b>Scan a leaf</b><small>पान स्कॅन करा</small></span></span></button>",
+      "css": ".ds-sb { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; min-height: 64px; min-width: 180px; padding: 0 12px; border: 0; border-radius: 2px; background: var(--ink, #1c1a17); color: var(--paper, #f4f5f0); box-shadow: 0 2px 0 rgb(80 60 20 / 0.16), 0 12px 24px -10px rgb(60 40 10 / 0.42); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; cursor: pointer; transition: transform 100ms ease-out, box-shadow 100ms ease-out; } .ds-sb-rim { position: absolute; inset: -6px; border: 3px solid var(--ink, #1c1a17); border-radius: 3px; pointer-events: none; -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); -webkit-mask-size: 120px 60px; mask-size: 120px 60px; } .ds-sb-rule { position: absolute; inset: 3px; border: 2px solid rgb(244 245 240 / 0.45); border-radius: 1px; pointer-events: none; -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); -webkit-mask-size: 120px 60px; mask-size: 120px 60px; } .ds-sb-label { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; text-align: left; line-height: 1.25; } .ds-sb-label b { display: block; font-size: 17px; font-weight: 700; } .ds-sb-label small { display: block; font-size: 14px; opacity: 0.9; font-family: var(--font-anek-deva, 'Anek Devanagari'), sans-serif; } .ds-sb::after { content: \"\"; position: absolute; inset: 0; border-radius: 2px; background: var(--ink, #1c1a17); opacity: 0; pointer-events: none; } .ds-sb:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-sb:active { transform: translateY(2px); box-shadow: 0 1px 0 rgb(80 60 20 / 0.18), 0 6px 14px -6px rgb(60 40 10 / 0.38), 0 18px 32px -18px rgb(60 40 10 / 0.35); } .ds-sb:active::after { animation: ds-sb-spread 120ms ease-out; } .ds-sb:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; } @keyframes ds-sb-spread { from { transform: scale(1); opacity: 0.55; } to { transform: scale(1.06); opacity: 0; } } @media (prefers-reduced-motion: reduce) { .ds-sb { transition: none; } .ds-sb:active::after { animation: none; } }"
+    },
+    {
+      "name": "Stamp Button (violet)",
+      "kind": "button",
+      "refersTo": "stamp-button-violet",
+      "description": "The violet stamp button for state-changing or verified outcomes: Ask, Confirm picking.",
+      "html": "<button class=\"ds-sbv\" type=\"button\"><span class=\"ds-sbv-rim\" aria-hidden=\"true\"></span><span class=\"ds-sbv-rule\" aria-hidden=\"true\"></span><span class=\"ds-sbv-label\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 19v3\"/><path d=\"M19 10v2a7 7 0 0 1-14 0v-2\"/><rect x=\"9\" y=\"2\" width=\"6\" height=\"13\" rx=\"3\"/></svg><span><b>Ask</b><small>प्रश्न विचारा</small></span></span></button>",
+      "css": ".ds-sbv { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; min-height: 64px; min-width: 180px; padding: 0 12px; border: 0; border-radius: 2px; background: var(--stamp, #4a3aa8); color: var(--paper, #f4f5f0); box-shadow: 0 2px 0 rgb(80 60 20 / 0.16), 0 12px 24px -10px rgb(60 40 10 / 0.42); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; cursor: pointer; transition: transform 100ms ease-out, box-shadow 100ms ease-out; } .ds-sbv-rim { position: absolute; inset: -6px; border: 3px solid var(--stamp, #4a3aa8); border-radius: 3px; pointer-events: none; -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); -webkit-mask-size: 120px 60px; mask-size: 120px 60px; } .ds-sbv-rule { position: absolute; inset: 3px; border: 2px solid rgb(244 245 240 / 0.45); border-radius: 1px; pointer-events: none; -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'120'%20height%3D'60'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.32'%20numOctaves%3D'2'%20seed%3D'4'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-5.2%203.05'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); -webkit-mask-size: 120px 60px; mask-size: 120px 60px; } .ds-sbv-label { position: relative; z-index: 1; display: flex; align-items: center; gap: 10px; text-align: left; line-height: 1.25; } .ds-sbv-label b { display: block; font-size: 17px; font-weight: 700; } .ds-sbv-label small { display: block; font-size: 14px; opacity: 0.9; font-family: var(--font-anek-deva, 'Anek Devanagari'), sans-serif; } .ds-sbv::after { content: \"\"; position: absolute; inset: 0; border-radius: 2px; background: var(--stamp, #4a3aa8); opacity: 0; pointer-events: none; } .ds-sbv:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-sbv:active { transform: translateY(2px); box-shadow: 0 1px 0 rgb(80 60 20 / 0.18), 0 6px 14px -6px rgb(60 40 10 / 0.38), 0 18px 32px -18px rgb(60 40 10 / 0.35); } .ds-sbv:active::after { animation: ds-sbv-spread 120ms ease-out; } .ds-sbv:disabled { opacity: 0.45; box-shadow: none; cursor: not-allowed; } @keyframes ds-sbv-spread { from { transform: scale(1); opacity: 0.55; } to { transform: scale(1.06); opacity: 0; } } @media (prefers-reduced-motion: reduce) { .ds-sbv { transition: none; } .ds-sbv:active::after { animation: none; } }"
+    },
+    {
+      "name": "Outline Button",
+      "kind": "button",
+      "refersTo": "outline-button",
+      "description": "Secondary action (desk demo inputs): 2px carbon outline that fills with carbon on hover.",
+      "html": "<button class=\"ds-btn-outline\" type=\"button\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.25\"><path d=\"M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242\"/><path d=\"M16 14v6\"/><path d=\"M8 14v6\"/><path d=\"M12 16v6\"/></svg>Rain forecast in 18 h</button>",
+      "css": ".ds-btn-outline { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border: 2px solid var(--ink, #1c1a17); border-radius: 3px; background: transparent; color: var(--ink, #1c1a17); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; font-size: 12.5px; font-weight: 600; line-height: 1.4; cursor: pointer; transition: background-color 150ms, color 150ms, transform 150ms; } .ds-btn-outline:hover { background: var(--ink, #1c1a17); color: var(--paper, #f4f5f0); } .ds-btn-outline:active { transform: translateY(1px); } .ds-btn-outline:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-btn-outline:disabled { border-color: rgb(28 26 23 / 0.3); color: var(--ink-3, #5f5a50); background: transparent; cursor: not-allowed; }"
+    },
+    {
+      "name": "Rubber Stamps",
+      "kind": "chip",
+      "refersTo": "stamp-verified",
+      "description": "State marks pressed askew with worn-rubber speckle: LIVE (violet), SIMULATED (carbon), Verified (violet), Re-planned (red), and the violet dated impression.",
+      "html": "<div class=\"ds-stamps\"><span class=\"ds-stamp ds-stamp-live\">Live</span><span class=\"ds-stamp ds-stamp-sim\">Simulated</span><span class=\"ds-stamp ds-stamp-ok\">Verified</span><span class=\"ds-stamp ds-stamp-alert\">Re-planned</span><span class=\"ds-stamp ds-stamp-date\">19 Oct 2026</span></div>",
+      "css": ".ds-stamps { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 14px 16px; background: var(--paper, #f4f5f0); } .ds-stamp { --r: -3deg; display: inline-flex; align-items: center; justify-content: center; white-space: nowrap; font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; font-weight: 700; font-stretch: 88%; text-transform: uppercase; line-height: 1; font-size: 10.5px; letter-spacing: 0.08em; padding: 2px 6px; border: 2px solid currentColor; border-radius: 3px; outline: 1px solid color-mix(in oklab, currentColor 40%, transparent); outline-offset: 2px; opacity: 0.92; transform: rotate(var(--r)); -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'80'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.9'%20numOctaves%3D'2'%20seed%3D'7'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-2.6%202.15'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'80'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.9'%20numOctaves%3D'2'%20seed%3D'7'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-2.6%202.15'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); -webkit-mask-size: 160px 80px; mask-size: 160px 80px; user-select: none; animation: ds-stamp-press 320ms cubic-bezier(0.3, 1.5, 0.5, 1) both; } .ds-stamp-live { color: var(--stamp, #4a3aa8); --r: -4deg; } .ds-stamp-sim { color: var(--ink, #1c1a17); --r: 2deg; } .ds-stamp-ok { color: var(--stamp, #4a3aa8); --r: -6deg; } .ds-stamp-alert { color: var(--alert, #c8102e); --r: 4deg; } .ds-stamp-date { color: var(--stamp, #4a3aa8); --r: -5deg; font-size: 9px; padding: 1px 4px; border-width: 1.5px; } @keyframes ds-stamp-press { from { transform: scale(1.3) rotate(calc(var(--r) - 4deg)); opacity: 0.45; } to { transform: scale(1) rotate(var(--r)); opacity: 0.92; } } @media (prefers-reduced-motion: reduce) { .ds-stamp { animation: none; } }"
+    },
+    {
+      "name": "Record Sheet",
+      "kind": "card",
+      "refersTo": "sheet",
+      "description": "A sheet of register paper with a form head (title, Marathi title, source stamp, typed form code) and numbered fields, each value in its provenance ink.",
+      "html": "<section class=\"ds-sheet\"><header class=\"ds-sheet-head\"><h2><span>My record</span><span class=\"ds-sheet-mr\">माझी नोंद</span></h2><div class=\"ds-sheet-right\"><span class=\"ds-sheet-stamp\">Simulated</span><span class=\"ds-sheet-code\">TAR-214</span></div></header><div class=\"ds-sheet-body\"><div class=\"ds-field\"><span class=\"ds-field-n\">1.</span><span class=\"ds-field-label\">Plot</span><span class=\"ds-field-typed\">Gat 214, 1.20 ac, drip</span></div><div class=\"ds-field\"><span class=\"ds-field-n\">2.</span><span class=\"ds-field-label\">Stage today</span><span class=\"ds-field-typed\">Fruit development</span></div><div class=\"ds-field\"><span class=\"ds-field-n\">3.</span><span class=\"ds-field-label\">Note</span><span class=\"ds-field-hand\">Oily spots on two lower leaves</span></div><div class=\"ds-field\"><span class=\"ds-field-n\">4.</span><span class=\"ds-field-label\">Blight</span><span class=\"ds-field-typed ds-field-alert\">Warning, 2 hexes</span></div></div></section>",
+      "css": ".ds-sheet { max-width: 420px; background: var(--paper, #f4f5f0); color: var(--ink, #1c1a17); border-radius: 2px; box-shadow: 0 1px 0 rgb(80 60 20 / 0.18), 0 6px 14px -6px rgb(60 40 10 / 0.38), 0 18px 32px -18px rgb(60 40 10 / 0.35); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; } .ds-sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; border-bottom: 2px solid var(--ink, #1c1a17); } .ds-sheet-head h2 { margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 8px; font-size: 17px; font-weight: 600; line-height: 1.25; font-stretch: 92%; } .ds-sheet-mr { font-family: var(--font-tiro-marathi, 'Tiro Devanagari Marathi'), var(--font-anek-deva, 'Anek Devanagari'), serif; font-size: 15px; font-weight: 400; color: var(--ink-2, #45413a); white-space: nowrap; } .ds-sheet-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; } .ds-sheet-stamp { display: inline-flex; font-weight: 700; font-stretch: 88%; text-transform: uppercase; line-height: 1; font-size: 9px; letter-spacing: 0.08em; padding: 1px 4px; border: 1.5px solid currentColor; border-radius: 3px; outline: 1px solid color-mix(in oklab, currentColor 40%, transparent); outline-offset: 2px; opacity: 0.92; transform: rotate(2deg); -webkit-mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'80'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.9'%20numOctaves%3D'2'%20seed%3D'7'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-2.6%202.15'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); mask-image: url(\"data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20width%3D'160'%20height%3D'80'%3E%3Cfilter%20id%3D'n'%3E%3CfeTurbulence%20type%3D'fractalNoise'%20baseFrequency%3D'0.9'%20numOctaves%3D'2'%20seed%3D'7'%2F%3E%3CfeColorMatrix%20values%3D'0%200%200%200%201%20%200%200%200%200%201%20%200%200%200%200%201%20%200%200%200%20-2.6%202.15'%2F%3E%3C%2Ffilter%3E%3Crect%20width%3D'100%25'%20height%3D'100%25'%20filter%3D'url(%23n)'%2F%3E%3C%2Fsvg%3E\"); -webkit-mask-size: 160px 80px; mask-size: 160px 80px; } .ds-sheet-code { font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 10.5px; color: var(--ink-3, #5f5a50); } .ds-sheet-body { padding: 4px 16px 12px; } .ds-field { display: grid; grid-template-columns: 1.5rem 6.5rem 1fr; align-items: baseline; column-gap: 8px; padding: 5px 0; border-bottom: 1px dotted rgb(28 26 23 / 0.25); } .ds-field-n { font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 11px; color: var(--ink-3, #5f5a50); } .ds-field-label { font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; font-stretch: 82%; color: var(--ink-2, #45413a); } .ds-field-typed { font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 13px; line-height: 1.375; font-variant-numeric: tabular-nums; } .ds-field-hand { font-family: var(--font-kalam, 'Kalam'), var(--font-anek-deva, 'Anek Devanagari'), cursive; font-size: 15px; line-height: 1.375; letter-spacing: 0.005em; color: var(--ballpoint, #1e40c8); } .ds-field-alert { color: var(--alert, #c8102e); font-weight: 700; }"
+    },
+    {
+      "name": "Today Slip",
+      "kind": "custom",
+      "refersTo": "slip",
+      "description": "The perforated yellow carbon slip carrying today's one action in English and Marathi, with a typed detail line and a typed corner code.",
+      "html": "<section class=\"ds-slip\"><span class=\"ds-slip-code\">KK-1 · today</span><p class=\"ds-slip-en\">Skip irrigation today</p><p class=\"ds-slip-mr\">आज पाणी देऊ नका</p><p class=\"ds-slip-detail\">18 mm rain forecast tomorrow; 12 kL stays in the ground</p><p class=\"ds-slip-detail-mr\">उद्या १८ मिमी पावसाचा अंदाज; १२ हजार लिटर पाणी वाचेल</p></section>",
+      "css": ".ds-slip { position: relative; max-width: 380px; padding: 20px 16px 16px; background: var(--slip, #f6edc9); color: var(--ink, #1c1a17); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; -webkit-mask: radial-gradient(circle 3px at 6px 0, transparent 2.6px, #000 3px) 0 0 / 12px 100% repeat-x; mask: radial-gradient(circle 3px at 6px 0, transparent 2.6px, #000 3px) 0 0 / 12px 100% repeat-x; animation: ds-slip-in 360ms cubic-bezier(0.2, 0.9, 0.3, 1) both; } .ds-slip-code { position: absolute; top: 12px; right: 12px; font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 10.5px; color: var(--ink-3, #5f5a50); } .ds-slip-en { margin: 0; padding-right: 64px; font-size: 22px; font-weight: 700; line-height: 1.25; font-stretch: 88%; } .ds-slip-mr { margin: 2px 0 0; font-family: var(--font-tiro-marathi, 'Tiro Devanagari Marathi'), var(--font-anek-deva, 'Anek Devanagari'), serif; font-size: 19px; line-height: 1.375; } .ds-slip-detail { margin: 8px 0 0; font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 13px; line-height: 1.375; } .ds-slip-detail-mr { margin: 2px 0 0; font-family: var(--font-anek-deva, 'Anek Devanagari'), sans-serif; font-size: 14px; line-height: 1.375; color: var(--ink-2, #45413a); } @keyframes ds-slip-in { from { transform: translateY(8px); opacity: 0.4; } to { transform: none; opacity: 1; } } @media (prefers-reduced-motion: reduce) { .ds-slip { animation: none; } }"
+    },
+    {
+      "name": "File Tabs",
+      "kind": "nav",
+      "refersTo": "file-tab",
+      "description": "Manila file tabs on the map sheet's top edge; the active tab is paper continuous with the sheet below. English label with a Marathi subtitle.",
+      "html": "<div class=\"ds-tabs-wrap\"><div class=\"ds-tabs\" role=\"tablist\" aria-label=\"Map layer\"><button class=\"ds-tab ds-tab-active\" role=\"tab\" aria-selected=\"true\">Pest Radar<span class=\"ds-tab-mr\">कीड रडार</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Harvest Wave<span class=\"ds-tab-mr\">तोडणी लाट</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Water Commons<span class=\"ds-tab-mr\">पाणी</span></button><button class=\"ds-tab\" role=\"tab\" aria-selected=\"false\">Pooled Runs<span class=\"ds-tab-mr\">वाहतूक</span></button></div><div class=\"ds-tabs-sheet\"></div></div>",
+      "css": ".ds-tabs-wrap { padding: 12px 12px 0; background: var(--board, #cda868); } .ds-tabs { position: relative; z-index: 1; display: flex; gap: 4px; padding-left: 12px; margin-bottom: -1px; } .ds-tab { display: flex; align-items: baseline; gap: 8px; padding: 8px 16px; border: 0; border-radius: 5px 5px 0 0; background: var(--board-deep, #b89252); color: var(--board-ink, #2f2512); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; font-size: 14px; font-weight: 600; line-height: 1.25; font-stretch: 90%; cursor: pointer; transition: background-color 150ms, color 150ms; } .ds-tab:hover { background: #c29d5c; } .ds-tab:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-tab-mr { font-family: var(--font-anek-deva, 'Anek Devanagari'), sans-serif; font-size: 12px; font-weight: 400; color: var(--board-ink-2, #4f3f20); } .ds-tab-active, .ds-tab-active:hover { background: var(--paper, #f4f5f0); color: var(--ink, #1c1a17); box-shadow: 0 -1px 0 rgb(80 60 20 / 0.12); } .ds-tab-active .ds-tab-mr { color: var(--ink-2, #45413a); } .ds-tabs-sheet { height: 40px; background: var(--paper, #f4f5f0); border-radius: 2px 2px 0 0; box-shadow: 0 1px 0 rgb(80 60 20 / 0.18), 0 6px 14px -6px rgb(60 40 10 / 0.38), 0 18px 32px -18px rgb(60 40 10 / 0.35); }"
+    },
+    {
+      "name": "Question Input",
+      "kind": "input",
+      "refersTo": "input",
+      "description": "The Ask sheet's typed fallback: a 48px bilingual field whose border turns violet on focus, paired with a 48px carbon send square.",
+      "html": "<form class=\"ds-ask\" onsubmit=\"return false\"><input class=\"ds-ask-input\" type=\"text\" placeholder=\"Or type your question / प्रश्न लिहा\" aria-label=\"Your question\"><button class=\"ds-ask-send\" type=\"submit\" aria-label=\"Ask\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M14.536 21.686a.5.5 0 0 0 .937-.024l6.5-19a.496.496 0 0 0-.635-.635l-19 6.5a.5.5 0 0 0-.024.937l7.93 3.18a2 2 0 0 1 1.112 1.11z\"/><path d=\"m21.854 2.147-10.94 10.939\"/></svg></button></form>",
+      "css": ".ds-ask { display: flex; gap: 8px; max-width: 400px; } .ds-ask-input { flex: 1; min-width: 0; min-height: 48px; padding: 0 12px; border: 2px solid rgb(28 26 23 / 0.4); border-radius: 3px; background: var(--paper, #f4f5f0); color: var(--ink, #1c1a17); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; font-size: 15px; outline: none; transition: border-color 150ms; } .ds-ask-input::placeholder { color: var(--ink-3, #5f5a50); } .ds-ask-input:focus { border-color: var(--stamp, #4a3aa8); } .ds-ask-send { display: grid; place-items: center; width: 48px; min-height: 48px; border: 0; border-radius: 3px; background: var(--ink, #1c1a17); color: var(--paper, #f4f5f0); cursor: pointer; } .ds-ask-send:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Chips",
+      "kind": "chip",
+      "refersTo": "chip-plot",
+      "description": "Typed plot chips (hover darkens the border, selected fills violet) and the Ask sheet's 'understood' pills: solid when heard, dashed when assumed from the record.",
+      "html": "<div class=\"ds-chips\"><div class=\"ds-chip-row\"><span class=\"ds-chip-label\">In this hex</span><button class=\"ds-chip-plot ds-chip-plot-on\" type=\"button\" aria-pressed=\"true\">TAR-214</button><button class=\"ds-chip-plot\" type=\"button\" aria-pressed=\"false\">TAR-209</button><button class=\"ds-chip-plot\" type=\"button\" aria-pressed=\"false\">TAR-231</button></div><div class=\"ds-chip-row\"><span class=\"ds-chip-heard\"><span class=\"ds-chip-k\">Crop:</span> Pomegranate <span class=\"ds-chip-mr\">डाळिंब</span></span><span class=\"ds-chip-assumed\"><span class=\"ds-chip-k\">Stage:</span> Fruit set <span class=\"ds-chip-mr\">फळधारणा</span></span></div></div>",
+      "css": ".ds-chips { display: grid; gap: 12px; padding: 12px 16px; background: var(--paper, #f4f5f0); color: var(--ink, #1c1a17); font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; } .ds-chip-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; } .ds-chip-label { margin-right: 4px; font-size: 11px; line-height: 16px; font-weight: 600; letter-spacing: 0.02em; text-transform: uppercase; font-stretch: 82%; color: var(--ink-2, #45413a); } .ds-chip-plot { padding: 2px 6px; border: 1px solid rgb(28 26 23 / 0.3); border-radius: 2px; background: transparent; color: var(--ink, #1c1a17); font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 11px; cursor: pointer; transition: border-color 150ms, background-color 150ms, color 150ms; } .ds-chip-plot:hover { border-color: var(--ink, #1c1a17); } .ds-chip-plot:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-chip-plot-on, .ds-chip-plot-on:hover { border-color: var(--stamp, #4a3aa8); background: var(--stamp, #4a3aa8); color: var(--paper, #f4f5f0); } .ds-chip-heard, .ds-chip-assumed { display: inline-block; padding: 2px 10px; border-radius: 9999px; font-size: 12.5px; line-height: 1.4; } .ds-chip-heard { border: 2px solid var(--ink, #1c1a17); } .ds-chip-assumed { border: 2px dashed rgb(28 26 23 / 0.4); color: var(--ink-2, #45413a); } .ds-chip-k { color: var(--ink-3, #5f5a50); } .ds-chip-mr { font-family: var(--font-anek-deva, 'Anek Devanagari'), sans-serif; }"
+    },
+    {
+      "name": "Date Stamp",
+      "kind": "custom",
+      "refersTo": "date-band",
+      "description": "The desk's signature control: rolling day / month / year bands in carbon inside a board-ink frame, with play and back-to-today instruments.",
+      "html": "<div class=\"ds-date-wrap\"><div class=\"ds-date\"><div class=\"ds-band\"><button class=\"ds-chev\" type=\"button\" aria-label=\"Previous day\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"m18 15-6-6-6 6\"/></svg></button><div class=\"ds-band-face ds-band-day\" role=\"spinbutton\" tabindex=\"0\" aria-label=\"Day\" aria-valuetext=\"19\">19</div><button class=\"ds-chev\" type=\"button\" aria-label=\"Next day\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"m6 9 6 6 6-6\"/></svg></button></div><div class=\"ds-band\"><button class=\"ds-chev\" type=\"button\" aria-label=\"Previous month\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"m18 15-6-6-6 6\"/></svg></button><div class=\"ds-band-face ds-band-month\" role=\"spinbutton\" tabindex=\"0\" aria-label=\"Month\" aria-valuetext=\"OCT\">OCT</div><button class=\"ds-chev\" type=\"button\" aria-label=\"Next month\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"m6 9 6 6 6-6\"/></svg></button></div><div class=\"ds-band\"><button class=\"ds-chev\" type=\"button\" aria-label=\"Previous year\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"m18 15-6-6-6 6\"/></svg></button><div class=\"ds-band-face ds-band-year\" role=\"spinbutton\" tabindex=\"0\" aria-label=\"Year\" aria-valuetext=\"2026\">2026</div><button class=\"ds-chev\" type=\"button\" aria-label=\"Next year\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"m6 9 6 6 6-6\"/></svg></button></div></div><div class=\"ds-transport\"><button class=\"ds-play\" type=\"button\" aria-label=\"Play the season\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><polygon points=\"6 3 20 12 6 21 6 3\" fill=\"currentColor\"/></svg></button><button class=\"ds-back\" type=\"button\" aria-label=\"Back to today\" disabled><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\" style=\"stroke-width:2.5\"><path d=\"M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8\"/><path d=\"M3 3v5h5\"/></svg></button></div></div>",
+      "css": ".ds-date-wrap { display: inline-flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--board, #cda868); } .ds-date { display: flex; align-items: flex-end; gap: 6px; padding: 2px 6px; border: 1.5px solid var(--board-ink, #2f2512); border-radius: 3px; } .ds-band { display: flex; flex-direction: column; align-items: center; } .ds-chev { display: grid; place-items: center; width: 100%; height: 16px; padding: 0; border: 0; background: none; color: var(--board-ink-2, #4f3f20); cursor: pointer; transition: color 150ms; } .ds-chev:hover { color: var(--ink, #1c1a17); } .ds-chev:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-band-face { display: grid; place-items: center; height: 36px; overflow: hidden; border-radius: 2px; background: var(--ink, #1c1a17); color: var(--paper, #f4f5f0); font-family: var(--font-courier-prime, 'Courier Prime'), ui-monospace, monospace; font-size: 20px; font-weight: 700; font-variant-numeric: tabular-nums; } .ds-band-face:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-band-day { width: 44px; } .ds-band-month { width: 54px; font-family: var(--font-anek-latin, 'Anek Latin'), var(--font-anek-deva, 'Anek Devanagari'), system-ui, sans-serif; font-size: 19px; letter-spacing: 0.08em; font-stretch: 86%; } .ds-band-year { width: 59px; } .ds-transport { display: flex; flex-direction: column; gap: 4px; } .ds-play { display: grid; place-items: center; width: 32px; height: 32px; border: 0; border-radius: 9999px; background: var(--ink, #1c1a17); color: var(--paper, #f4f5f0); cursor: pointer; transition: transform 150ms; } .ds-play:active { transform: scale(0.95); } .ds-play:focus-visible, .ds-back:focus-visible { outline: 2px solid var(--stamp, #4a3aa8); outline-offset: 2px; } .ds-back { display: grid; place-items: center; width: 32px; height: 32px; border: 2px solid rgb(47 37 18 / 0.7); border-radius: 9999px; background: none; color: var(--board-ink, #2f2512); cursor: pointer; transition: opacity 150ms; } .ds-back:disabled { opacity: 0.35; cursor: default; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Living Record",
+    "overview": "KhetKundli is drawn as the paperwork of a Maharashtra plot: the 7/12 extract, the Soil Health Card, the village survey map. Every surface is a stack of cool ruled register sheets lying on a manila file board. Modules are entries in a record and the collective layers are the survey map, so the interface vocabulary is the vocabulary of a government file: numbered form fields, typed values, ballpoint notes, rubber stamps, perforated carbon slips, file tabs and a dated stamp.\n\nProvenance is carried by ink, not by badges. Carbon-black typewriter marks anything computed, ballpoint blue in a human hand marks anything a person entered, and violet rubber stamps mark verified state and \"now\". Red ink appears only when something needs attention. One axis, the season's day, drives everything: rolling the date stamp on the desk or turning the kundli wheel on the phone re-inks every sheet, the map and the runs together.\n\nThe two built surfaces share the world but not the density. The Taluka Desk is a dense, projector-scale operations board; the farmer phone is a single column of large, bilingual, high-contrast sheets for one-handed outdoor use. The world refuses the agritech default of KPI tiles over a satellite basemap with coloured pins, and the farmer-app default of a feed of tips, weather tiles and a chatbot bubble.",
+    "keyCharacteristics": [
+      "Manila board ground, cool register paper, warm brown shadows.",
+      "Three provenance inks (typed carbon, Kalam ballpoint, violet stamp) plus red ink for alerts only.",
+      "Anek Latin and Anek Devanagari on the width axis for all UI; Courier Prime only for record values; Tiro Devanagari Marathi for Marathi titles.",
+      "Survey-map linework with H3 hexes hatched in red ink for blight risk; no individual farm on a shared view.",
+      "Motion is physical and driven by simulated time: stamps press, digits roll, ink re-fades, paper slides."
+    ],
+    "rules": [
+      {
+        "name": "The Three Inks Rule",
+        "body": "Every value is written in exactly one ink, and the ink says who wrote it: typed carbon for computed, Kalam ballpoint blue for a person, violet stamp for verified or current state. A value never carries two inks and is never coloured for decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Red Ink Rule",
+        "body": "Red means attention: risk, failure, glut, low confidence, offline, re-planned. When an entry is an alert, red replaces its ink colour but its typeface keeps its provenance. The one ledger-native exception is a deduction on a sale slip, written in red as a debit.",
+        "section": "colors"
+      },
+      {
+        "name": "The Cool Paper Rule",
+        "body": "Paper is cool grey-green register stock, never cream. Warmth belongs to the manila board around it.",
+        "section": "colors"
+      },
+      {
+        "name": "The Typewriter Is for Values Rule",
+        "body": "Courier Prime sets only record values, codes, dates, times and numbers. Labels, headings and prose are Anek. If it was computed, it is typed.",
+        "section": "typography"
+      },
+      {
+        "name": "The Marathi Alongside Rule",
+        "body": "Every farmer-facing line carries its Marathi partner in the same block, at equal or near-equal size, never behind a toggle. Titles pair with Tiro Devanagari Marathi; body lines with Anek Devanagari.",
+        "section": "typography"
+      },
+      {
+        "name": "The Form Code Rule",
+        "body": "Nothing sits above a heading. A sheet is identified by a typed form code (KK-1 to KK-7, or the plot ID) in the right cluster of its head, beside its stamps. No kicker, no eyebrow.",
+        "section": "typography"
+      },
+      {
+        "name": "The Ruled Pitch Rule",
+        "body": "On ruled paper, line-height equals the rule gap and the date or time column sits in the margin. Text never floats between rules.",
+        "section": "layout"
+      },
+      {
+        "name": "The Paper on Board Rule",
+        "body": "A thing either lies on the board (sheet), is held above it (lift), or is pressed into it: a stamp button drops 2px and collapses from lift to sheet. Nothing inside a sheet casts a shadow.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Stamp Every Source Rule",
+        "body": "Every block of data carries a LIVE or SIMULATED stamp in its head or beside its figure. A source that is not live is never presented as live; the pomegranate scan result stays SIMULATED until a pomegranate model exists.",
+        "section": "components"
+      },
+      {
+        "name": "The Simulated Clock Rule",
+        "body": "Nothing moves on its own. Vehicles, hours and marks move only when simulated time moves (play, roll, drag). Under reduced motion every animation and transition collapses to 1ms, and stamp presses, ink spreads, month blur and listening rings are skipped.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do write every value in the ink of whoever produced it: typed carbon (Courier Prime) for computed, Kalam ballpoint blue for a person, a violet stamp for verified or current state.",
+      "Do stamp every data source LIVE (violet) or SIMULATED (carbon), on the sheet head or beside the figure it qualifies.",
+      "Do set Marathi alongside every farmer-facing line: Tiro Devanagari Marathi for titles, Anek Devanagari for body lines.",
+      "Do give every phone control at least 48px in its smaller dimension, and the dock's primary stamp buttons 64px.",
+      "Do identify a sheet by its typed form code (KK-1 to KK-7, or the plot ID) at the right end of its head.",
+      "Do re-ink with a 200ms fade when the day changes, press stamps on the spring, and honour prefers-reduced-motion.",
+      "Do put tear-off notices (today's action, re-planned ripples, demo inputs, escalations, scan advice) on the perforated yellow slip.",
+      "Do aggregate shared maps to H3 hexes and village areas, drawing risk as red-ink hatching density."
+    ],
+    "donts": [
+      "Don't place a kicker or eyebrow above any heading; the form code and stamps in the head's right cluster are the only marks a sheet head carries.",
+      "Don't use red for anything but alerts and ledger debits: never for decoration, brand or \"today\".",
+      "Don't put two inks on one value, or colour a value outside its provenance ink or the alert.",
+      "Don't add coloured side-stripe borders to cards, rows or alerts; the register's red margin rule is ruling printed on the paper, not a status stripe.",
+      "Don't use progress rings or radial gauges for a metric; the kundli wheel is a season chart (time round the circle), not a percentage.",
+      "Don't use cream or warm paper; warmth belongs to the manila board.",
+      "Don't build KPI tiles over a satellite basemap with coloured pins, or a feed of tips, weather tiles and a chatbot bubble.",
+      "Don't show an individual farm on a shared map.",
+      "Don't animate vehicles or the season unless simulated time is moving."
+    ]
+  }
+}

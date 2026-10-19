@@ -1,5 +1,5 @@
-// KhetKundli offline support: the farmer phone, the Scan Lens model and the runtime keep working without signal.
-const CACHE = "khetkundli-v1";
+// KhetKundli offline support: the farmer phone, Scan Lens, the sale-slip reader and their runtimes keep working without signal.
+const CACHE = "khetkundli-v2";
 const PRECACHE = [
   "/farmer",
   "/workers/scan-lens.js",
@@ -12,8 +12,13 @@ const PRECACHE = [
   "/samples/s1.jpg",
   "/samples/s2.jpg",
   "/samples/s3.jpg",
+  "/samples/slip-fair.jpg",
+  "/samples/slip-extra.jpg",
+  "/tesseract/worker.min.js",
+  "/tesseract/lang/eng.traineddata.gz",
 ];
-const CACHE_FIRST = ["/_next/static/", "/ort/", "/models/", "/workers/", "/samples/"];
+// The OCR core is cached on first use: the worker picks one of three builds by the device's SIMD support.
+const CACHE_FIRST = ["/_next/static/", "/ort/", "/models/", "/workers/", "/samples/", "/tesseract/"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(caches.open(CACHE).then((c) => c.addAll(PRECACHE)).then(() => self.skipWaiting()));

@@ -308,6 +308,7 @@ export function generateSeason(input: SeasonInput = {}): Season {
   });
 
   const runs: Run[] = [];
+  const slips = ov.slips ?? [];
   const groups = new Map<string, typeof bookings>();
   for (const b of bookings) {
     const k = `${b.day}|${b.hub}|${b.market}`;
@@ -350,6 +351,8 @@ export function generateSeason(input: SeasonInput = {}): Season {
       }
       say(b.plot, day, 19, "computed", { type: "booking", crates: b.crates, hub, run: firstRun, market: mk.id });
       const saleDay = Math.min(SEASON_DAYS - 1, day + 1);
+      // A slip the farmer read on the phone is the sale as it happened; it replaces this one.
+      if (slips.some((s) => s.plot === b.plot && Math.abs(s.day - saleDay) <= 3)) continue;
       const pricePerKg = Math.round(prices[mk.id][saleDay] * GRADE_FACTOR[b.grade]);
       const gross = b.crates * CRATE_KG * pricePerKg;
       const deductions = [
@@ -368,6 +371,21 @@ export function generateSeason(input: SeasonInput = {}): Season {
         net: gross - deductions.reduce((s, x) => s + x.amount, 0),
       });
     }
+  }
+  for (const s of slips) {
+    if (!plots[s.plot] || s.day < 0 || s.day >= SEASON_DAYS) continue;
+    say(s.plot, s.day, 9, "human", {
+      type: "sale",
+      crates: s.crates,
+      kg: s.kg,
+      grade: s.grade,
+      market: s.market,
+      pricePerKg: s.pricePerKg,
+      gross: s.gross,
+      deductions: s.deductions,
+      net: s.net,
+      slip: { pattiNo: s.pattiNo, agent: s.agent, aboveCard: s.aboveCard, flags: s.flags },
+    });
   }
   runs.sort((a, b) => a.day - b.day || a.departHour - b.departHour);
   const runsByDay: Run[][] = Array.from({ length: SEASON_DAYS }, () => []);

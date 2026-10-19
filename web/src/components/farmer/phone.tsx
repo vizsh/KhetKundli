@@ -16,6 +16,7 @@ import { AskSheet } from "./ask-sheet";
 import { HarvestDate } from "./harvest-date";
 import { Passbook } from "./passbook";
 import { ScanLens } from "./scan-lens";
+import { SlipCheck } from "./slip-check";
 import { SeasonWheel, WheelKey } from "./season-wheel";
 import { TodaySlip } from "./today-slip";
 
@@ -29,6 +30,7 @@ export function Phone() {
   const village = geo.villages[p.village];
   const [scan, setScan] = useState(false);
   const [ask, setAsk] = useState(false);
+  const [slip, setSlip] = useState(false);
   const [hint, setHint] = useState(true);
 
   // Offline support ships in production builds only, so development never serves stale files.
@@ -89,7 +91,7 @@ export function Phone() {
         </div>
 
         <div className="mt-4">
-          <Passbook plot={plot} />
+          <Passbook plot={plot} onCheckSlip={() => setSlip(true)} />
         </div>
 
         <p className="mt-4 px-1 text-center text-[12px] text-board-ink-2">
@@ -123,6 +125,7 @@ export function Phone() {
 
       <ScanLens open={scan} onClose={() => setScan(false)} />
       <AskSheet open={ask} onClose={() => setAsk(false)} plot={plot} />
+      <SlipCheck open={slip} onClose={() => setSlip(false)} plot={plot} />
     </div>
   );
 }

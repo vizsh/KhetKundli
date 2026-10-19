@@ -1,0 +1,12 @@
+[
+  {
+    "src": "/samples/slip-fair.jpg",
+    "title": "A fair slip",
+    "credit": "Specimen made for this demo; the agent is fictitious"
+  },
+  {
+    "src": "/samples/slip-extra.jpg",
+    "title": "A slip with extra charges",
+    "credit": "Specimen made for this demo; the agent is fictitious"
+  }
+]

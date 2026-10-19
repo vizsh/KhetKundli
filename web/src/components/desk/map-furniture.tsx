@@ -71,7 +71,7 @@ export function DemoSlip({ floating = false }: { floating?: boolean }) {
   const btn =
     "inline-flex items-center gap-1.5 rounded-[3px] border-2 border-ink px-2.5 py-1 text-[12.5px] font-semibold transition-[background-color,transform] hover:bg-ink hover:text-paper active:translate-y-px disabled:cursor-not-allowed disabled:border-ink/30 disabled:text-ink-3 disabled:hover:bg-transparent disabled:hover:text-ink-3";
   return (
-    <div className={floating ? "perforated flex flex-col gap-1.5 bg-slip px-3 pb-2 pt-3 shadow-[var(--shadow-lift)]" : "flex flex-wrap items-center gap-2"}>
+    <div className={floating ? "perforated flex flex-col gap-1.5 bg-slip px-3 pb-2 pt-3" : "flex flex-wrap items-center gap-2"}>
       <span className="label-form mr-1 text-ink-3">Demo inputs, simulated</span>
       <div className={floating ? "grid grid-cols-2 gap-2" : "flex flex-wrap items-center gap-2"}>
       <button type="button" className={btn} onClick={() => heroScan()} disabled={scanned}>
@@ -91,7 +91,7 @@ export function DemoSlip({ floating = false }: { floating?: boolean }) {
         <Smartphone className="size-3.5" strokeWidth={2.25} />
         Open Sunita&rsquo;s phone
       </button>
-      <button type="button" className={`${btn} border-transparent`} onClick={resetDemo} disabled={!scanned && !rained}>
+      <button type="button" className={`${btn} border-transparent`} onClick={resetDemo}>
         <RotateCcw className="size-3.5" strokeWidth={2.25} />
         Reset
       </button>

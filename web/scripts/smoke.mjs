@@ -21,7 +21,7 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   page.on("pageerror", (e) => check("no page errors", false, String(e)));
-  await page.goto(`${BASE}/farmer`, { waitUntil: "networkidle0" });
+  await page.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
 
   // Scan Lens on two sample leaves, crop-conditioned.
   for (const [crop, sample] of [["Capsicum", "bacterial spot"], ["Tomato", "Septoria leaf spot."]]) {
@@ -52,7 +52,7 @@ try {
   // Phone and desk in two tabs: a pomegranate scan saved on the phone ripples on the desk.
   const desk = await browser.newPage();
   await desk.setViewport({ width: 1440, height: 900 });
-  await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle0" });
+  await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
   await page.evaluate(() => document.querySelector("[aria-label='Close']")?.click());
   await sleep(500);
   await clickText(page, "nav button", "Scan a leaf");
@@ -76,4 +76,66 @@ try {
   await browser.close();
 }
 for (const r of results) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}${r.detail ? `  ·  ${r.detail}` : ""}`);
-process.exit(results.every((r) => r.ok) ? 0 : 1);
+if (!results.every((r) => r.ok)) process.exitCode = 1;
+
+// Network relay: phone and desk in separate browser profiles cannot share a BroadcastChannel,
+// so the escalation and the officer's reply can only travel through /api/sync.
+{
+  const relay = [];
+  const browser2 = await puppeteer.launch({ executablePath: CHROME, headless: true });
+  try {
+    const phoneCtx = await browser2.createBrowserContext();
+    const deskCtx = await browser2.createBrowserContext();
+    const phone = await phoneCtx.newPage();
+    await phone.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+    const desk = await deskCtx.newPage();
+    await desk.setViewport({ width: 1440, height: 900 });
+    await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
+    await phone.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
+    await clickText(phone, "nav button", "Ask");
+    await sleep(500);
+    const question = `Is the new nursery variety from Baramati good for my land? (${Date.now().toString(36)})`;
+    await phone.type("[role=dialog] input", question);
+    await phone.evaluate(() => [...document.querySelectorAll("[role=dialog] form")].at(-1)?.requestSubmit());
+    const arrived = await desk.waitForFunction((q) => document.body.textContent?.includes(q), { timeout: 10000, polling: 200 }, question).then(() => true, () => false);
+    relay.push({ name: "relay: escalation reaches the desk on another profile", ok: arrived });
+    if (arrived) {
+      await desk.evaluate((q) => {
+        const item = [...document.querySelectorAll("li")].find((li) => li.textContent?.includes(q));
+        const input = item?.querySelector("input");
+        if (!input) return;
+        const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
+        setter.call(input, "Do not mix them. Spray copper alone at 06:00; fertiliser by drip two days later.");
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        item.querySelector("form")?.requestSubmit();
+      }, question);
+      const replied = await phone.waitForFunction(() => document.body.textContent?.includes("Do not mix them"), { timeout: 10000, polling: 200 }).then(() => true, () => false);
+      relay.push({ name: "relay: officer's reply reaches the phone", ok: replied });
+    }
+
+    // Sale slip: read on the phone with on-device OCR, checked, filed and disputed; the desk sees both.
+    await phone.evaluate(() => [...document.querySelectorAll("[role=dialog] button[aria-label='Close']")].at(-1)?.click());
+    await sleep(600);
+    await clickText(phone, "button", "Check a sale slip");
+    await sleep(500);
+    await clickText(phone, "[role=dialog] button", "A slip with extra charges");
+    const read = await phone.waitForFunction(() => /read on this phone in [0-9.]+ s/.test(document.body.textContent ?? ""), { timeout: 60000, polling: 200 }).then(() => true, () => false);
+    const slipText = await textOf(phone, "[role=dialog]");
+    if (process.env.SMOKE_DEBUG) console.log("slip dialog:", read, slipText.slice(150, 900));
+    relay.push({ name: "slip: OCR on the phone finds ₹1,863 above the rate card", ok: read && slipText.includes("₹1,863"), detail: slipText.match(/read on this phone in [0-9.]+ s/)?.[0] ?? slipText.slice(0, 160) });
+    await clickText(phone, "[role=dialog] button", "File in my record");
+    await clickText(phone, "[role=dialog] button", "Send to the officer");
+    const rippled = await desk.waitForFunction(() => document.body.textContent?.includes("Sale slip of 12 NOV read and checked"), { timeout: 10000, polling: 200 }).then(() => true, () => false);
+    relay.push({ name: "slip: filing ripples to the desk over the relay", ok: rippled });
+    const inboxed = await desk.waitForFunction(() => [...document.querySelectorAll("li")].some((li) => li.textContent?.includes("Sale slip") && li.textContent?.includes("Please refund ₹1,863")), { timeout: 10000, polling: 200 }).then(() => true, () => false);
+    relay.push({ name: "slip: dispute lands in the desk inbox with slip replies", ok: inboxed });
+  } catch (err) {
+    relay.push({ name: "relay run completed", ok: false, detail: String(err).slice(0, 200) });
+  } finally {
+    await browser2.close();
+    // Leave the relay clean for the next run or the live demo.
+    await fetch(`${BASE}/api/sync`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "reset", from: "smoke" }) }).catch(() => {});
+  }
+  for (const r of relay) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}${r.detail ? `  ·  ${r.detail}` : ""}`);
+  if (relay.some((r) => !r.ok)) process.exitCode = 1;
+}

@@ -66,12 +66,13 @@ export function TodaySlip({ plot }: { plot: number }) {
   const day = Math.floor(t);
   const action = todayAction(season, plot, day);
   return (
+    <div className="slip-shadow">
     <motion.section
       key={`${day}-${action.kind}`}
       initial={{ y: 8, opacity: 0.4 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ type: "spring", stiffness: 420, damping: 32 }}
-      className="perforated relative bg-slip px-4 pb-4 pt-5 shadow-[var(--shadow-sheet)]"
+      className="perforated relative bg-slip px-4 pb-4 pt-5"
       aria-live="polite"
     >
       <span className="typed absolute right-3 top-3 text-[10.5px] text-ink-3">KK-1 · today</span>
@@ -83,5 +84,6 @@ export function TodaySlip({ plot }: { plot: number }) {
         <SprayRibbon />
       </div>
     </motion.section>
+    </div>
   );
 }

@@ -239,8 +239,8 @@ export function SeasonTrack({ className }: { className?: string }) {
           <text x={x(mo.day) + 3} y={34} fontSize={10.5} fontWeight={700} fill="var(--board-ink-2)" style={{ fontStretch: "85%" }}>{mo.label}</text>
         </g>
       ))}
-      <line x1={x(today)} x2={x(today)} y1={6} y2={22} stroke="var(--alert)" strokeWidth={1.5} />
-      <text x={x(today) + 3} y={9} fontSize={10} fontWeight={700} fill="var(--alert)">TODAY</text>
+      <line x1={x(today)} x2={x(today)} y1={6} y2={22} stroke="var(--ink)" strokeWidth={1.5} />
+      <text x={x(today) + 3} y={9} fontSize={10} fontWeight={700} fill="var(--ink)">TODAY</text>
       <text x={x(215) - 3} y={9} textAnchor="end" fontSize={10} fontWeight={600} fill="var(--board-ink-2)">HARVEST</text>
       <g transform={`translate(${x(t)},0)`}>
         <line y1={4} y2={24} stroke="var(--stamp)" strokeWidth={2} />

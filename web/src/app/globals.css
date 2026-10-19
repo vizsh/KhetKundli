@@ -197,6 +197,10 @@
     -webkit-mask: radial-gradient(circle 3px at 6px 0, transparent 2.6px, #000 3px) 0 0 / 12px 100% repeat-x;
     mask: radial-gradient(circle 3px at 6px 0, transparent 2.6px, #000 3px) 0 0 / 12px 100% repeat-x;
   }
+  /* A slip's shadow lives on a wrapper: the perforation mask would clip a shadow on the slip itself. */
+  .slip-shadow {
+    filter: drop-shadow(0 1px 0 rgb(80 60 20 / 0.16)) drop-shadow(0 10px 14px rgb(60 40 10 / 0.3));
+  }
   /* File-board fibre on the manila ground. */
   .board-fibre {
     background-color: var(--board);

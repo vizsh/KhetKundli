@@ -52,7 +52,7 @@ export function Desk() {
             <div className="relative shrink-0">
               <SurveyMap />
               <MapCartouche />
-              <div className="absolute right-20 top-3 hidden xl:block">
+              <div className="slip-shadow absolute right-20 top-3 hidden xl:block">
                 <DemoSlip floating />
               </div>
             </div>

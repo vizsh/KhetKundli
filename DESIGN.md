@@ -329,6 +329,8 @@ Depth is physical: sheets of paper lying on a manila board. There are only two s
 - **Lift** (`box-shadow: 0 2px 0 rgb(80 60 20 / 0.16), 0 12px 24px -10px rgb(60 40 10 / 0.42)`): things held above the paper: the floating demo slip, the ripple slip, hover cards on the map and chart, stamp buttons at rest.
 - **Tab lip** (`box-shadow: 0 -1px 0 rgb(80 60 20 / 0.12)`): the top edge of the active file tab.
 
+Perforated slips declare Sheet or Lift too, but the perforation mask clips everything outside the slip's border box, so in practice slips read flat against what they lie on.
+
 ### Named Rules
 **The Paper on Board Rule.** A thing either lies on the board (sheet), is held above it (lift), or is pressed into it: a stamp button drops 2px and collapses from lift to sheet. Nothing inside a sheet casts a shadow.
 

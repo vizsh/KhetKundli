@@ -13,7 +13,7 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: Number(w), height: Number(h), deviceScaleFactor: 1, isMobile: mobile, hasTouch: mobile });
   const weather = page.waitForResponse((r) => r.url().includes("/api/weather"), { timeout: 20000 }).catch(() => null);
-  await page.goto(url, { waitUntil: "networkidle0", timeout: 60000 });
+  await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
   await weather;
   await page.evaluate(() => document.fonts.ready);
   await new Promise((r) => setTimeout(r, 1800));

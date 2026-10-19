@@ -1,66 +1,93 @@
 "use client";
 
 import { useEffect } from "react";
-import { useDesk } from "@/lib/store";
+import { addTransport, post, SELF, type SyncMsg } from "@/lib/channel";
 import type { Overrides } from "@/lib/sim/types";
-
-type Msg =
-  | { kind: "hello"; from: string }
-  | { kind: "state"; from: string; overrides: Overrides; t: number }
-  | { kind: "overrides"; from: string; overrides: Overrides; label: string }
-  | { kind: "time"; from: string; t: number };
+import { useDesk } from "@/lib/store";
 
 const same = (a: Overrides, b: Overrides) => JSON.stringify(a) === JSON.stringify(b);
 
+/** Apply a message from another window or device to this window's state. */
+function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => void) => void) {
+  if (!m || m.from === SELF) return;
+  const s = useDesk.getState();
+  switch (m.kind) {
+    case "hello":
+      reply({ kind: "state", from: SELF, overrides: s.overrides, inbox: s.inbox, t: s.t });
+      break;
+    case "state":
+      if (!same(m.overrides, s.overrides) && Object.keys(m.overrides).length) s.applyOverrides(m.overrides, "Synced from another screen", "remote");
+      if (m.inbox.length) s.mergeInbox(m.inbox);
+      break;
+    case "overrides":
+      if (!same(m.overrides, s.overrides)) s.applyOverrides(m.overrides, m.label, "remote");
+      break;
+    case "time":
+      follow(() => {
+        if (s.playing) s.setPlaying(false);
+        s.setTime(m.t);
+      });
+      break;
+    case "escalation":
+      s.receiveEscalation(m.item);
+      break;
+    case "reply":
+      s.receiveReply(m.id, m.reply);
+      break;
+    case "reset":
+      s.applyOverrides({}, "Demo reset on another screen", "remote");
+      useDesk.setState({ ripple: null, inbox: [] });
+      break;
+  }
+}
+
 /**
- * Links every KhetKundli window on this device: a scan on the phone ripples on the desk, and the
- * season clock moves together. Two separate devices need a server relay (see docs/ARCHITECTURE.md).
+ * Links every KhetKundli window and device: BroadcastChannel between windows on this device,
+ * and the /api/sync relay (server-sent events) between devices on the same network.
  */
 export function SyncBridge() {
   useEffect(() => {
-    if (typeof BroadcastChannel === "undefined") return;
-    const ch = new BroadcastChannel("khetkundli");
-    const me = Math.random().toString(36).slice(2);
     let following = false;
+    const follow = (fn: () => void) => { following = true; fn(); following = false; };
+    const cleanups: (() => void)[] = [];
 
-    ch.onmessage = (e: MessageEvent<Msg>) => {
-      const m = e.data;
-      if (!m || m.from === me) return;
-      const s = useDesk.getState();
-      if (m.kind === "hello") {
-        ch.postMessage({ kind: "state", from: me, overrides: s.overrides, t: s.t } satisfies Msg);
-      } else if (m.kind === "state") {
-        if (!same(m.overrides, s.overrides)) s.applyOverrides(m.overrides, "Synced from another screen", "remote");
-      } else if (m.kind === "overrides") {
-        if (!same(m.overrides, s.overrides)) s.applyOverrides(m.overrides, m.label, "remote");
-      } else if (m.kind === "time") {
-        following = true;
-        if (s.playing) s.setPlaying(false);
-        s.setTime(m.t);
-        following = false;
-      }
-    };
+    if (typeof BroadcastChannel !== "undefined") {
+      const ch = new BroadcastChannel("khetkundli");
+      const send = (msg: SyncMsg) => ch.postMessage(msg);
+      ch.onmessage = (e: MessageEvent<SyncMsg>) => receive(e.data, send, follow);
+      cleanups.push(addTransport(send), () => ch.close());
+      send({ kind: "hello", from: SELF });
+    }
 
-    const offOut = useDesk.subscribe((s, prev) => {
-      if (s.outbox && s.outbox !== prev.outbox) {
-        ch.postMessage({ kind: "overrides", from: me, overrides: s.outbox.overrides, label: s.outbox.label } satisfies Msg);
-      }
-    });
+    if (typeof EventSource !== "undefined") {
+      const es = new EventSource("/api/sync");
+      es.onmessage = (e) => {
+        try { receive(JSON.parse(e.data) as SyncMsg, () => {}, follow); } catch { /* ignore malformed */ }
+      };
+      // Time is chatty, so the network hears it at most four times a second.
+      let lastTime = 0;
+      const send = (msg: SyncMsg) => {
+        if (msg.kind === "hello" || msg.kind === "state") return;
+        if (msg.kind === "time") {
+          const now = performance.now();
+          if (now - lastTime < 250) return;
+          lastTime = now;
+        }
+        fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg), keepalive: true }).catch(() => {});
+      };
+      cleanups.push(addTransport(send), () => es.close());
+    }
+
     let last = 0;
     const offTime = useDesk.subscribe((s, prev) => {
       if (following || s.t === prev.t) return;
       const now = performance.now();
       if (now - last < 70) return;
       last = now;
-      ch.postMessage({ kind: "time", from: me, t: s.t } satisfies Msg);
+      post({ kind: "time", from: SELF, t: s.t });
     });
-
-    ch.postMessage({ kind: "hello", from: me } satisfies Msg);
-    return () => {
-      offOut();
-      offTime();
-      ch.close();
-    };
+    cleanups.push(offTime);
+    return () => cleanups.forEach((fn) => fn());
   }, []);
   return null;
 }

@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Mic, Send, Volume2, X } from "lucide-react";
+import { Mic, Send, UserRound, Volume2, X } from "lucide-react";
+import type { Escalation } from "@/lib/channel";
 import { Stamp } from "@/components/record/stamp";
 import { answer, SAMPLE_QUESTIONS, type Answer } from "@/lib/voice";
 import { useDesk } from "@/lib/store";
@@ -60,6 +61,32 @@ function Orb({ listening }: { listening: boolean }) {
   );
 }
 
+/** A question handed to the extension officer: queued until the officer's reply arrives, in their hand. */
+function HandoffSlip({ item }: { item: Escalation }) {
+  return (
+    <div className="slip-shadow mt-3">
+      <div className="perforated bg-slip px-3.5 pb-3 pt-4">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[14px] font-semibold">
+            {item.reply ? "The extension officer replied" : "Handed to the extension officer"}{" "}
+            <span className="font-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>{item.reply ? "कृषी सहाय्यकांचे उत्तर" : "कृषी सहाय्यकांकडे पाठवले"}</span>
+          </p>
+          <Stamp tone="stamp" size="xs" rotate={-4}>{item.reply ? "Answered" : "Queued"}</Stamp>
+        </div>
+        <p className="ballpoint mt-1.5 text-[15px] leading-snug">“{item.question}”</p>
+        {item.reply ? (
+          <div className="mt-2 border-t border-dotted border-ink/30 pt-2">
+            <p className="ballpoint text-[16px] leading-snug">{item.reply.text}</p>
+            <p className="typed mt-1 text-[11px] text-ink-3">{item.reply.by}</p>
+          </div>
+        ) : (
+          <p className="typed mt-1.5 text-[11.5px] text-ink-2">{item.plotId} · last {item.context.length} record entries attached · usually answered the same day</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function AskSheet({ open, onClose, plot }: { open: boolean; onClose: () => void; plot: number }) {
   const season = useDesk((s) => s.season);
   const t = useDesk((s) => s.t);
@@ -69,7 +96,11 @@ export function AskSheet({ open, onClose, plot }: { open: boolean; onClose: () =
   const [typed, setTyped] = useState("");
   const [result, setResult] = useState<(Answer & { question: string }) | null>(null);
   const [supported, setSupported] = useState(true);
+  const [handedId, setHandedId] = useState<string | null>(null);
+  const inbox = useDesk((s) => s.inbox);
+  const escalate = useDesk((s) => s.escalate);
   const rec = useRef<Recognition | null>(null);
+  const handed = handedId ? inbox.find((q) => q.id === handedId) : undefined;
 
   useEffect(() => {
     queueMicrotask(() => setSupported(Boolean(makeRecognition())));
@@ -87,6 +118,7 @@ export function AskSheet({ open, onClose, plot }: { open: boolean; onClose: () =
     if (!q) return;
     const a = answer(season, plot, day, q);
     setResult({ ...a, question: q });
+    setHandedId(a.escalate ? escalate(q).id : null);
     speak(a.mr, "mr");
   };
 
@@ -181,6 +213,14 @@ export function AskSheet({ open, onClose, plot }: { open: boolean; onClose: () =
                   </li>
                 ))}
               </ul>
+              {inbox.length > 0 && (
+                <div className="mt-5">
+                  <p className="label-form text-ink-3">Your questions to the officer <span className="normal-case tracking-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>अधिकाऱ्यांना विचारलेले प्रश्न</span></p>
+                  <div className="mt-1.5 space-y-3">
+                    {inbox.slice(0, 3).map((q) => <HandoffSlip key={q.id} item={q} />)}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -204,14 +244,16 @@ export function AskSheet({ open, onClose, plot }: { open: boolean; onClose: () =
               {result.sources.length > 0 && (
                 <p className="mt-2 text-[12px] text-ink-3">From your record <span style={{ fontFamily: "var(--font-anek-deva)" }}>तुमच्या नोंदीतून</span>: {result.sources.join(" · ")}{result.sourcesMr ? <span className="block" style={{ fontFamily: "var(--font-anek-deva)" }}>{result.sourcesMr.join(" · ")}</span> : null}</p>
               )}
-              {result.escalate && (
-                <div className="perforated mt-3 bg-slip px-3.5 pb-3 pt-4">
-                  <div className="flex items-center justify-between gap-2">
-                    <p className="text-[14px] font-semibold">Handed to the extension officer <span className="font-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>कृषी सहाय्यकांकडे पाठवले</span></p>
-                    <Stamp tone="stamp" size="xs" rotate={-4}>Queued</Stamp>
-                  </div>
-                  <p className="typed mt-1.5 text-[12px] text-ink-2">Question: “{result.question}” · Plot TAR-214, pomegranate, {season.plots[plot].acres} ac · last 7 record entries attached</p>
-                </div>
+              {handed ? (
+                <HandoffSlip item={handed} />
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setHandedId(escalate(result.question).id)}
+                  className="mt-3 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-[3px] border-2 border-ink px-3 text-[14px] font-semibold"
+                >
+                  <UserRound className="size-5" /> Ask the extension officer instead <span className="font-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>कृषी सहाय्यकांना विचारा</span>
+                </button>
               )}
             </motion.section>
           )}

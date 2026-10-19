@@ -1,10 +1,11 @@
 "use client";
 
 import { create } from "zustand";
-import { clampDay, realToday, SEASON_DAYS, TODAY } from "@/lib/sim/calendar";
+import { post, SELF, type Escalation } from "@/lib/channel";
+import { clampDay, fmtDay, realToday, SEASON_DAYS, TODAY } from "@/lib/sim/calendar";
 import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, type Ripple } from "@/lib/sim/selectors";
-import type { MarketId, Overrides, Season } from "@/lib/sim/types";
+import type { MarketId, Overrides, SaleSlip, Season } from "@/lib/sim/types";
 import type { LiveDaily, LiveHourly } from "@/lib/sim/weather";
 
 /** 05:31, just after the pooled runs leave at 05:15. */
@@ -32,8 +33,8 @@ type DeskState = {
   liveStatus: LiveStatus;
   season: Season;
   ripple: (Ripple & { at: number }) | null;
-  /** Bumped on every local override so the sync bridge knows to broadcast. */
-  outbox: { overrides: Overrides; label: string; at: number } | null;
+  /** Questions farmers handed to the extension officer, newest first. */
+  inbox: Escalation[];
   setDay: (day: number) => void;
   syncToday: () => void;
   setTime: (t: number) => void;
@@ -48,6 +49,12 @@ type DeskState = {
   rainTwist: () => void;
   heroHarvest: (shift: number, market: MarketId) => void;
   resetDemo: () => void;
+  escalate: (question: string, extra?: { context?: string[]; topic?: Escalation["topic"] }) => Escalation;
+  fileSlip: (slip: SaleSlip) => void;
+  replyTo: (id: string, text: string) => void;
+  receiveEscalation: (item: Escalation) => void;
+  receiveReply: (id: string, reply: NonNullable<Escalation["reply"]>) => void;
+  mergeInbox: (items: Escalation[]) => void;
 };
 
 const initial = generateSeason();
@@ -80,7 +87,7 @@ export const useDesk = create<DeskState>((set, get) => {
     liveStatus: "loading",
     season: initial,
     ripple: null,
-    outbox: null,
+    inbox: [],
     setDay: (day) => set({ t: clampDay(day) + START_HOUR }),
     syncToday: () => {
       const today = realToday();
@@ -100,7 +107,7 @@ export const useDesk = create<DeskState>((set, get) => {
     },
     applyOverrides: (overrides, label, origin) => {
       regenerate(overrides, label);
-      if (origin === "local") set({ outbox: { overrides, label, at: Date.now() } });
+      if (origin === "local") post({ kind: "overrides", from: SELF, overrides, label });
     },
     heroScan: (opts) => {
       const { overrides, season, t } = get();
@@ -120,8 +127,53 @@ export const useDesk = create<DeskState>((set, get) => {
       local({ ...overrides, heroPickShift: shift, heroMarket: market }, `Sunita set her first picking ${shift === 0 ? "as planned" : `${Math.abs(shift)} days ${shift < 0 ? "earlier" : "later"}`}, selling at ${market === "phaltan" ? "Phaltan APMC" : market === "pune" ? "Pune" : "Vashi"}`);
     },
     resetDemo: () => {
-      local({}, "Demo reset");
-      set({ ripple: null });
+      get().applyOverrides({}, "Demo reset", "remote");
+      set({ ripple: null, inbox: [] });
+      post({ kind: "reset", from: SELF });
+    },
+    fileSlip: (slip) => {
+      const { overrides } = get();
+      const slips = [...(overrides.slips ?? []).filter((s) => s.id !== slip.id && !(s.plot === slip.plot && s.day === slip.day)), slip];
+      local({ ...overrides, slips }, `Sale slip of ${fmtDay(slip.day)} read and checked on Sunita's phone`);
+    },
+    escalate: (question, extra) => {
+      const { season, t } = get();
+      const plot = season.heroPlot;
+      const p = season.plots[plot];
+      const day = Math.floor(t);
+      const context = extra?.context ?? season.eventsByPlot[plot]
+        .filter((e) => e.day <= day && e.type !== "irrigate" && e.type !== "booking")
+        .slice(-5)
+        .map((e) => `${e.day}: ${e.type}${e.type === "spray" && e.washedOff ? " (washed off)" : ""}${e.type === "scan" ? ` (${e.finding})` : ""}`);
+      const item: Escalation = {
+        id: `Q${Date.now().toString(36)}`,
+        plot,
+        plotId: p.id,
+        farmer: p.farmer.name,
+        question,
+        day,
+        askedAt: new Date().toISOString(),
+        context,
+        topic: extra?.topic ?? "crop",
+      };
+      set({ inbox: [item, ...get().inbox] });
+      post({ kind: "escalation", from: SELF, item });
+      return item;
+    },
+    replyTo: (id, text) => {
+      const reply = { text, by: "Extension officer, Phaltan", at: new Date().toISOString() };
+      set({ inbox: get().inbox.map((q) => (q.id === id ? { ...q, reply } : q)) });
+      post({ kind: "reply", from: SELF, id, reply });
+    },
+    receiveEscalation: (item) => {
+      if (get().inbox.some((q) => q.id === item.id)) return;
+      set({ inbox: [item, ...get().inbox] });
+    },
+    receiveReply: (id, reply) => set({ inbox: get().inbox.map((q) => (q.id === id ? { ...q, reply } : q)) }),
+    mergeInbox: (items) => {
+      const known = new Map(get().inbox.map((q) => [q.id, q]));
+      for (const q of items) known.set(q.id, { ...known.get(q.id), ...q, reply: q.reply ?? known.get(q.id)?.reply });
+      set({ inbox: [...known.values()].sort((a, b) => b.askedAt.localeCompare(a.askedAt)) });
     },
   };
 });

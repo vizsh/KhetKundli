@@ -48,12 +48,31 @@ export type PlotEvent = EventBase &
     | { type: "voice"; question: string; answer: string }
     | { type: "pick"; picking: number; crates: number; grade: "A" | "B" | "C" }
     | { type: "booking"; crates: number; hub: string; run: string; market: MarketId }
-    | { type: "sale"; crates: number; market: MarketId; pricePerKg: number; gross: number; deductions: Deduction[]; net: number }
+    | { type: "sale"; crates: number; market: MarketId; pricePerKg: number; gross: number; deductions: Deduction[]; net: number; kg?: number; grade?: "A" | "B" | "C"; slip?: SlipMark }
   );
 
 export type PlotEventType = PlotEvent["type"];
 
-export type Deduction = { label: string; amount: number };
+/** `card` is the amount the agreed rate card allows, when the sale came from a checked slip. */
+export type Deduction = { label: string; amount: number; card?: number };
+
+/** A sale that came from a slip the farmer photographed and checked on the phone. */
+export type SlipMark = { pattiNo?: string; agent?: string; aboveCard: number; flags: string[] };
+
+/** What a checked sale slip (patti) files into the record. */
+export type SaleSlip = SlipMark & {
+  id: string;
+  plot: number;
+  day: number;
+  market: MarketId;
+  crates: number;
+  kg: number;
+  grade: "A" | "B" | "C";
+  pricePerKg: number;
+  gross: number;
+  deductions: Deduction[];
+  net: number;
+};
 
 export type MarketId = "phaltan" | "pune" | "vashi";
 
@@ -102,4 +121,6 @@ export type Overrides = {
   heroPickShift?: number;
   /** Hero farmer's market choice. */
   heroMarket?: MarketId;
+  /** Sale slips read on a phone; each replaces the simulated sale it matches. */
+  slips?: SaleSlip[];
 };

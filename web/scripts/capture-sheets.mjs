@@ -1,4 +1,4 @@
-// Review captures of the phone's sheets in action: a live tomato scan and a voice answer.
+// Review captures of the phone's sheets in action: a live tomato scan, a voice answer and a sale slip check.
 // Usage: node scripts/capture-sheets.mjs <outDir> [baseUrl]
 import puppeteer from "puppeteer-core";
 
@@ -11,7 +11,7 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: true 
 try {
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
-  await page.goto(`${BASE}/farmer`, { waitUntil: "networkidle0" });
+  await page.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
   await sleep(1200);
 
   await click(page, "nav button", "Scan a leaf");
@@ -34,7 +34,22 @@ try {
   await page.evaluate(() => document.querySelector("[role=dialog]")?.scrollTo({ top: 260 }));
   await sleep(300);
   await page.screenshot({ path: `${out}/ask.png` });
-  console.log("captured scan.png and ask.png");
+  await page.evaluate(() => document.querySelector("[aria-label='Close ask']")?.click() ?? [...document.querySelectorAll("[role=dialog] button[aria-label^='Close']")].at(-1)?.click());
+  await sleep(700);
+
+  await click(page, "button", "Check a sale slip");
+  await sleep(600);
+  await click(page, "[role=dialog] button", "A slip with extra charges");
+  await page.waitForFunction(() => [...document.querySelectorAll("[role=dialog]")].some((d) => d.textContent?.includes("charged above the agreed rate card")), { timeout: 60000, polling: 200 });
+  await sleep(1400);
+  await page.screenshot({ path: `${out}/slip-1.png` });
+  await page.evaluate(() => [...document.querySelectorAll("[role=dialog]")].at(-1)?.scrollTo({ top: 560 }));
+  await sleep(400);
+  await page.screenshot({ path: `${out}/slip-2.png` });
+  await page.evaluate(() => [...document.querySelectorAll("[role=dialog]")].at(-1)?.scrollTo({ top: 1250 }));
+  await sleep(400);
+  await page.screenshot({ path: `${out}/slip-3.png` });
+  console.log("captured scan.png, ask.png and slip-1..3.png");
 } finally {
   await browser.close();
 }
