@@ -78,9 +78,36 @@ try {
   check("forecast: live wind grid, 9 points", wind.status === "live" && wind.points === 9 && wind.hours >= 72, JSON.stringify(wind));
   // Spread forecast: the demo rain shows up in the 72-hour total.
   await clickText(desk, "button", "Rain forecast in 18 h");
-  const rainTotal = () => Number(document.body.textContent?.match(/72 h · (\d+(?:\.\d)?) mm rain/)?.[1] ?? 0);
+  const rainTotal = () => Number(document.body.textContent?.match(/72 h · (\d+(?:\.\d)?) mm/)?.[1] ?? 0);
   const stormed = await desk.waitForFunction(`(${rainTotal})() >= 18`, { timeout: 10000, polling: 200 }).then(() => true, () => false);
   check("forecast: demo rain enters the 72-hour forecast", stormed, (await desk.evaluate(() => document.body.textContent?.match(/Next 72 hours.{0,140}/)?.[0])) ?? "");
+
+  // Uncertainty: the 51-member ECMWF ensemble for Phaltan.
+  const ens = await desk.evaluate(() => fetch("/api/weather/ensemble").then((r) => r.json()).then((j) => ({ status: j.status, members: j.members?.length, hours: j.times?.length })));
+  check("forecast: 51-member ensemble", ens.status === "live" && ens.members >= 51 && ens.hours >= 72, JSON.stringify(ens));
+
+  // Storm brush: draw a storm across Adarki's warning cell; the panel answers as a what-if.
+  await clickText(desk, "button", "Storm brush");
+  await sleep(300);
+  const area = await desk.evaluate(() => { const r = document.querySelector("[aria-label^='Draw a storm']")?.getBoundingClientRect(); return r ? { x: r.left, y: r.top, w: r.width, h: r.height } : null; });
+  if (area) {
+    await desk.mouse.move(area.x + area.w * 0.05, area.y + area.h * 0.72);
+    await desk.mouse.down();
+    for (const [fx, fy] of [[0.1, 0.66], [0.15, 0.6], [0.2, 0.55], [0.26, 0.5]]) await desk.mouse.move(area.x + area.w * fx, area.y + area.h * fy, { steps: 6 });
+    await desk.mouse.up();
+  }
+  const brushed = await desk.waitForFunction(() => /What if a storm runs/.test(document.body.textContent ?? ""), { timeout: 8000, polling: 200 }).then(() => true, () => false);
+  check("forecast: storm brush gives a what-if plume", brushed, (await desk.evaluate(() => document.body.textContent?.match(/What if a storm runs[^.]*\./)?.[0])) ?? "");
+  await clickText(desk, "button", "Clear storm");
+
+  // Lot passport: a buyer's page with the export check and a QR code.
+  const lotPage = await browser.newPage();
+  await lotPage.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await lotPage.goto(`${BASE}/lot/TAR-214-P1`, { waitUntil: "networkidle2" });
+  const passport = await lotPage.waitForFunction(() => /Export check/.test(document.body.textContent ?? "") && document.querySelector("[aria-label^='QR code'] svg"), { timeout: 10000, polling: 200 }).then(() => true, () => false);
+  check("passport: lot page with export check and QR", passport, (await lotPage.evaluate(() => document.body.innerText.match(/(Not for export|Export PHI clear)/)?.[0])) ?? "");
+  await lotPage.close();
+  check("phone: neighbour pulse around the plot", /Around your plot/.test(await page.evaluate(() => document.body.textContent ?? "")));
 } catch (err) {
   check("smoke run completed", false, String(err).slice(0, 200));
 } finally {

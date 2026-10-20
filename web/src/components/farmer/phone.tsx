@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "motion/react";
 import { Mic, ScanLine } from "lucide-react";
 import { SeasonPlayer } from "@/components/desk/date-stamp";
+import { LiveWindLoader } from "@/components/desk/forecast";
 import { LiveWeatherLoader } from "@/components/desk/weather-slip";
 import { Sheet } from "@/components/record/sheet";
 import { DatedImpression, SourceStamp } from "@/components/record/stamp";
@@ -14,6 +15,8 @@ import { useDesk } from "@/lib/store";
 import { SyncBridge } from "@/lib/sync";
 import { AskSheet } from "./ask-sheet";
 import { HarvestDate } from "./harvest-date";
+import { LotPassports } from "./lot-passports";
+import { NeighbourPulse } from "./neighbour-pulse";
 import { Passbook } from "./passbook";
 import { ScanLens } from "./scan-lens";
 import { SlipCheck } from "./slip-check";
@@ -44,6 +47,7 @@ export function Phone() {
     <div className="min-h-dvh">
       <SeasonPlayer />
       <LiveWeatherLoader />
+      <LiveWindLoader />
       <SyncBridge />
       <div className="mx-auto max-w-[480px] px-3 pb-36 pt-2.5">
         <header className="px-1 pb-2.5">
@@ -87,7 +91,15 @@ export function Phone() {
         </div>
 
         <div className="mt-4">
+          <NeighbourPulse plot={plot} />
+        </div>
+
+        <div className="mt-4">
           <HarvestDate plot={plot} />
+        </div>
+
+        <div className="mt-4">
+          <LotPassports plot={plot} />
         </div>
 
         <div className="mt-4">

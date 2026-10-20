@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Camera, ImageUp, Loader2, WifiOff, Wifi, X } from "lucide-react";
 import { SourceStamp, Stamp } from "@/components/record/stamp";
-import { adviceFor, CROPS, cropMismatch, MATCH, mrLabel, preprocess, scanWorker, type Advice, type Ranked, type Sample, type ScanCrop, type ScanEvent } from "@/lib/scan";
+import { adviceFor, CROPS, cropMismatch, MATCH, mrLabel, photoQuality, preprocess, QUALITY_TEXT, scanWorker, type Advice, type PhotoQuality, type Ranked, type Sample, type ScanCrop, type ScanEvent } from "@/lib/scan";
 import { SPRAYS } from "@/lib/sim/rules";
 import { useDesk } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -66,6 +66,9 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
   const [camera, setCamera] = useState<MediaStream | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [saved, setSaved] = useState(false);
+  /** Photo check of the analysed photo, and of the live viewfinder while the camera is open. */
+  const [quality, setQuality] = useState<PhotoQuality | null>(null);
+  const [liveQuality, setLiveQuality] = useState<PhotoQuality | null>(null);
   const [samples, setSamples] = useState<Sample[]>([]);
   const video = useRef<HTMLVideoElement>(null);
   const file = useRef<HTMLInputElement>(null);
@@ -100,7 +103,18 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
   };
   useEffect(() => { if (video.current && camera) video.current.srcObject = camera; }, [camera]);
 
+  // Twice a second, check the viewfinder: the frame turns violet when the leaf is sharp and well lit.
+  useEffect(() => {
+    if (!camera) return;
+    const id = setInterval(() => {
+      const v = video.current;
+      if (v && v.videoWidth) setLiveQuality(photoQuality(v, v.videoWidth, v.videoHeight));
+    }, 500);
+    return () => clearInterval(id);
+  }, [camera]);
+
   const analyse = (source: CanvasImageSource, w: number, h: number) => {
+    setQuality(photoQuality(source, w, h));
     const { pixels, preview } = preprocess(source, w, h);
     setSaved(false);
     if (crop === "pomegranate") {
@@ -210,6 +224,15 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
                 </p>
               )}
               {camera && <video ref={video} autoPlay playsInline muted className="absolute inset-0 h-full w-full object-cover" />}
+              {camera && liveQuality && (
+                <>
+                  <div className={cn("pointer-events-none absolute inset-3 border-[3px] transition-colors", liveQuality.issue ? "border-alert/80" : "border-stamp")} />
+                  <p className={cn("absolute inset-x-0 top-0 px-3 py-1.5 text-center text-[13px] font-semibold text-paper", liveQuality.issue ? "bg-alert/85" : "bg-stamp/90")}>
+                    {liveQuality.issue ? QUALITY_TEXT[liveQuality.issue].en : "Good: take the photo"}
+                    <span className="block text-[12.5px] font-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>{liveQuality.issue ? QUALITY_TEXT[liveQuality.issue].mr : "छान: फोटो घ्या"}</span>
+                  </p>
+                </>
+              )}
               {result && (
                 <>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -272,6 +295,13 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
 
           {result && top && (
             <motion.section initial={{ y: 12, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="mx-4 mb-6 mt-4 border-t-2 border-ink pt-3">
+              {quality && (
+                <p className={cn("mb-2 text-[13px] leading-snug", quality.issue ? "font-semibold text-alert" : "text-stamp")} title={`sharpness ${quality.sharp}, light ${quality.light}`}>
+                  {quality.issue ? "Photo check: " : "Photo check ✓ "}{QUALITY_TEXT[quality.issue ?? "ok"].en}
+                  {quality.issue ? ". The result below may be wrong." : ""}
+                  <span className="block font-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>{QUALITY_TEXT[quality.issue ?? "ok"].mr}</span>
+                </p>
+              )}
               <div className="flex items-center gap-3">
                 <Confidence p={top.p} />
                 <div className="min-w-0 flex-1">

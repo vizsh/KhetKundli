@@ -85,3 +85,48 @@ const MR_NAMES: [RegExp, string][] = [
 export function mrLabel(label: string) {
   return MR_NAMES.find(([re]) => re.test(label))?.[1] ?? "";
 }
+
+export type PhotoIssue = "blurry" | "dark" | "bright" | null;
+export type PhotoQuality = { sharp: number; light: number; issue: PhotoIssue };
+
+/**
+ * Is the photo good enough to read? Sharpness is the variance of the Laplacian on a 192 px grey copy
+ * (sharp leaf photos score in the hundreds to thousands, a 1.5 px blur under 40); light is mean brightness.
+ */
+export function photoQuality(source: CanvasImageSource, sw: number, sh: number): PhotoQuality {
+  const k = 192 / Math.max(sw, sh);
+  const w = Math.max(8, Math.round(sw * k)), h = Math.max(8, Math.round(sh * k));
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(source, 0, 0, w, h);
+  const { data } = ctx.getImageData(0, 0, w, h);
+  const grey = new Float32Array(w * h);
+  let sum = 0;
+  for (let i = 0; i < w * h; i++) {
+    grey[i] = 0.299 * data[i * 4] + 0.587 * data[i * 4 + 1] + 0.114 * data[i * 4 + 2];
+    sum += grey[i];
+  }
+  let m = 0, m2 = 0, n = 0;
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const i = y * w + x;
+      const lap = grey[i - w] + grey[i + w] + grey[i - 1] + grey[i + 1] - 4 * grey[i];
+      m += lap;
+      m2 += lap * lap;
+      n++;
+    }
+  }
+  const sharp = Math.round(m2 / n - (m / n) ** 2);
+  const light = Math.round(sum / (w * h));
+  const issue: PhotoIssue = light < 65 ? "dark" : light > 215 ? "bright" : sharp < 60 ? "blurry" : null;
+  return { sharp, light, issue };
+}
+
+export const QUALITY_TEXT: Record<Exclude<PhotoIssue, null> | "ok", { en: string; mr: string }> = {
+  ok: { en: "Sharp, good light", mr: "स्पष्ट, योग्य उजेड" },
+  blurry: { en: "Blurry: hold the phone still and retake", mr: "धूसर: फोन स्थिर धरून पुन्हा फोटो घ्या" },
+  dark: { en: "Too dark: face the light and retake", mr: "खूप अंधार: उजेडाकडे तोंड करून पुन्हा घ्या" },
+  bright: { en: "Washed out: step out of direct sun and retake", mr: "खूप उजेड: थेट उन्हातून बाजूला होऊन पुन्हा घ्या" },
+};

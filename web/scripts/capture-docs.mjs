@@ -32,6 +32,21 @@ try {
   await sleep(2200);
   await shot(desk, "desk-storm");
 
+  // Desk, today: a storm drawn with the brush across Adarki's warning cell, mid-crossing.
+  await reset();
+  await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
+  await sleep(3000);
+  await click(desk, "button", "Storm brush");
+  await sleep(300);
+  const area = await rect(desk, "[aria-label^='Draw a storm']");
+  await desk.mouse.move(area.x + area.w * 0.05, area.y + area.h * 0.72);
+  await desk.mouse.down();
+  for (const [fx, fy] of [[0.1, 0.66], [0.15, 0.6], [0.2, 0.55], [0.26, 0.5], [0.32, 0.46]]) await desk.mouse.move(area.x + area.w * fx, area.y + area.h * fy, { steps: 6 });
+  await desk.mouse.up();
+  await sleep(1300);
+  await shot(desk, "desk-storm-brush");
+  await click(desk, "button", "Clear storm");
+
   // Desk, 19 September: the spread forecast replayed on the recorded monsoon, then the advisory.
   await reset();
   await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
@@ -65,6 +80,23 @@ try {
   await phone.evaluate(() => document.fonts.ready);
   await sleep(1800);
   await shot(phone, "phone-home");
+  await phone.evaluate(() => [...document.querySelectorAll("h2")].find((h) => h.textContent?.includes("Around your plot"))?.scrollIntoView({ block: "start" }));
+  await sleep(900);
+  await shot(phone, "phone-pulse");
+  await phone.evaluate(() => [...document.querySelectorAll("h2")].find((h) => h.textContent?.includes("Lot passports"))?.scrollIntoView({ block: "start" }));
+  await sleep(500);
+  await click(phone, "button", "TAR-214-P1");
+  await sleep(1000);
+  await shot(phone, "phone-passport");
+  await phone.evaluate(() => [...document.querySelectorAll("[role=dialog] button[aria-label='Close']")].at(-1)?.click());
+  await sleep(500);
+  await phone.evaluate(() => window.scrollTo(0, 0));
+  const lotPage = await browser.newPage();
+  await lotPage.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
+  await lotPage.goto(`${BASE}/lot/TAR-214-P1`, { waitUntil: "networkidle2" });
+  await sleep(2200);
+  await shot(lotPage, "lot-passport");
+  await lotPage.close();
   await click(phone, "nav button", "Ask");
   await sleep(500);
   await phone.evaluate(() => [...document.querySelectorAll("[role=dialog] button")].find((b) => b.textContent?.includes("Why did my last spray fail"))?.click());

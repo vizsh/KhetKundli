@@ -7,7 +7,7 @@ import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, type Ripple } from "@/lib/sim/selectors";
 import type { MarketId, Overrides, SaleSlip, Season } from "@/lib/sim/types";
 import type { LiveDaily, LiveHourly } from "@/lib/sim/weather";
-import type { WindGrid } from "@/lib/spread";
+import type { Ensemble, EnsembleForecast, Storm, WindGrid } from "@/lib/spread";
 
 /** 05:31, just after the pooled runs leave at 05:15. */
 const START_HOUR = 0.23;
@@ -40,7 +40,21 @@ type DeskState = {
   wind: WindGrid | null;
   /** Hour into the 72-hour spread forecast the desk is looking at; null follows the clock. */
   forecastHour: number | null;
+  /** The 51-member ensemble at Phaltan, for the forecast's uncertainty. */
+  ensemble: Ensemble | null;
+  /** The spread forecast run once per ensemble member: chance of moderate exposure by cell. */
+  ensembleForecast: EnsembleForecast | null;
+  /** A storm the officer drew on the map: a what-if, local to this screen. */
+  storm: Storm | null;
+  /** The map is waiting for a storm to be drawn. */
+  brushing: boolean;
+  /** The 72 hours are playing across the map. */
+  forecastPlaying: boolean;
   setWind: (wind: WindGrid | null) => void;
+  setEnsemble: (ensemble: Ensemble | null) => void;
+  setStorm: (storm: Storm | null) => void;
+  setBrushing: (brushing: boolean) => void;
+  setForecastPlaying: (playing: boolean) => void;
   setForecastHour: (hour: number | null) => void;
   warnCells: (hexes: number[], plots: number) => void;
   setDay: (day: number) => void;
@@ -98,7 +112,16 @@ export const useDesk = create<DeskState>((set, get) => {
     inbox: [],
     wind: null,
     forecastHour: null,
+    ensemble: null,
+    ensembleForecast: null,
+    storm: null,
+    brushing: false,
+    forecastPlaying: false,
     setWind: (wind) => set({ wind }),
+    setEnsemble: (ensemble) => set({ ensemble }),
+    setStorm: (storm) => set({ storm, brushing: false }),
+    setBrushing: (brushing) => set({ brushing }),
+    setForecastPlaying: (forecastPlaying) => set({ forecastPlaying }),
     setForecastHour: (forecastHour) => set({ forecastHour }),
     warnCells: (hexes, plots) => {
       const { overrides, t } = get();

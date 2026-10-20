@@ -12,6 +12,12 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | :---: | :---: | :---: |
 | ![The kundli season wheel with the real 2026 monsoon drawn as rain ticks](docs/images/phone-home.jpg) | ![A photographed patti with the overcharges ringed in red pen](docs/images/phone-slip.jpg) | ![Why did my last spray fail? Answered from the plot record](docs/images/phone-ask.jpg) |
 
+| Around her plot, cell by cell | A QR for each picking | What the buyer sees |
+| :---: | :---: | :---: |
+| ![A radar of the cells within 4 km: reported blight and the next 72 hours](docs/images/phone-pulse.jpg) | ![The lot passport QR on the phone](docs/images/phone-passport.jpg) | ![The lot passport page with the export pre-harvest check](docs/images/lot-passport.jpg) |
+
+![The storm brush: a storm drawn across Adarki's warning cell, the gust front bending the wind, and the plume it would carry](docs/images/desk-storm-brush.jpg)
+
 ## What it does
 
 | For | Feature | What is real |
@@ -21,8 +27,13 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | Farmer | **Scan Lens**: photograph a leaf, get a diagnosis with no signal, see where the model looked | MobileNetV2 in the browser, ~80 ms; pomegranate result is scripted until trained |
 | Farmer | **Ask**: Marathi or English voice question answered from her own record, read aloud; anything else goes to the officer | Web Speech API; answers built from the record, never invented |
 | Farmer | **Sale slip check**: photograph the agent's patti; every number is read and checked against arithmetic and the agreed rate card | Tesseract OCR on the phone, ~1.2 s |
+| Farmer | **Around your plot**: a radar of the cells within 4 km, with reported blight, the next 72 hours' exposure at her plot and the wind; never a neighbour's plot | Live forecast; reports simulated |
+| Farmer | **Lot passports**: one QR per picking; the buyer's page shows origin cell, sprays, water, transport and an **export pre-harvest check** | Copper's 60-day interval from the APEDA list |
+| Farmer | **Photo check** before a scan (sharp? lit?), live on the camera; **Listen** to the officer's reply aloud | On the phone |
 | Officer | **Pest Radar** with a **live wind field** and a **72-hour spread forecast**: where reported blight can travel, hour by hour, and who to warn | 9-point live wind grid; recorded weather for any past day |
 | Officer | **Warn downwind**: one tap sends a preventive advisory to the plots in the plume, by app or SMS, and the season re-plans | Simulated outcome, shown as a ripple |
+| Officer | **How sure is it**: the same forecast run on all 51 members of the ECMWF ensemble; chance of moderate exposure by cell, and the range of rain in the hour strip | Live Open-Meteo ensemble |
+| Officer | **Storm brush**: draw a storm's path across the map and watch where it would carry blight, as a what-if | The model, with a moving rain cell and gust front |
 | Officer | **Harvest Wave**, **Water Commons**, **Pooled Runs**, daily register, inbox, plot records | Simulated network |
 | Everyone | **Season time machine**: one clock for every screen; replay the season on either device | Two devices stay in step over Wi-Fi |
 
@@ -123,7 +134,7 @@ For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3
 
 ```mermaid
 flowchart LR
-  H0["<b>Now · demo</b><br/>Oct 2026<br/>recorded weather, live wind,<br/>spread forecast, slip check"]
+  H0["<b>Now · demo</b><br/>Oct 2026<br/>recorded weather, live wind,<br/>ensemble forecast, storm brush,<br/>slip check, lot passports"]
   H1["<b>Pilot</b><br/>Ambia bahar 2027<br/>one FPO, three villages<br/>accounts, offline sync, IVR,<br/>pomegranate Scan Lens"]
   H2["<b>Taluka</b><br/>Mrig 2027 to 2028<br/>Sentinel-2 plot health,<br/>groundwater, glut warning,<br/>run optimiser, export record"]
   H3["<b>Platform</b><br/>2028 onward<br/>other pomegranate talukas,<br/>more crops, open data"]

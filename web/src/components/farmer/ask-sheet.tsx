@@ -77,7 +77,17 @@ function HandoffSlip({ item }: { item: Escalation }) {
         {item.reply ? (
           <div className="mt-2 border-t border-dotted border-ink/30 pt-2">
             <p className="ballpoint text-[16px] leading-snug">{item.reply.text}</p>
-            <p className="typed mt-1 text-[11px] text-ink-3">{item.reply.by}</p>
+            <div className="mt-1 flex items-center justify-between gap-2">
+              <p className="typed text-[11px] text-ink-3">{item.reply.by}</p>
+              {/* For farmers who would rather listen than read: the reply in the officer's language, aloud. */}
+              <button
+                type="button"
+                onClick={() => speak(item.reply!.text, /[ऀ-ॿ]/.test(item.reply!.text) ? "mr" : "en")}
+                className="inline-flex min-h-11 items-center gap-1.5 rounded-[3px] border-2 border-stamp px-2.5 text-[13px] font-semibold text-stamp"
+              >
+                <Volume2 className="size-4" /> Listen <span className="font-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>ऐका</span>
+              </button>
+            </div>
           </div>
         ) : (
           <p className="typed mt-1.5 text-[11.5px] text-ink-2">{item.plotId} · last {item.context.length} record entries attached · usually answered the same day</p>

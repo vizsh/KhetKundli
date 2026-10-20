@@ -8,8 +8,9 @@ import { useDesk } from "@/lib/store";
 const same = (a: Overrides, b: Overrides) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Apply a message from another window or device to this window's state. */
-function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => void) => void) {
+function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => void) => void, listenOnly = false) {
   if (!m || m.from === SELF) return;
+  if (listenOnly && (m.kind === "time" || m.kind === "hello")) return;
   const s = useDesk.getState();
   switch (m.kind) {
     case "hello":
@@ -44,8 +45,9 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
 /**
  * Links every KhetKundli window and device: BroadcastChannel between windows on this device,
  * and the /api/sync relay (server-sent events) between devices on the same network.
+ * `listenOnly` (a lot passport opened by a buyer) receives the record but never sends, and keeps its own clock.
  */
-export function SyncBridge() {
+export function SyncBridge({ listenOnly = false }: { listenOnly?: boolean }) {
   useEffect(() => {
     let following = false;
     const follow = (fn: () => void) => { following = true; fn(); following = false; };
@@ -54,15 +56,16 @@ export function SyncBridge() {
     if (typeof BroadcastChannel !== "undefined") {
       const ch = new BroadcastChannel("khetkundli");
       const send = (msg: SyncMsg) => ch.postMessage(msg);
-      ch.onmessage = (e: MessageEvent<SyncMsg>) => receive(e.data, send, follow);
-      cleanups.push(addTransport(send), () => ch.close());
+      ch.onmessage = (e: MessageEvent<SyncMsg>) => receive(e.data, send, follow, listenOnly);
+      cleanups.push(() => ch.close());
+      if (!listenOnly) cleanups.push(addTransport(send));
       send({ kind: "hello", from: SELF });
     }
 
     if (typeof EventSource !== "undefined") {
       const es = new EventSource("/api/sync");
       es.onmessage = (e) => {
-        try { receive(JSON.parse(e.data) as SyncMsg, () => {}, follow); } catch { /* ignore malformed */ }
+        try { receive(JSON.parse(e.data) as SyncMsg, () => {}, follow, listenOnly); } catch { /* ignore malformed */ }
       };
       // Time is chatty, so the network hears it at most four times a second.
       let lastTime = 0;
@@ -75,8 +78,10 @@ export function SyncBridge() {
         }
         fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg), keepalive: true }).catch(() => {});
       };
-      cleanups.push(addTransport(send), () => es.close());
+      cleanups.push(() => es.close());
+      if (!listenOnly) cleanups.push(addTransport(send));
     }
+    if (listenOnly) return () => cleanups.forEach((fn) => fn());
 
     let last = 0;
     const offTime = useDesk.subscribe((s, prev) => {
@@ -88,6 +93,6 @@ export function SyncBridge() {
     });
     cleanups.push(offTime);
     return () => cleanups.forEach((fn) => fn());
-  }, []);
+  }, [listenOnly]);
   return null;
 }

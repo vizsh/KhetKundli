@@ -5,6 +5,7 @@
 | Source | What we use | Access | Freshness | Licence | Status |
 | --- | --- | --- | --- | --- | --- |
 | Open-Meteo archive (`archive-api.open-meteo.com/v1/archive`) | Daily rain, temperature, humidity, wind, ET0; hourly temperature, humidity and rain for leaf-wet hours; Phaltan, 1 June to yesterday | No key; cached hourly in `/api/weather` | Lags a day or two | CC BY 4.0 | **Recorded** |
+| Open-Meteo ensemble (`ensemble-api.open-meteo.com/v1/ensemble`) | ECMWF IFS 0.25° ensemble, 51 members: hourly rain, wind, humidity at Phaltan for 4 days | No key; cached hourly in `/api/weather/ensemble` | Model runs | CC BY 4.0 | **Live** |
 | Open-Meteo forecast (`api.open-meteo.com/v1/forecast`) | 7 days daily plus hourly at Phaltan; 96 hours hourly at a 3 × 3 grid for wind, rain, humidity, temperature | No key; cached hourly in `/api/weather` and `/api/weather/wind` | Hourly model runs | CC BY 4.0 | **Live** |
 | OpenStreetMap (Overpass extracts in `data/raw`) | Taluka boundary (relation 10354585), 23 villages, roads, rivers, canals, railway | Built into `web/src/data/phaltan.json` by `scripts/build-geo.ts` | Frozen at build | ODbL | **Real** |
 | Agmarknet via data.gov.in (resource `9ef84268-d588-465a-a308-a864a43d0070`) | Pomegranate modal and min/max prices by market and day | Needs `DATA_GOV_IN_API_KEY` | Daily | Government Open Data Licence – India | **Live** with a key; otherwise the screen says so |
@@ -32,6 +33,16 @@ type WeatherDay = {
   wetHours?: number;    // from hourly data on recorded and forecast days
   observed?: boolean;   // recorded (archive)
   live?: boolean;       // from Open-Meteo (recorded or forecast)
+};
+```
+
+### Ensemble (`/api/weather/ensemble`)
+
+```ts
+type Ensemble = {
+  model: string;                 // "ECMWF IFS 0.25° ensemble"
+  times: string[];               // local ISO hours, 96
+  members: { rain: number[]; speed: number[]; from: number[]; rh: number[] }[]; // 51
 };
 ```
 

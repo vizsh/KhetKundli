@@ -24,7 +24,8 @@ Maharashtra's farm paperwork is the visual world: the manila board of a governme
 - **Survey sheet**: the real taluka from OpenStreetMap, village areas as Voronoi fields, an H3 grid, cartouche, north arrow and scale bar.
 - **Four layers**: Pest Radar (red hatching by reported level, violet stipple for the 72-hour forecast, and the live wind drawn as pencil strokes), Harvest Wave (crates by village for a week), Water Commons (water kept in the ground), Pooled Runs (routes and vehicles moving at the stamped hour).
 - **Date stamp and season track**: the rolling date stamp and a season ruler set one clock for every view; play replays the season.
-- **72-hour forecast panel**: the hour strip (night bands, rain bars, hatched demo rain, red wet-canopy band, wind arrows every three hours) is a slider; drag or play it and the plume grows across the map. Villages are ranked chips; one stamp button warns the plots downwind.
+- **72-hour forecast panel**: the hour strip (night bands, rain bars with the ensemble's 10–90% band behind them, hatched demo rain, red wet-canopy band, wind arrows every three hours) is a slider; drag or play it and the plume grows across the map. Villages are ranked chips with the ensemble's chance; one stamp button warns the plots downwind.
+- **Storm brush**: press *Storm brush* and drag across the sheet. The track is inked in canal blue, a hatched rain cell rides along it as the strip plays, the wind strokes inside it swing to the gust front, and the plume follows. The warn button reads *What-if only* until the storm is cleared.
 - **Leaf-wet strip** in the Pest Radar sheet: one bar per day of the season, red where the canopy stayed wet for 12 hours or more; hover any day to read it.
 - **Register and inbox**, **plot record** in the farmer's inks, **village ledger**.
 
@@ -36,7 +37,9 @@ Maharashtra's farm paperwork is the visual world: the manila board of a governme
 
 - **Kundli wheel**: the season as a dial: stage ring, rain ticks (recorded rain in 2026), water dots, sprays, scans, pickings. Drag the violet knob to scrub the season; months in English and Marathi stay upright.
 - **Today slip**: one action, in both languages, and a 72-hour spray ribbon with bad hours hatched.
-- **Two stamp buttons** at the thumb: *Scan a leaf* and *Ask*.
+- **Two stamp buttons** at the thumb: *Scan a leaf* and *Ask*. The camera view checks sharpness and light twice a second; the officer's reply has a *Listen* button.
+- **Around your plot**: a small radar of the cells within 4 km, with red for reported blight, violet stipple for the next 72 hours' exposure, a wind arrow on the rim, and a slow sweep.
+- **Lot passports**: one card per picking; tapping it opens a QR to show the buyer.
 - **Harvest date strip and market ledger**, **record** with Marathi twin lines, **sale-slip check**.
 
 ### Pitch (`/`)
@@ -57,6 +60,8 @@ Motion is used where something physical happens, never as decoration.
 | Wind field | Graphite trails drift with the hour's wind, blue in rain | Makes the forecast's driver visible | Static arrows on a grid |
 | Forecast play | The plume accumulates hour by hour over 7 s | The officer sees when and where, not just whether | Jumps to 72 h |
 | Slip check | Red pen rings draw round overcharges, ticks on the rest | The officer's pen on a paper slip | Drawn instantly |
+| Storm brush | The drawn storm plays across its track; the rain cell and gust front move hour by hour | The officer sees what a storm would do before it comes | The plume shown at hour 4, no playback |
+| Neighbour pulse | A radar arm sweeps the cells round her plot every 6 s | The village watching together, at a glance | Still |
 | Counters | Poster figures roll | Large numbers read as changing values | Instant |
 
 ## Marathi

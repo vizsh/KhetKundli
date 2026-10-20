@@ -101,6 +101,12 @@ Exposure tiers: low ≥ 0.35, moderate ≥ 1.2, high ≥ 4. The desk shows expos
 
 **Closing the loop.** *Warn* adds `{ day, hexes }` to `overrides.advisories`. In the engine, every plot in those cells that is not already symptomatic gets the advisory; app users book a preventive spray on the first sprayable day, and SMS recipients do so with probability 0.45. The ripple reports plots told, sprays booked, and the change in new infections over three weeks. On 19 September with the recorded weather: 62 plots told, 52 sprays booked, new infections 14 → 11.
 
+**Leaf wetness after rain.** A canopy stays wet after rain stops, longer after heavy rain: after an hour with $P$ mm, the wet-canopy term ($0.45\,w_T$) holds for $\min(10, \max(4, 3 + P))$ hours at that source.
+
+**Uncertainty: the ensemble.** `/api/weather/ensemble` serves the 51 members (control + 50) of the ECMWF IFS 0.25° ensemble at Phaltan, hourly for four days. Each member becomes its own frames (its rain, humidity and wind, one wind for the taluka; demo rain stays in every member), the kernel runs once per member, six members per tick so the desk stays responsive, and the desk shows the share of members in which each cell reaches moderate exposure, plus the 10th to 90th percentile of rain per hour. On 20 October 2026 all 51 members kept Phaltan dry for four days.
+
+**Storm brush.** The officer draws a track; it becomes a rain cell (8 mm an hour at the core, Gaussian with a 4 km radius) moving along the track at about 12 km/h (3 to 8 hours). Rain at each source is summed over the hour in quarter-hour steps as the cell passes, and within the cell the wind becomes a gust front of at least 22 km/h along the track. It is a what-if: the warn button is disabled while a drawn storm is on the map.
+
 **What it is not.** It is not fitted. Rain splash and wind-driven rain carry *Xanthomonas* over short distances; the reach and widths above are plausible placeholders. Validation plan: compare forecast exposure with the cells where scans are reported in the following 14 days during the pilot, and fit $R$, $\sigma$ and the weights by maximum likelihood.
 
 ## 4. Water Commons
@@ -130,6 +136,8 @@ Bookings are grouped by day, village collection point and market and packed larg
 - **Where it looked**: a 7 × 7 occlusion map, batched, drawn as a red heat overlay.
 - Honest numbers: 95.4% on PlantVillage lab photos (model card); on three public field photos it misread two diseases. Pomegranate has no class in PlantVillage, so the pomegranate result is scripted until `ml/train.py` is run on Phaltan photos.
 
+**Photo check.** Before inference, a 192 px grey copy of the photo gives sharpness (variance of the Laplacian) and light (mean brightness). On the sample leaves, sharp photos scored 230 to 5,900 and a 1.5 px blur 10 to 36, so under 60 is *blurry*; under 65 brightness is *too dark*, over 215 *washed out*. The camera view runs the same check twice a second and turns its frame violet when the photo will read.
+
 ## 8. Sale slip check
 
 ```mermaid
@@ -146,6 +154,10 @@ flowchart LR
 
 Checks: weight against crates × 20 kg (flag below 95%); gross = weight × rate; each charge against the rate card (commission 6% of gross, hamali ₹5 and weighment ₹1 a crate, freight the run's rate a crate); any charge not on the card; deductions add up to the total; gross less total equals net. The rate is compared with the day's modal price for the grade (information only). Numbers read with under 75% confidence are underlined for the farmer to check.
 
-## 9. Voice
+## 9. Lot passport and the export check
+
+`src/lib/lot.ts` builds one passport per picking (`TAR-214-P1`): village and H3 cell (never the gat number or full name), picking date, crates and grade, run and market, every spray and scan before picking, drip water and water skipped. The export check flags any copper spray (every product in the table is copper-based) within 60 days before picking, the interval the APEDA list gives for copper on pomegranate, and gives the first date a picking would clear it. It is not a certificate: registration and residue testing go through APEDA's AnarNet.
+
+## 10. Voice
 
 Intent by keyword in Marathi and English (spray failure, next spray, irrigation, harvest date, market, sale, blight nearby), answered by builders that quote the record with dates and amounts, with sources and *sure* chips. Unknown intents go to the officer with the plot's last five entries. Speech in and out through the Web Speech API (`mr-IN`).

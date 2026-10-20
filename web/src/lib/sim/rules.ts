@@ -20,6 +20,12 @@ export const SPRAYS = {
   },
 } as const;
 
+/**
+ * Pre-harvest interval for copper compounds on pomegranate grown for export (APEDA list; docs/AGRONOMY.md).
+ * Every spray in SPRAYS is copper-based, so every spray counts.
+ */
+export const EXPORT_PHI_DAYS = 60;
+
 export const SPRAY_SOURCE = "ICAR-NRCP advisories and the APEDA/NRCP pomegranate list (docs/AGRONOMY.md); not yet reviewed by an agronomist; follow the product label";
 
 /** Crop coefficient by stage, used for irrigation (ET0 x Kc). */

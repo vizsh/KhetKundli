@@ -4,7 +4,7 @@ From a demo that runs on real weather to a record that real farmers keep. Each i
 
 ## Where we are (20 October 2026)
 
-Built and tested: the kundli wheel, today slip and spray window; Scan Lens on the device; Marathi voice answers from the record with escalation to an officer; the sale slip check with on-device OCR; the taluka desk with Pest Radar, Harvest Wave, Water Commons and pooled runs; the season engine running on **recorded 2026 weather**; a **live wind field** and **72-hour spread forecast** with one-tap advisories by app or SMS; two-device sync; the pitch. Simulated: the farmers and their plots, mandi prices without a key, the specimen slips.
+Built and tested: the kundli wheel, today slip and spray window; Scan Lens on the device; Marathi voice answers from the record with escalation to an officer; the sale slip check with on-device OCR; the taluka desk with Pest Radar, Harvest Wave, Water Commons and pooled runs; the season engine running on **recorded 2026 weather**; a **live wind field** and **72-hour spread forecast** with one-tap advisories by app or SMS, run on all **51 ECMWF ensemble members** for a chance by cell; the **storm brush** what-if; **lot passports** with QR codes and an **export pre-harvest check**; the **neighbour pulse** on the phone; a **photo check** before scans; officer replies read aloud; two-device sync; the pitch. Simulated: the farmers and their plots, mandi prices without a key, the specimen slips.
 
 ## Horizons
 
@@ -134,7 +134,7 @@ Agmarknet daily modal prices and arrivals for pomegranate at Phaltan, Pune, Vash
 
 ### 1.7 Spread forecast v2
 
-- **Uncertainty**: drive the forecast with ensemble members (Open-Meteo's ensemble API) and show the probability that a cell reaches moderate exposure, not one answer.
+- **Uncertainty** (built in October 2026): the forecast runs on each of the 51 ECMWF ensemble members at Phaltan, and the desk shows the share of members in which each cell reaches moderate exposure, with the 10–90% range of rain in the hour strip. Next: per-member wind fields at the nine grid points rather than one wind per member.
 - **Fit the kernel**: during the pilot, record forecast exposure and the cells where blight is reported in the next 14 days; fit reach $R$, width $\sigma$ and source weights by maximum likelihood; report skill as ROC AUC against a distance-only baseline.
 - **Second channel**: pruning gangs and shared sprayers carry bacteria between orchards; let farmers log who worked in the orchard and add that contact network to the forecast.
 - **Terrain**: add slope and aspect from the Copernicus GLO-30 DEM; channel wind along the valleys.
@@ -168,9 +168,11 @@ Agmarknet daily modal prices and arrivals for pomegranate at Phaltan, Pune, Vash
 
 - Capacitated vehicle routing with time windows (OR-Tools): collection points as pickups, market opening as the deadline, real vehicles with capacity and cost per km; re-solved each evening from the next day's bookings.
 - A driver app: route, pickups, crate counts with a photo at each stop, GPS trace; cost split per crate on the farmers' slips.
-- **Lot passport**: a QR per lot (cell, picking date, grade, spray record summary, run) that the buyer can scan at the market.
+- **Lot passport** (built in October 2026): a QR per picking (cell, picking date, grade, sprays, water, run, export check) that the buyer can scan; next, sign the passport so a buyer can trust it was not edited.
 
 ### 2.5 Export-ready record
+
+The first piece is built: each lot passport checks copper sprays against the 60-day pre-harvest interval from the APEDA list and says when a picking would clear it.
 
 Pomegranate exports to the EU go through APEDA's AnarNet traceability system. The record already holds every spray with product and date; add each product's label pre-harvest interval and residue limits, check them against the planned picking date, schedule residue tests, and produce the plot's spray dossier for registration.
 
@@ -196,19 +198,19 @@ Each of these should be as good to demonstrate as it is useful in the field.
 
 | Feature | What the user sees | Real use | Data | Build notes | Horizon |
 | --- | --- | --- | --- | --- | --- |
-| **Storm brush** | The officer drags a rain cell across the survey sheet; the plume and the ripple follow the cursor | Training, and "what if the forecast shifts east" planning | Forecast frames, spread kernel | Pointer → hourly rain field per cell; the forecast runs in ~5 ms, fast enough per frame | H1 |
-| **Ensemble plume** | The plume drawn as several faint layers that agree where the risk is likely | Honest uncertainty for advisories | Open-Meteo ensembles | Run the kernel per member; show probability | H1 |
-| **Neighbour pulse** | A radar sweep on the phone: "3 blight scans within 2 km this week" | Makes the collective visible to the farmer, and rewards reporting | Pest Radar cells | Cell-level only, never a neighbour's plot | H1 |
+| **Storm brush** | The officer drags a rain cell across the survey sheet; the plume and the ripple follow the cursor | Training, and "what if the forecast shifts east" planning | Forecast frames, spread kernel | Pointer → a moving rain cell with a gust front; the forecast runs in ~5 ms | **Built** |
+| **Ensemble plume** | The plume drawn as several faint layers that agree where the risk is likely | Honest uncertainty for advisories | Open-Meteo ensembles | Run the kernel per member (in small batches); show the share of members | **Built** |
+| **Neighbour pulse** | A radar sweep on the phone: "3 blight scans within 2 km this week" | Makes the collective visible to the farmer, and rewards reporting | Pest Radar cells | Cell-level only, never a neighbour's plot | **Built** |
 | **Spray window push** | A 05:30 notification on a sprayable morning when a spray is due | Fewer washed-off sprays | Hourly forecast, record | Web Push, WhatsApp template, IVR call | H1 |
-| **Officer voice notes** | The reply plays as Marathi audio in Ask | Low-literacy farmers | TTS or recorded audio | Store audio with the reply event | H1 |
-| **Scan guide** | A frame that turns green when one leaf is sharp, lit and fills the view | Better scans, fewer misreads | Camera frames | Laplacian variance, exposure, segmentation mask | H1 |
+| **Officer voice notes** | The reply plays as Marathi audio in Ask | Low-literacy farmers | TTS or recorded audio | Built as text read aloud; recorded audio next | **Built (TTS)** |
+| **Scan guide** | A frame that turns green when one leaf is sharp, lit and fills the view | Better scans, fewer misreads | Camera frames | Laplacian variance and exposure built; a leaf-coverage mask next | **Built** |
 | **Season film** | One click renders a 60-second replay of the village season with captions, to share at a gram sabha | Shows the village what it achieved together | The season | Canvas capture to MP4 with WebCodecs | H1 |
 | **Kundli share card** | A Marathi image of the farmer's wheel and season summary | A record she can show a buyer or a scheme officer | Her record | Server-side render to PNG; QR to the lot passport | H2 |
 | **3D survey sheet** | The taluka in relief, wind flowing over the hills, exposure extruded by cell | Explains valleys and ridges in spread | Copernicus GLO-30 DEM | deck.gl TerrainLayer, particles in 3D | H2 |
 | **Mandi river** | Arrivals flowing from talukas into Pune and Vashi, with the price line and a glut band ahead | Choose when and where to sell | Agmarknet, Harvest Wave | Streamgraph with forecast band | H2 |
 | **Aquifer passbook** | The village's groundwater as a bank passbook with deposits and withdrawals | A shared goal people understand | Wells, rain, records | Monthly statement, Marathi | H2 |
 | **Collection-point board** | A tablet at the collection point showing today's lots, grades and vehicles | Smooth mornings, fewer disputes | Bookings, runs | Kiosk mode, offline | H2 |
-| **Lot passport** | A QR on each lot that opens its history | Trust with buyers, export traceability | Record, runs | Signed, minimal, consented | H2 |
+| **Lot passport** | A QR on each lot that opens its history | Trust with buyers, export traceability | Record, runs | Minimal fields built, with the export check; signing next | **Built** |
 
 ---
 

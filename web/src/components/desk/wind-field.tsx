@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useReducedMotion } from "motion/react";
-import { windAt, type Frame } from "@/lib/spread";
+import { stormRain, windUnder, type Frame, type Storm } from "@/lib/spread";
 import type { LonLat } from "@/lib/sim/types";
 import { boundaryPath, MAP_H, MAP_W, projection } from "./map-geometry";
 
@@ -19,13 +19,13 @@ type Particle = { x: number; y: number; age: number; life: number };
  * The wind as pencil strokes drifting across the survey sheet: each particle follows the hour's wind
  * (interpolated between the nine forecast points), leaving a fading trail. Rain hours draw in canal blue.
  */
-export function WindField({ frame, points }: { frame: Frame | undefined; points: LonLat[] | null }) {
+export function WindField({ frame, k, points, storm }: { frame: Frame | undefined; k: number; points: LonLat[] | null; storm: Storm | null }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const reduce = useReducedMotion();
-  const live = useRef({ frame, points });
+  const live = useRef({ frame, k, points, storm });
   useEffect(() => {
-    live.current = { frame, points };
-  }, [frame, points]);
+    live.current = { frame, k, points, storm };
+  }, [frame, k, points, storm]);
 
   useEffect(() => {
     const el = canvas.current;
@@ -61,10 +61,10 @@ export function WindField({ frame, points }: { frame: Frame | undefined; points:
     const particles = Array.from({ length: COUNT }, () => spawn({ x: 0, y: 0, age: 0, life: 0 }));
     for (const p of particles) p.age = Math.floor(Math.random() * p.life);
     const velocity = (x: number, y: number): [number, number] => {
-      const { frame: f, points: pts } = live.current;
+      const { frame: f, points: pts, storm: st, k: hour } = live.current;
       if (!f) return [0, 0];
       const ll = projection.invert!([x, y]) as LonLat;
-      const [u, v] = windAt(f, pts, ll);
+      const [u, v] = windUnder(f, hour, pts, st, ll);
       const speed = Math.hypot(u, v);
       const k = speed ? pace(speed) / speed : 0;
       return [u * k, -v * k];
@@ -108,10 +108,10 @@ export function WindField({ frame, points }: { frame: Frame | undefined; points:
       ctx.fillRect(0, 0, MAP_W, MAP_H);
       ctx.globalCompositeOperation = "source-over";
       const rain = (live.current.frame?.rain ?? 0) >= 0.2;
-      ctx.strokeStyle = rain ? "rgba(44,104,168,0.8)" : "rgba(40,36,30,0.68)";
-      ctx.lineWidth = rain ? 1.25 : 1.05;
+      const { storm: st, k: hour } = live.current;
       ctx.lineCap = "round";
-      ctx.beginPath();
+      // Two pens: graphite for dry air, canal blue where rain is falling (the whole frame, or under the storm).
+      const wet = new Path2D(), dry = new Path2D();
       for (const p of particles) {
         const [dx, dy] = velocity(p.x, p.y);
         const nx = p.x + dx, ny = p.y + dy;
@@ -120,12 +120,18 @@ export function WindField({ frame, points }: { frame: Frame | undefined; points:
           spawn(p);
           continue;
         }
-        ctx.moveTo(p.x, p.y);
-        ctx.lineTo(nx, ny);
+        const pen = rain || (st && stormRain(st, hour, projection.invert!([p.x, p.y]) as LonLat) > 0.6) ? wet : dry;
+        pen.moveTo(p.x, p.y);
+        pen.lineTo(nx, ny);
         p.x = nx;
         p.y = ny;
       }
-      ctx.stroke();
+      ctx.strokeStyle = "rgba(40,36,30,0.68)";
+      ctx.lineWidth = 1.05;
+      ctx.stroke(dry);
+      ctx.strokeStyle = "rgba(44,104,168,0.85)";
+      ctx.lineWidth = 1.3;
+      ctx.stroke(wet);
     };
     raf = requestAnimationFrame(tick);
     return () => {

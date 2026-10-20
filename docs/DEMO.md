@@ -23,11 +23,13 @@ Before going on stage: press **Reset** on the desk (clears every screen and the 
 | 2:20 | Desk | Read the ripple | "Her spray is set for the first dry morning, neighbours are warned, the radar redraws, and her harvest grade rises." |
 | 2:50 | Desk | *Rain forecast in 18 h* → press play on the 72-hour strip | "If a storm comes, the wind carries blight from the reported cells: watch the plume grow, hour by hour." |
 | 3:30 | Desk | *Warn* | "One tap: an advisory to every plot in the plume, on the app or by SMS, and the season re-plans." |
-| 4:00 | Desk | Click the season track at 19 September; play the strip | "The same forecast on the real monsoon. Warning the plume books 52 preventive sprays and cuts new infections from 14 to 11." |
+| 3:45 | Desk | *Storm brush* → drag from south-west of Adarki to the north-east | "Or ask what if: draw a storm and watch the gust front carry blight from the warning cell. The ensemble line says all 51 forecast runs are dry this week; this is the what-if." |
+| 4:00 | Desk | *Clear storm*; click the season track at 19 September; play the strip | "The same forecast on the real monsoon. Warning the plume books 52 preventive sprays and cuts new infections from 14 to 11." |
 | 4:50 | Desk | *Harvest Wave*, hover the Pune glut week | "Crop stage on every plot is the harvest forecast, and the harvest forecast is the transport plan." |
 | 5:20 | Phone | Harvest date: move the first picking earlier, choose Phaltan | "Pooled runs re-plan on the desk." |
 | 5:50 | Phone | *Check a sale slip* → *A slip with extra charges* | "Read on the phone in a second: commission at 8% against 6% agreed, hamali at ₹7 against ₹5, ₹250 of 'misc'. ₹1,863 to ask about." |
-| 6:20 | Phone, desk | *Send to the officer*; reply from the inbox | "The officer answers with the slip in front of him." |
+| 6:20 | Phone, desk | *Send to the officer*; reply from the inbox; *Listen* on the phone | "The officer answers with the slip in front of them, and Sunita can listen to the reply." |
+| 6:35 | Phone, then any phone | *Lot passports* → P1 → scan the QR with another phone | "Every picking has a passport: where it grew, every spray, and whether copper is too close to picking for export." |
 | 6:45 | Pitch | The honest ledger | "Weather, wind, map, scans and slip reading are real. The farmers are synthetic, and the roadmap is how they become real." |
 
 ## Fallbacks

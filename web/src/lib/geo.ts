@@ -22,6 +22,9 @@ export type TalukaGeo = {
 
 export const geo = raw as unknown as TalukaGeo;
 
+/** A short, readable H3 cell label: the index without its trailing padding (res-7 ids end in "ffffff"). */
+export const cellLabel = (id: string) => id.replace(/f+$/, "").slice(-5).toUpperCase();
+
 export const villageIndex = new Map(geo.villages.map((v, i) => [v.id, i]));
 export const routeByHub = new Map(geo.routes.map((r) => [r.hub, r]));
 

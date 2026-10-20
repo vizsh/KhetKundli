@@ -1,9 +1,10 @@
 "use client";
 
-import { memo, useMemo, useState } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { geo } from "@/lib/geo";
-import { frameLabel, TIER } from "@/lib/spread";
+import { memo, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, useReducedMotion } from "motion/react";
+import { cellLabel, geo } from "@/lib/geo";
+import { frameLabel, stormAt, TIER } from "@/lib/spread";
+import type { LonLat } from "@/lib/sim/types";
 import { useForecast } from "./forecast";
 import { WindField } from "./wind-field";
 import { focusWeek, villageCrates, waterShareByVillage } from "@/lib/sim/selectors";
@@ -21,6 +22,8 @@ import {
   MAP_H,
   MAP_W,
   pointAlong,
+  project,
+  projection,
   rail,
   rivers,
   roads,
@@ -64,6 +67,13 @@ function Patterns() {
           <circle cx={1.5} cy={1.5} r={[0, 0.9, 1.1, 1.3][k]} fill="var(--stamp)" opacity={[0, 0.55, 0.75, 0.9][k]} />
         </pattern>
       ))}
+      <pattern id="storm-cell" patternUnits="userSpaceOnUse" width="6" height="6" patternTransform="rotate(-35)">
+        <rect width="6" height="6" fill="var(--water)" opacity={0.18} />
+        <line x1="0" y1="0" x2="0" y2="6" stroke="var(--water)" strokeWidth="1.2" opacity={0.7} />
+      </pattern>
+      <marker id="storm-arrow" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+        <path d="M0 0L10 5L0 10z" fill="var(--water)" />
+      </marker>
       <clipPath id="taluka-clip">
         <path d={boundaryPath} />
       </clipPath>
@@ -208,9 +218,18 @@ function Exposure({ onHover }: { onHover: (h: number | null) => void }) {
   const t = useDesk((s) => s.t);
   const risk = season.hexRisk[Math.floor(t)];
   const upto = forecast.cumulative[hour ?? forecast.cumulative.length - 1];
+  const ens = useDesk((s) => s.ensembleForecast);
+  const storm = useDesk((s) => s.storm);
   if (!upto) return null;
   return (
     <g>
+      {ens && !storm && hour === null && hexes.map((h, i) =>
+        ens.prob[i] >= 0.1 && risk[i] < 2 ? (
+          <text key={`p${i}`} x={h.cx} y={h.cy + 3.5} textAnchor="middle" fontSize={9.5} fontWeight={700} fill="var(--stamp)" stroke="var(--paper)" strokeWidth={2.5} paintOrder="stroke" className="typed pointer-events-none">
+            {Math.round(ens.prob[i] * 100)}%
+          </text>
+        ) : null,
+      )}
       {hexes.map((h, i) => {
         const e = upto[i];
         const tier = e >= 4 ? 3 : e >= 1.2 ? 2 : e >= 0.35 ? 1 : 0;
@@ -231,6 +250,80 @@ function Exposure({ onHover }: { onHover: (h: number | null) => void }) {
         );
       })}
     </g>
+  );
+}
+
+/** The storm drawn with the brush: its path, and the rain cell where it is at the scrubbed hour. */
+function StormTrack() {
+  const storm = useDesk((s) => s.storm);
+  const hour = useDesk((s) => s.forecastHour);
+  if (!storm) return null;
+  const pts = storm.track.map(project);
+  const d = `M${pts.map((p) => p.join(",")).join("L")}`;
+  const now = hour !== null ? stormAt(storm, hour + 0.5) : null;
+  const r = storm.radiusKm / kmPerUnit;
+  const [sx, sy] = pts[0], [ex, ey] = pts[pts.length - 1];
+  const centre = now ? project(now.at) : null;
+  return (
+    <g className="pointer-events-none">
+      <path d={d} fill="none" stroke="var(--water)" strokeOpacity={0.16} strokeWidth={r * 1.6} strokeLinecap="round" strokeLinejoin="round" />
+      <path d={d} fill="none" stroke="var(--water)" strokeWidth={2} strokeDasharray="7 4" markerEnd="url(#storm-arrow)" />
+      <circle cx={sx} cy={sy} r={4} fill="var(--paper)" stroke="var(--water)" strokeWidth={2} />
+      <text x={sx + 8} y={sy - 6} fontSize={10.5} fontWeight={700} fill="var(--water)" stroke="var(--paper)" strokeWidth={3} paintOrder="stroke" className="typed">STORM +{storm.start} h</text>
+      <text x={ex + 8} y={ey + 14} fontSize={10.5} fontWeight={700} fill="var(--water)" stroke="var(--paper)" strokeWidth={3} paintOrder="stroke" className="typed">+{storm.start + storm.hours} h</text>
+      {centre && (
+        <g>
+          <circle cx={centre[0]} cy={centre[1]} r={r} fill="url(#storm-cell)" stroke="var(--water)" strokeWidth={1.6} />
+          <circle cx={centre[0]} cy={centre[1]} r={r * 0.35} fill="var(--water)" opacity={0.35} />
+        </g>
+      )}
+    </g>
+  );
+}
+
+/** Drag across the map to draw a storm's path; on release it becomes a six-hour what-if storm. */
+function StormBrush() {
+  const brushing = useDesk((s) => s.brushing);
+  const setStorm = useDesk((s) => s.setStorm);
+  const setBrushing = useDesk((s) => s.setBrushing);
+  const reduce = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const [pts, setPts] = useState<[number, number][]>([]);
+  if (!brushing) return null;
+  const toMap = (e: React.PointerEvent): [number, number] => {
+    const r = ref.current!.getBoundingClientRect();
+    return [((e.clientX - r.left) / r.width) * MAP_W, ((e.clientY - r.top) / r.height) * MAP_H];
+  };
+  const finish = () => {
+    const track = pts.map((p) => projection.invert!(p) as LonLat);
+    const km = pts.reduce((a, p, i) => (i ? a + Math.hypot(p[0] - pts[i - 1][0], p[1] - pts[i - 1][1]) * kmPerUnit : 0), 0);
+    setPts([]);
+    if (km < 3) return;
+    // A convective storm moves at about 12 km/h: a longer path takes longer to cross (3 to 8 hours).
+    setStorm({ track, start: 1, hours: Math.min(8, Math.max(3, Math.round(km / 12))), mm: 8, radiusKm: 4 });
+    useDesk.setState(reduce ? { forecastHour: 4 } : { forecastHour: 0, forecastPlaying: true });
+  };
+  return (
+    <div
+      ref={ref}
+      className="absolute inset-0 z-10 cursor-crosshair touch-none"
+      role="application"
+      aria-label="Draw a storm's path: drag across the map"
+      onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); setPts([toMap(e)]); }}
+      onPointerMove={(e) => {
+        if (!pts.length || e.buttons !== 1) return;
+        const p = toMap(e), last = pts[pts.length - 1];
+        if (Math.hypot(p[0] - last[0], p[1] - last[1]) > 8) setPts([...pts, p]);
+      }}
+      onPointerUp={finish}
+      onKeyDown={(e) => { if (e.key === "Escape") setBrushing(false); }}
+      tabIndex={0}
+    >
+      <div className="pointer-events-none absolute inset-0 bg-[color-mix(in_oklab,var(--water)_6%,transparent)] outline outline-2 -outline-offset-2 outline-water/60" />
+      <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="pointer-events-none absolute inset-0 h-full w-full">
+        {pts.length > 1 && <path d={`M${pts.map((p) => p.join(",")).join("L")}`} fill="none" stroke="var(--water)" strokeWidth={10} strokeOpacity={0.35} strokeLinecap="round" strokeLinejoin="round" />}
+      </svg>
+    </div>
   );
 }
 
@@ -307,7 +400,7 @@ export function SurveyMap() {
   const season = useDesk((s) => s.season);
   const [hover, setHover] = useState<number | null>(null);
   const hovered = hover !== null ? geo.hexes[hover] : null;
-  const { frames, forecast, points } = useForecast();
+  const { frames, forecast, points, storm } = useForecast();
   const forecastHour = useDesk((s) => s.forecastHour);
   const hoverPlots = hover !== null ? season.plots.filter((p) => p.hex === hover).length : 0;
 
@@ -320,12 +413,14 @@ export function SurveyMap() {
         {layer === "pest" && <Exposure onHover={setHover} />}
         {layer === "pest" && <RiskHexes day={day} onHover={setHover} />}
         {layer === "runs" && <Runs />}
+        {layer === "pest" && <StormTrack />}
         <Labels layer={layer} />
         <NorthArrow />
         <ScaleBar />
         <rect width={MAP_W} height={MAP_H} fill="url(#paper-grain)" className="pointer-events-none" />
       </svg>
-      {layer === "pest" && <WindField frame={frames[forecastHour ?? 0]} points={points} />}
+      {layer === "pest" && <WindField frame={frames[forecastHour ?? 0]} k={forecastHour ?? 0} points={points} storm={storm} />}
+      {layer === "pest" && <StormBrush />}
       <AnimatePresence>
         {hovered && hover !== null && (
           <motion.div
@@ -336,7 +431,7 @@ export function SurveyMap() {
             transition={{ duration: 0.14 }}
             className="pointer-events-none absolute bottom-4 left-4 w-56 rounded-[2px] bg-paper px-3 py-2 text-[12px] shadow-[var(--shadow-lift)]"
           >
-            <p className="typed text-[10.5px] text-ink-3">HEX {hovered.id.slice(-6).toUpperCase()}</p>
+            <p className="typed text-[10.5px] text-ink-3">CELL {cellLabel(hovered.id)}</p>
             <p className="mt-0.5 font-semibold">Near {geo.villages[hovered.village].name}</p>
             <p className="text-ink-2">
               {["No blight reported", "Watch", "Warning", "Outbreak"][season.hexRisk[day][hover]]}

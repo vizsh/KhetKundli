@@ -28,6 +28,9 @@ export type FrameSource = "live" | "recorded" | "simulated";
 
 export const HORIZON = 72;
 const DOW = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
+/** Kilometres per degree of longitude and latitude at Phaltan, for local distances. */
+const KM_LON = 111.32 * Math.cos((17.99 * Math.PI) / 180), KM_LAT = 110.57;
+const toKm = (p: LonLat): [number, number] => [p[0] * KM_LON, p[1] * KM_LAT];
 
 export const frameLabel = (f: Frame) => `${DOW[dateOf(f.day).dow]} ${String(f.hour).padStart(2, "0")}:00`;
 
@@ -153,28 +156,85 @@ export type Forecast = {
 
 /** Inoculum by reported level: watch (one or two scans in 14 days), warning, outbreak. */
 const SOURCE_WEIGHT = [0, 0.5, 1.2, 2];
-const KX = 111.32 * Math.cos((17.99 * Math.PI) / 180), KY = 110.57;
-const XY = geo.hexes.map((h) => [h.center[0] * KX, h.center[1] * KY] as const);
+const XY = geo.hexes.map((h) => toKm(h.center));
 
-export function spreadForecast(season: Season, day: number, frames: Frame[], points: LonLat[] | null): Forecast {
+/**
+ * A storm the officer draws on the map ("storm brush"): a rain cell that travels along the track
+ * over a few hours, with a gust front blowing the way it moves. It is a what-if, never a forecast.
+ */
+export type Storm = { track: LonLat[]; start: number; hours: number; mm: number; radiusKm: number };
+
+/** Where the storm's centre is at time t (forecast hours, fractional), and which way it is moving; null outside its hours. */
+export function stormAt(storm: Storm | null, t: number): { at: LonLat; dir: [number, number] } | null {
+  if (!storm || storm.track.length < 2 || t < storm.start || t >= storm.start + storm.hours) return null;
+  const pts = storm.track.map(toKm);
+  const cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]));
+  const target = ((t - storm.start) / storm.hours) * cum[cum.length - 1];
+  let i = 1;
+  while (i < pts.length - 1 && cum[i] < target) i++;
+  const seg = cum[i] - cum[i - 1] || 1;
+  const u = (target - cum[i - 1]) / seg;
+  const a = storm.track[i - 1], b = storm.track[i];
+  const dx = pts[i][0] - pts[i - 1][0], dy = pts[i][1] - pts[i - 1][1], len = Math.hypot(dx, dy) || 1;
+  return { at: [a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u], dir: [dx / len, dy / len] };
+}
+
+/**
+ * Storm rain (mm) falling at a point during forecast hour k: heaviest under the core, fading over the
+ * cell's radius, summed over the hour as the storm moves past (four quarter-hour samples).
+ */
+export function stormRain(storm: Storm | null, k: number, at: LonLat) {
+  if (!storm) return 0;
+  const [x, y] = toKm(at);
+  let mm = 0;
+  for (const q of [0.125, 0.375, 0.625, 0.875]) {
+    const s = stormAt(storm, k + q);
+    if (!s) continue;
+    const [cx, cy] = toKm(s.at);
+    mm += (storm.mm / 4) * Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * storm.radiusKm * storm.radiusKm));
+  }
+  return mm;
+}
+
+/** Wind under the storm: at least 22 km/h along its track inside the cell (the gust front), else the frame's wind. */
+export function windUnder(f: Frame, k: number, points: LonLat[] | null, storm: Storm | null, at: LonLat): [number, number] {
+  const base = windAt(f, points, at);
+  const s = stormAt(storm, k + 0.5);
+  if (!s || !storm) return base;
+  const [x, y] = toKm(at), [cx, cy] = toKm(s.at);
+  const w = Math.exp(-((x - cx) ** 2 + (y - cy) ** 2) / (2 * (storm.radiusKm * 1.4) ** 2));
+  if (w < 0.05) return base;
+  const gust = Math.max(22, Math.hypot(base[0], base[1]));
+  return [base[0] * (1 - w) + s.dir[0] * gust * w, base[1] * (1 - w) + s.dir[1] * gust * w];
+}
+
+export function spreadForecast(season: Season, day: number, frames: Frame[], points: LonLat[] | null, storm: Storm | null = null): Forecast {
   const H = geo.hexes.length;
   const risk = season.hexRisk[day];
   const exposure = new Float64Array(H);
   const best = new Float64Array(H);
   const peak = new Int16Array(H).fill(-1);
   const sources = geo.hexes.flatMap((h, i) => (risk[i] ? [i] : []));
-  let wetHours = 0, rainMm = 0, lastRain = -99;
+  // Wetness is judged at each source orchard, where rain splash releases the bacteria.
+  const lastRain = new Float64Array(H).fill(-99);
+  const lastMm = new Float64Array(H);
+  let wetHours = 0, rainMm = 0;
   const cumulative: Float32Array[] = [];
   frames.forEach((f, k) => {
     rainMm += f.rain;
     if (k > 0) cumulative.push(Float32Array.from(exposure));
-    if (f.rain >= 0.2) lastRain = k;
-    // Leaves stay wet for a few hours after rain stops, and bacteria keep oozing onto them.
-    const fav = Math.max(favourOf(f), k - lastRain <= 4 ? 0.45 * (f.temp >= 18 && f.temp <= 35 ? 1 : 0.4) : 0);
-    if (!fav) return;
-    wetHours += 1;
+    const warm = f.temp >= 18 && f.temp <= 35 ? 1 : 0.4;
+    let anyWet = false;
     for (const s of sources) {
-      const [u, v] = windAt(f, points, geo.hexes[s].center);
+      const rain = f.rain + stormRain(storm, k, geo.hexes[s].center);
+      if (rain >= 0.2) { lastRain[s] = k; lastMm[s] = rain; }
+      // Leaves stay wet after rain stops, longer after heavy rain (4 to 10 hours), and bacteria keep oozing onto them.
+      const linger = Math.min(10, Math.max(4, 3 + lastMm[s]));
+      const fav = Math.max(favourOf({ ...f, rain }), k - lastRain[s] <= linger ? 0.45 * warm : 0);
+      if (!fav) continue;
+      anyWet = true;
+      const [u, v] = windUnder(f, k, points, storm, geo.hexes[s].center);
       const speed = Math.hypot(u, v);
       const ux = speed ? u / speed : 0, uy = speed ? v / speed : 0;
       // Splash plus wind-driven rain: further reach in stronger wind.
@@ -193,6 +253,7 @@ export function spreadForecast(season: Season, day: number, frames: Frame[], poi
         if (c > best[j]) { best[j] = c; peak[j] = k; }
       }
     }
+    if (anyWet) wetHours += 1;
   });
   if (frames.length) cumulative.push(Float32Array.from(exposure));
   const tier = Array.from(exposure, (e) => (e >= 4 ? 3 : e >= 1.2 ? 2 : e >= 0.35 ? 1 : 0) as Tier);
@@ -227,4 +288,54 @@ export function spreadForecast(season: Season, day: number, frames: Frame[], poi
     warnPlots: season.plots.filter((p) => warnSet.has(p.hex)).length,
     warnApp: season.plots.filter((p) => warnSet.has(p.hex) && p.farmer.usesApp).length,
   };
+}
+
+/** Ensemble members at Phaltan, as served by /api/weather/ensemble. */
+export type Ensemble = {
+  model: string;
+  times: string[];
+  members: { rain: number[]; speed: number[]; from: number[]; rh: number[] }[];
+  fetchedAt: string;
+};
+
+/**
+ * One set of frames per ensemble member: the member's rain, humidity and wind at Phaltan, one wind for
+ * the taluka, with the deterministic frames' temperature. Demo rain is a scenario input, so it stays in
+ * every member.
+ */
+export function memberFrames(base: Frame[], ens: Ensemble): Frame[][] | null {
+  const index = base.map((f) => ens.times.indexOf(isoHour(f.day, f.hour)));
+  if (index.some((i) => i < 0)) return null;
+  return ens.members.map((m) =>
+    base.map((f, k) => {
+      if (f.demoRain) return f;
+      const i = index[k];
+      const [u, v] = toUV(m.speed[i], m.from[i]);
+      return { ...f, rain: m.rain[i], rh: m.rh[i], u: [u], v: [v] };
+    }),
+  );
+}
+
+export type EnsembleForecast = {
+  members: number;
+  /** Share of members in which each cell reaches moderate exposure or more. */
+  prob: Float32Array;
+  /** Per village: the highest cell probability. */
+  villageProb: number[];
+  /** Rain across members, per forecast hour: 10th, 50th and 90th percentiles (mm). */
+  rainBand: { lo: number; mid: number; hi: number }[];
+};
+
+export function summariseEnsemble(season: Season, day: number, members: Frame[][], results: Forecast[]): EnsembleForecast {
+  const H = geo.hexes.length;
+  const risk = season.hexRisk[day];
+  const prob = new Float32Array(H);
+  for (const r of results) for (let i = 0; i < H; i++) if (r.tier[i] >= 2 && risk[i] < 2) prob[i] += 1 / results.length;
+  const villageProb = geo.villages.map((_, vi) => geo.hexes.reduce((m, h, i) => (h.village === vi ? Math.max(m, prob[i]) : m), 0));
+  const q = (xs: number[], p: number) => xs[Math.min(xs.length - 1, Math.floor(p * xs.length))];
+  const rainBand = (members[0] ?? []).map((_, k) => {
+    const xs = members.map((m) => m[k].rain).sort((a, b) => a - b);
+    return { lo: q(xs, 0.1), mid: q(xs, 0.5), hi: q(xs, 0.9) };
+  });
+  return { members: results.length, prob, villageProb, rainBand };
 }

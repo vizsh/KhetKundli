@@ -19,6 +19,8 @@ flowchart TB
   subgraph Srv["Next.js server (route handlers)"]
     W1["GET /api/weather<br/>recorded season + forecast, cached hourly"]
     W2["GET /api/weather/wind<br/>3 × 3 grid, 96 h, cached hourly"]
+    W3["GET /api/weather/ensemble<br/>51 members, 96 h, cached hourly"]
+    LP["/lot/[id]<br/>lot passport"]
     P1["GET /api/prices"]
     S1["GET, POST /api/sync<br/>SSE relay, state in memory"]
   end
@@ -32,6 +34,9 @@ flowchart TB
   end
   OMA --> W1
   OMF --> W1 & W2
+  OME[(Open-Meteo ensemble<br/>ECMWF IFS 0.25°)] --> W3
+  W3 --> ST
+  EN --> LP
   AG --> P1
   OSM --> BG --> EN
   MOD --> WK
@@ -56,10 +61,11 @@ flowchart TB
 | Area | Files | Notes |
 | --- | --- | --- |
 | Engine | `src/lib/sim/season.ts`, `rules.ts`, `weather.ts`, `calendar.ts`, `selectors.ts`, `rng.ts`, `types.ts` | ~150 ms for a 245-day season of 192 plots |
-| Spread forecast | `src/lib/spread.ts` | 72 hourly frames, kernel per source cell per hour; ~5 ms |
+| Spread forecast | `src/lib/spread.ts`, `components/desk/forecast.tsx` | 72 hourly frames, kernel per source cell per hour (~5 ms); storm brush; ensemble of 51 runs in batches |
+| Lot passport | `src/lib/lot.ts`, `app/lot/[id]/page.tsx`, `components/lot/*`, `components/record/qr.tsx` | Buyer's page per picking, export pre-harvest check, QR drawn on the device |
 | Geography | `src/lib/geo.ts`, `src/data/phaltan.json`, `components/desk/map-geometry.ts` | Mercator fit, Voronoi village areas, label placement |
 | Store and sync | `src/lib/store.ts`, `sync.tsx`, `channel.ts`, `app/api/sync/route.ts` | |
-| Phone | `components/farmer/*` | wheel, today slip, scan lens, ask, harvest date, passbook, slip check |
+| Phone | `components/farmer/*` | wheel, today slip, neighbour pulse, scan lens with photo check, ask (replies read aloud), harvest date, lot passports, passbook, slip check |
 | Desk | `components/desk/*` | survey map, wind field, forecast panel, figure sheet, register, inbox, plot extract, ledger |
 | Pitch | `components/pitch/*` | scroll-driven season story on the live engine |
 | On-device ML | `public/workers/scan-lens.js`, `src/lib/scan.ts`, `src/lib/ocr.ts`, `src/lib/patti.ts` | |
@@ -172,6 +178,7 @@ The service worker (production builds) precaches the phone page, the leaf model,
 | --- | --- |
 | `generateSeason` (192 plots, 245 days, recorded weather) | ~150 ms |
 | `spreadForecast` (72 frames, up to 48 source cells) | ~5 ms |
+| Ensemble: 51 member runs, six per tick | ~250 ms in the background |
 | Scan Lens, MobileNetV2 fp32, one leaf | ~60–90 ms (plus a 7 × 7 occlusion map in batches) |
 | Slip OCR, one 900 × 800 photo, English LSTM | ~1.2 s |
 | Wind field | 460 particles at display refresh rate, canvas |
@@ -180,7 +187,7 @@ The service worker (production builds) precaches the phone page, the leaf model,
 
 | Command | What it proves |
 | --- | --- |
-| `npm run smoke` | 14 checks in real Chrome: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
+| `npm run smoke` | 18 checks in real Chrome: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
 | `npm run test:slips` | Both specimen slips read in Node; gross, net, charge count and the amount above the card |
 | `npx tsx --tsconfig tsconfig.json scripts/simtest.ts` | Engine statistics and causal isolation |
 | `npx tsc --noEmit`, `npx eslint src`, `npm run build` | Types, lint, production build |

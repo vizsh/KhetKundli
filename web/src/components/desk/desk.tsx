@@ -14,7 +14,7 @@ import { Register } from "./register";
 import { SurveyMap } from "./survey-map";
 import { VillageLedger } from "./village-ledger";
 import { LiveWeatherLoader, WeatherSlip } from "./weather-slip";
-import { LiveWindLoader, SpreadForecast } from "./forecast";
+import { EnsembleRunner, LiveWindLoader, SpreadForecast } from "./forecast";
 
 function FileCover() {
   const plots = useDesk((s) => s.season.plots.length);
@@ -63,6 +63,7 @@ export function Desk() {
       <SeasonPlayer />
       <LiveWeatherLoader />
       <LiveWindLoader />
+      <EnsembleRunner />
       <SyncBridge />
       <FileCover />
       <main className="grid min-h-0 flex-1 grid-cols-1 content-start gap-5 px-3 pb-5 sm:px-5 xl:grid-cols-[minmax(0,1.42fr)_minmax(400px,1fr)] xl:content-normal">
