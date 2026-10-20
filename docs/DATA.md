@@ -98,4 +98,4 @@ type Overrides = {
 - The archive is a **reanalysis** grid of several kilometres, not a station in the orchard; local showers can be missed or smeared.
 - The wind grid has nine points across a taluka roughly 60 km wide; valleys and hills are not resolved.
 - Agmarknet prices are what markets report; arrivals and modal prices can be revised.
-- OCR reads printed English labels and Western digits; Marathi labels and handwriting need the work listed in the roadmap.
+- OCR reads printed English and Marathi labels and Western and Devanagari digits; handwritten amounts and column layouts need the work listed in the roadmap.

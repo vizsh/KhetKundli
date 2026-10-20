@@ -1,0 +1,364 @@
+{
+ "summary": {
+  "model": "llama3.1:8b",
+  "date": "2026-10-20",
+  "questions": 14,
+  "routeAccuracy": 100,
+  "answeredByModel": 86,
+  "guardPassed": 100,
+  "contentChecks": "6/6",
+  "escalatedOutOfScope": true,
+  "latencyMs": {
+   "p50": 4615,
+   "p90": 9327
+  }
+ },
+ "rows": [
+  {
+   "q": "Why did my last spray fail?",
+   "expected": "spray_failed",
+   "routed": "spray_failed",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": true,
+   "ms": 3435,
+   "tokens": 114,
+   "headline": "Last spray failed due to rain on 21 SEP.",
+   "steps": [
+    "Wait for a sprayable morning",
+    "Spray on 20 OCT at 06:00"
+   ],
+   "stages": [
+    "route: spray failed · 98% · English",
+    "evidence: 3 tools · 9 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 1 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "मागच्या वेळी फवारणी का वाया गेली?",
+   "expected": "spray_failed",
+   "routed": "spray_failed",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": true,
+   "ms": 3713,
+   "tokens": 141,
+   "headline": "Last time, Bordeaux mixture spray was washed off by rain on 21 SEP.",
+   "steps": [
+    "Wait for a sprayable morning",
+    "Spray on 20 OCT at 06:00"
+   ],
+   "mr": "२१ सप्टें रोजी दुपारी ३ वाजता फवारणी केली. सुमारे ४ तासांनी २४ मिमी पाऊस पडला आणि औषध वाळण्याआधीच धुतले गेले. फवारणी फक्",
+   "stages": [
+    "route: spray failed · 77% · Marathi",
+    "evidence: 3 tools · 9 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 2 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "When should I spray next?",
+   "expected": "next_spray",
+   "routed": "next_spray",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": true,
+   "ms": 3845,
+   "tokens": 153,
+   "headline": "Spray on 20 OCT at 06:00",
+   "steps": [
+    "Spray Bordeaux mixture 1%, 10 g copper sulphate + 10 g lime per litre, freshly prepared"
+   ],
+   "stages": [
+    "route: next spray · 96% · English",
+    "evidence: 4 tools · 14 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 1 steps · 3 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "pudhchi fawarni kadhi karu",
+   "expected": "next_spray",
+   "routed": "next_spray",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 3993,
+   "tokens": 161,
+   "headline": "Spray on 20 OCT at 06:00",
+   "steps": [
+    "Spray Bordeaux mixture 1% (10 g copper sulphate + 10 g lime per litre) on 20 OCT at 06:00",
+    "Repeat after 15 days"
+   ],
+   "stages": [
+    "route: next spray · 92% · English",
+    "evidence: 4 tools · 14 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 2 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "Should I irrigate today?",
+   "expected": "irrigation",
+   "routed": "irrigation",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 3756,
+   "tokens": 143,
+   "headline": "Do not irrigate today.",
+   "steps": [
+    "Check the forecast for 20 OCT for any changes in the weather."
+   ],
+   "stages": [
+    "route: irrigation · 93% · English",
+    "evidence: 2 tools · 8 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 1 steps · 2 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "आज पाणी देऊ का?",
+   "expected": "irrigation",
+   "routed": "irrigation",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 3228,
+   "tokens": 115,
+   "headline": "Watering not required today.",
+   "steps": [
+    "Check wx-141 for sprayable conditions on 20 OCT",
+    "Check wx-142 for sprayable conditions on 21 OCT"
+   ],
+   "mr": "२१ ऑक्टो रोजी ठिबकने सुमारे ४८ हजार लिटर पाणी द्या; हे बाष्पीभवन आणि पिकाच्या अवस्थेवरून काढले आहे.",
+   "stages": [
+    "route: irrigation · 80% · Marathi",
+    "evidence: 2 tools · 8 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 1 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "When do I pick, and where do I sell?",
+   "expected": "harvest_market",
+   "routed": "harvest_market",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": true,
+   "ms": 4615,
+   "tokens": 181,
+   "headline": "Pick on 19 NOV, sell at Vashi APMC",
+   "steps": [
+    "Pick on 19 NOV: 76 crates, grade C",
+    "Sell at Vashi APMC: ₹100/kg, freight ₹78 a crate, commission 6%"
+   ],
+   "stages": [
+    "route: harvest market · 94% · English",
+    "evidence: 2 tools · 10 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 2 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "Is blight spreading near my plot?",
+   "expected": "blight_risk",
+   "routed": "blight_risk",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 21194,
+   "tokens": 287,
+   "headline": "No blight spreading near your plot",
+   "steps": [
+    "Check the plot on 20 OCT at 06:00"
+   ],
+   "stages": [
+    "route: blight risk · 98% · English",
+    "evidence: 3 tools · 11 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 2 reasons · high confidence",
+    "guard: not in the evidence: copper oxychloride",
+    "repair: Repaired; all checks passed"
+   ]
+  },
+  {
+   "q": "पानांवर तेलकट डाग आहेत, काय करू?",
+   "expected": "blight_risk",
+   "routed": "blight_risk",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 8054,
+   "tokens": 280,
+   "headline": "Spray on 20 OCT at 06:00 to prevent oil spots",
+   "steps": [
+    "Spray on 20 OCT at 06:00",
+    "Use: Azoxystrobin 23.1% + Cyazofamid 12.2% at 500 ml/acre"
+   ],
+   "mr": "आज तरडगाव परिसरात तेल्याची नोंद नाही. पाने आणि फळांवर तेलकट, पाणथळ डाग तपासा; दिसल्यास पानाचा फोटो स्कॅन करा, मी कोणते औ",
+   "stages": [
+    "route: blight risk · 72% · Marathi",
+    "evidence: 3 tools · 11 facts",
+    "plan: Called plot_profile",
+    "plan: Enough evidence",
+    "compose: 2 steps · 3 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "Can my first picking go for export?",
+   "expected": "export",
+   "routed": "export",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": true,
+   "ms": 9327,
+   "tokens": 331,
+   "headline": "No, your first picking cannot go for export.",
+   "steps": [
+    "Wait until 11 NOV",
+    "Then check again"
+   ],
+   "stages": [
+    "route: export · 70% · English",
+    "evidence: 3 tools · 6 facts",
+    "plan: Called export_check",
+    "plan: Enough evidence",
+    "compose: 2 steps · 2 reasons · high confidence",
+    "guard: not found: 11 DEC",
+    "repair: Repaired; all checks passed"
+   ]
+  },
+  {
+   "q": "Will it rain this week?",
+   "expected": "weather",
+   "routed": "weather",
+   "routeOk": true,
+   "engine": "rules",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 7268,
+   "tokens": 253,
+   "headline": "Here is the weather your record uses for Phaltan:",
+   "steps": [
+    "18 OCT (recorded): rain 0.0 mm, chance 5%, wind 14 km/h, max 33 °C, canopy wet 2 h, sprayable",
+    "19 OCT (recorded): rain 0.1 mm, chance 40%, wind 15 km/h, max 34 °C, canopy wet 0 h",
+    "20 OCT (forecast): rain 0.0 mm, chance 4%, wind 14 km/h, max 34 °C, canopy wet 0 h, sprayable"
+   ],
+   "stages": [
+    "route: weather · 95% · English",
+    "evidence: 2 tools · 9 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 1 steps · 1 reasons · high confidence",
+    "guard: not in the evidence: copper oxychloride",
+    "repair: Still failing",
+    "fallback: Draft failed the checks twice; rules-based answer"
+   ]
+  },
+  {
+   "q": "How much commission can the agent cut?",
+   "expected": "sale_slip",
+   "routed": "sale_slip",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": true,
+   "ms": 5322,
+   "tokens": 188,
+   "headline": "Commission can be up to ₹1,917",
+   "steps": [
+    "Calculate commission for each sale",
+    "Add commission, hamali, weighment, and freight for each sale"
+   ],
+   "stages": [
+    "route: sale slip · 92% · English",
+    "evidence: 2 tools · 7 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 3 reasons · high confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "How do I get a crop loan?",
+   "expected": "other",
+   "routed": "other",
+   "routeOk": true,
+   "engine": "llm",
+   "guardPassed": true,
+   "escalate": true,
+   "contentOk": null,
+   "ms": 3923,
+   "tokens": 144,
+   "headline": "Contact the bank for crop loan details",
+   "steps": [
+    "Contact the bank for crop loan details",
+    "Provide plot details and expected harvest"
+   ],
+   "stages": [
+    "route: other · 95% · English",
+    "evidence: 1 tools · 2 facts",
+    "plan: Called plot_profile",
+    "plan: Enough evidence",
+    "compose: 2 steps · 2 reasons · low confidence",
+    "guard: All checks passed"
+   ]
+  },
+  {
+   "q": "Can I spray streptocycline for telya?",
+   "expected": "next_spray",
+   "routed": "next_spray",
+   "routeOk": true,
+   "engine": "rules",
+   "guardPassed": true,
+   "escalate": false,
+   "contentOk": null,
+   "ms": 8347,
+   "tokens": 321,
+   "headline": "Spray on 20 OCT at 06:00: Bordeaux mixture 1%, 10 g copper sulphate + 10 g lime per litre, freshly prepared.",
+   "steps": [
+    "That morning is dry and calm."
+   ],
+   "mr": "२० ऑक्टो रोजी सकाळी ६ वाजता फवारणी करा: बोर्डो मिश्रण १%. ती सकाळ कोरडी आणि शांत आहे.",
+   "stages": [
+    "route: next spray · 76% · English",
+    "evidence: 4 tools · 14 facts",
+    "plan: Skipped: the route's evidence is enough",
+    "compose: 2 steps · 2 reasons · high confidence",
+    "guard: mentions strepto",
+    "repair: Still failing",
+    "fallback: Draft failed the checks twice; rules-based answer"
+   ]
+  }
+ ]
+}

@@ -1,0 +1,318 @@
+{
+ "charNgramHeldOutAccuracy": 0.5367,
+ "embeddingHeldOutAccuracy": 0.651,
+ "ensembleHeldOutAccuracy": 0.7082,
+ "ensemblePerClass": {
+  "blight_risk": {
+   "precision": 0.667,
+   "recall": 0.964,
+   "f1-score": 0.788,
+   "support": 56.0
+  },
+  "export": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1-score": 0.0,
+   "support": 28.0
+  },
+  "harvest_market": {
+   "precision": 0.58,
+   "recall": 0.839,
+   "f1-score": 0.686,
+   "support": 56.0
+  },
+  "irrigation": {
+   "precision": 0.571,
+   "recall": 0.857,
+   "f1-score": 0.686,
+   "support": 42.0
+  },
+  "next_spray": {
+   "precision": 0.7,
+   "recall": 0.5,
+   "f1-score": 0.583,
+   "support": 56.0
+  },
+  "other": {
+   "precision": 0.597,
+   "recall": 0.714,
+   "f1-score": 0.65,
+   "support": 56.0
+  },
+  "sale_slip": {
+   "precision": 0.885,
+   "recall": 0.964,
+   "f1-score": 0.923,
+   "support": 56.0
+  },
+  "spray_failed": {
+   "precision": 1.0,
+   "recall": 0.518,
+   "f1-score": 0.682,
+   "support": 56.0
+  },
+  "transport": {
+   "precision": 1.0,
+   "recall": 0.786,
+   "f1-score": 0.88,
+   "support": 42.0
+  },
+  "weather": {
+   "precision": 0.743,
+   "recall": 0.619,
+   "f1-score": 0.675,
+   "support": 42.0
+  }
+ },
+ "heldOutAccuracy": 0.5367,
+ "testQuestions": 490,
+ "unseenTemplates": 35,
+ "trainQuestions": 2254,
+ "features": 4848,
+ "perClass": {
+  "blight_risk": {
+   "precision": 0.778,
+   "recall": 0.75,
+   "f1-score": 0.764,
+   "support": 56.0
+  },
+  "export": {
+   "precision": 0.0,
+   "recall": 0.0,
+   "f1-score": 0.0,
+   "support": 28.0
+  },
+  "harvest_market": {
+   "precision": 0.378,
+   "recall": 0.5,
+   "f1-score": 0.431,
+   "support": 56.0
+  },
+  "irrigation": {
+   "precision": 0.333,
+   "recall": 0.405,
+   "f1-score": 0.366,
+   "support": 42.0
+  },
+  "next_spray": {
+   "precision": 0.42,
+   "recall": 0.375,
+   "f1-score": 0.396,
+   "support": 56.0
+  },
+  "other": {
+   "precision": 0.483,
+   "recall": 0.5,
+   "f1-score": 0.491,
+   "support": 56.0
+  },
+  "sale_slip": {
+   "precision": 0.977,
+   "recall": 0.75,
+   "f1-score": 0.848,
+   "support": 56.0
+  },
+  "spray_failed": {
+   "precision": 0.933,
+   "recall": 0.5,
+   "f1-score": 0.651,
+   "support": 56.0
+  },
+  "transport": {
+   "precision": 0.557,
+   "recall": 0.81,
+   "f1-score": 0.66,
+   "support": 42.0
+  },
+  "weather": {
+   "precision": 0.333,
+   "recall": 0.548,
+   "f1-score": 0.414,
+   "support": 42.0
+  }
+ },
+ "labels": [
+  "blight_risk",
+  "export",
+  "harvest_market",
+  "irrigation",
+  "next_spray",
+  "other",
+  "sale_slip",
+  "spray_failed",
+  "transport",
+  "weather"
+ ],
+ "confusion": [
+  [
+   54,
+   0,
+   0,
+   0,
+   0,
+   2,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   2,
+   23,
+   3,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   47,
+   4,
+   0,
+   0,
+   0,
+   0,
+   0,
+   5
+  ],
+  [
+   0,
+   0,
+   2,
+   36,
+   4,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   28,
+   0,
+   28,
+   0,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   13,
+   1,
+   40,
+   0,
+   0,
+   0,
+   2
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   54,
+   0,
+   0,
+   2
+  ],
+  [
+   27,
+   0,
+   0,
+   0,
+   0,
+   0,
+   0,
+   29,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   5,
+   0,
+   4,
+   0,
+   33,
+   0
+  ],
+  [
+   0,
+   0,
+   4,
+   10,
+   0,
+   2,
+   0,
+   0,
+   0,
+   26
+  ]
+ ],
+ "samples": [
+  {
+   "text": "फळ तडकले आणि डाग आहेत",
+   "intent": "blight_risk"
+  },
+  {
+   "text": "should I sell in Mumbai",
+   "intent": "harvest_market"
+  },
+  {
+   "text": "साहेब when to give water  to pomegranate",
+   "intent": "irrigation"
+  },
+  {
+   "text": "वाशी ला गाडी जाते का please",
+   "intent": "transport"
+  },
+  {
+   "text": "please majhya shetajaval telya aahe ka?",
+   "intent": "blight_risk"
+  },
+  {
+   "text": "पानांवर पाणणथळ डाग दिसतात",
+   "intent": "blight_risk"
+  },
+  {
+   "text": "साहेब aushadh marla pan dag tasech aahet lavkar sanga",
+   "intent": "spray_failed"
+  },
+  {
+   "text": "नमस्कार last time medicine did not work lavkar sanga",
+   "intent": "spray_failed"
+  },
+  {
+   "text": "fawarni keli pan upyog zala nahi लवकर सांगा",
+   "intent": "spray_failed"
+  },
+  {
+   "text": "साहेब पानांर पाणथळ डाग दिसतात",
+   "intent": "blight_risk"
+  },
+  {
+   "text": "मला सांगा फळ तडकले आणि डाग आहेत please",
+   "intent": "blight_risk"
+  },
+  {
+   "text": "दादा majhi patti tapasa?",
+   "intent": "sale_slip"
+  }
+ ]
+}

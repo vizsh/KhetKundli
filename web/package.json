@@ -14,6 +14,10 @@
     "test:slips": "tsx --tsconfig tsconfig.json scripts/slip-test.ts",
     "backtest": "tsx --tsconfig tsconfig.json scripts/backtest.ts",
     "build:terrain": "tsx --tsconfig tsconfig.json scripts/build-terrain.ts",
+    "train:router": "python ../ml/router/train.py",
+    "build:kb": "tsx scripts/build-kb.mts",
+    "test:router": "tsx --tsconfig tsconfig.json scripts/router-parity.mts",
+    "eval:agent": "tsx --tsconfig tsconfig.json scripts/agent-eval.mts",
     "report:figures": "node scripts/report/figures.mjs && python scripts/report/frames.py",
     "report": "node scripts/report/make-report.mjs && powershell -ExecutionPolicy Bypass -File scripts/report/finalize.ps1"
   },

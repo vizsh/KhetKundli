@@ -42,6 +42,7 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | Officer | **Survey sheet in relief**: 25 m contour lines from real elevation; low-lying cells hold dew two hours longer in the forecast | Copernicus DEM via Open-Meteo |
 | Everyone | **Forecast skill, measured**: a backtest over the recorded season scores the forecast against later reports, a distance-only baseline and an oracle | `npm run backtest`; results in [docs/MODELS.md](docs/MODELS.md) |
 | Officer | **Harvest Wave**, **Water Commons**, **Pooled Runs**, daily register, inbox, plot records | Simulated network |
+| Farmer, officer | **Reasoning agent, on this laptop**: a router trained here (Marathi and English), 12 tools over the plot record, weather and rules, Llama 3.1 8B planning and writing under a JSON schema, retrieval over our agronomy notes, and guards that block any dose, product, date or number not in the evidence; the officer drafts replies with it; an evening advisory pipeline batches warnings by village | Ollama on the laptop GPU; 14/14 routed, every answer guard-checked ([docs/AGENTS.md](docs/AGENTS.md)) |
 | Everyone | **Season time machine**: one clock for every screen; replay the season on either device | Two devices stay in step over Wi-Fi |
 
 ## How it fits together
@@ -109,6 +110,7 @@ npm run dev          # http://localhost:3000 (pitch), /farmer and /desk
 npm run smoke        # 21 end-to-end checks in Chrome (dev server running)
 npm run test:slips   # reads the three specimen slips (English and Marathi) in Node and checks the parser
 npm run backtest     # scores the spread forecast over the recorded season
+npm run eval:agent   # the reasoning agent end to end on the local model (Ollama with llama3.1:8b and nomic-embed-text)
 npm run report:figures && npm run report   # redraws the report's figures and rebuilds the Word report (Windows, needs Word for the contents and PDF)
 ```
 
@@ -121,6 +123,7 @@ For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Phaltan, pomegranate and the problems; the six problem statements and how one record answers them |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data model, the sync protocol, offline, performance and tests, with diagrams |
 | [docs/MODELS.md](docs/MODELS.md) | The engine's models: blight, spread forecast, water, harvest, markets, runs, Scan Lens, slip check, voice |
+| [docs/AGENTS.md](docs/AGENTS.md) | The reasoning backend: router training, tools, the local model, retrieval, guards, evaluation, API |
 | [docs/DATA.md](docs/DATA.md) | Every data source, schemas, live versus recorded versus simulated, privacy |
 | [docs/AGRONOMY.md](docs/AGRONOMY.md) | The spray table and its sources; why the antibiotic was removed; what still needs an agronomist |
 | [docs/EXPERIENCE.md](docs/EXPERIENCE.md) | The "Living Record" design world, surfaces, motion, Marathi, accessibility |

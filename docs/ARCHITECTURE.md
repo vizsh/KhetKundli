@@ -48,6 +48,10 @@ flowchart TB
   ST <--> SB <--> S1
 ```
 
+## The agent backend
+
+`/api/agent/ask`, `/api/agent/advisories` and `/api/agent/health` run the reasoning pipeline on the server: the season engine regenerated from the phone's overrides and the recorded weather, a router trained in `ml/router/`, tools over the record, Llama 3.1 8B and `nomic-embed-text` through a local Ollama server, and deterministic guards. Design, training and evaluation are in [AGENTS.md](AGENTS.md).
+
 ## Principles in the code
 
 - **One clock.** `t` is a float of season days (day 0 = 1 June 2026; the fraction is the hour). The date stamp, season track, kundli wheel, map, registers and forecast all read it. On load it rolls to the real date in IST.

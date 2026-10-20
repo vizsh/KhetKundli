@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
-import { Send } from "lucide-react";
+import { Cpu, Send } from "lucide-react";
 import { Stamp } from "@/components/record/stamp";
 import type { Escalation } from "@/lib/channel";
 import { fmtDay } from "@/lib/sim/calendar";
@@ -22,10 +22,22 @@ const QUICK_SLIP = [
   "I have sent this to the FPO and the APMC office; they will raise it at the next auction.",
 ];
 
+/** Ask the agent for a draft reply (audience: officer); the officer reads and edits it before sending. */
+async function draftReply(q: Escalation, overrides: unknown) {
+  const res = await fetch("/api/agent/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q.question, plot: q.plot, day: q.day, overrides, audience: "officer" }) });
+  const body = await res.text();
+  const data = body.split(String.fromCharCode(10, 10)).find((b) => b.startsWith("event: answer"))?.split("data: ")[1];
+  if (!data) throw new Error("no draft");
+  const a = JSON.parse(data) as { headline: string; steps: string[]; guard: { passed: boolean }; engine: string; ms: number };
+  return { text: [a.headline, ...a.steps].join(" "), note: `${a.engine === "llm" ? "Drafted by the local model" : "Drafted from the rules"} · ${a.guard.passed ? "checks passed" : "check before sending"} · ${(a.ms / 1000).toFixed(1)} s` };
+}
+
 function Item({ q }: { q: Escalation }) {
   const replyTo = useDesk((s) => s.replyTo);
   const selectPlot = useDesk((s) => s.selectPlot);
+  const overrides = useDesk((s) => s.overrides);
   const [text, setText] = useState("");
+  const [drafting, setDrafting] = useState<string | null>(null);
   return (
     <motion.li
       layout
@@ -57,6 +69,28 @@ function Item({ q }: { q: Escalation }) {
               </button>
             ))}
           </div>
+          {q.topic !== "slip" && (
+            <div className="mt-1.5 flex items-center gap-2">
+              <button
+                type="button"
+                disabled={drafting === "…"}
+                onClick={async () => {
+                  setDrafting("…");
+                  try {
+                    const d = await draftReply(q, overrides);
+                    setText(d.text);
+                    setDrafting(d.note);
+                  } catch {
+                    setDrafting("The local model is not reachable; use a quick reply");
+                  }
+                }}
+                className="inline-flex min-h-8 items-center gap-1.5 rounded-[2px] border-2 border-stamp px-2 text-[12px] font-semibold text-stamp disabled:opacity-50"
+              >
+                <Cpu className="size-3.5" /> {drafting === "…" ? "Drafting from the record…" : "Draft with the agent"}
+              </button>
+              {drafting && drafting !== "…" && <span className="typed text-[10.5px] text-ink-3">{drafting}</span>}
+            </div>
+          )}
           <form
             className="mt-2 flex gap-2"
             onSubmit={(e) => { e.preventDefault(); if (text.trim()) replyTo(q.id, text.trim()); }}

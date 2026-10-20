@@ -5,6 +5,7 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Mic, Send, UserRound, Volume2, X } from "lucide-react";
 import type { Escalation } from "@/lib/channel";
 import { Stamp } from "@/components/record/stamp";
+import { AgentAnswerCard } from "./agent-answer";
 import { answer, SAMPLE_QUESTIONS, type Answer } from "@/lib/voice";
 import { useDesk } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -254,6 +255,7 @@ export function AskSheet({ open, onClose, plot }: { open: boolean; onClose: () =
               {result.sources.length > 0 && (
                 <p className="mt-2 text-[12px] text-ink-3">From your record <span style={{ fontFamily: "var(--font-anek-deva)" }}>तुमच्या नोंदीतून</span>: {result.sources.join(" · ")}{result.sourcesMr ? <span className="block" style={{ fontFamily: "var(--font-anek-deva)" }}>{result.sourcesMr.join(" · ")}</span> : null}</p>
               )}
+              <AgentAnswerCard question={result.question} plot={plot} day={day} />
               {handed ? (
                 <HandoffSlip item={handed} />
               ) : (

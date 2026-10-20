@@ -31,3 +31,9 @@ Thumbs.db
 
 # decision-page payloads (ephemeral)
 .impeccable/questions/
+
+# Office lock files (a document open in Word)
+~$*
+
+# Python caches
+__pycache__/
