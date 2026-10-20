@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
-import { AnimatePresence, motion, useMotionValueEvent, useScroll } from "motion/react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
+import { ArrowDown, ChevronLeft, ChevronRight } from "lucide-react";
 import Counter from "@/components/Counter";
 import { SurveyMap } from "@/components/desk/survey-map";
 import { WaveChart } from "@/components/desk/wave-chart";
+import { AgentAnswerCard } from "@/components/farmer/agent-answer";
 import { Waterfall } from "@/components/farmer/passbook";
 import { SeasonWheel } from "@/components/farmer/season-wheel";
 import { Sheet } from "@/components/record/sheet";
 import { SourceStamp, Stamp } from "@/components/record/stamp";
-import { fmtDay, SEASON_DAYS, weekOf } from "@/lib/sim/calendar";
+import { dateOf, fmtDay, MONTHS, SEASON_DAYS, weekOf } from "@/lib/sim/calendar";
 import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, recentDetections, riskCounts, weekTotals } from "@/lib/sim/selectors";
 import type { PlotEvent } from "@/lib/sim/types";
@@ -18,30 +20,54 @@ import { answer } from "@/lib/voice";
 import { cn } from "@/lib/utils";
 import { PosterStamp } from "./poster-stamp";
 
-type Visual = "wheel" | "pest" | "voice" | "ripple" | "wave" | "runs" | "kept";
-type Chapter = { from: number; to: number; title: string; mr: string; body: string; visual: Visual; layer?: Layer };
+type Visual = "wheel" | "pest" | "voice" | "agent" | "ripple" | "wave" | "runs" | "kept";
+type Chapter = { from: number; to: number; short: string; title: string; mr: string; body: string; visual: Visual; layer?: Layer };
 
 const CHAPTERS: Chapter[] = [
-  { from: 0, to: 40, visual: "wheel", title: "Each plot's chart is drawn", mr: "प्रत्येक शेताची कुंडली मांडली जाते", body: "Mrig bahar is regulated across 192 plots. From now on every irrigation, spray, scan and picking is written into the plot's own record, in the ink of whoever wrote it." },
-  { from: 41, to: 110, visual: "pest", layer: "pest", title: "Blight moves through the taluka", mr: "तेल्या रोग तालुक्यात पसरतो", body: "Wet canopies and wind-driven rain carry bacterial blight between orchards; the season runs on Phaltan's recorded 2026 weather, hour by hour. No farmer sees it from one phone; the records together draw the front, and the wind shows where it goes next." },
-  { from: 111, to: 128, visual: "voice", title: "The record remembers a washed-off spray", mr: "पावसाने धुतलेली फवारणी नोंदीत राहते", body: "Sunita sprayed at three in the afternoon; that evening the real monsoon of 2026 dropped heavy rain on Phaltan. When she asks why it failed, the answer comes from her own record, in Marathi." },
-  { from: 129, to: 152, visual: "ripple", title: "One leaf, scanned offline, ripples outward", mr: "एका पानाचा स्कॅन, सगळीकडे परिणाम", body: "She scans a spotted leaf with no signal. When it syncs, her spray is set for the first dry morning, her neighbours are warned, the radar redraws, and her harvest grade improves." },
-  { from: 153, to: 180, visual: "wave", layer: "wave", title: "The harvest wave, and a glut in Pune", mr: "तोडणीची लाट आणि पुण्यातील आवक", body: "Crop stage on every plot forecasts when each village will pick. The wave shows the Pune glut coming, so a farmer can move her picking and her market before prices fall." },
-  { from: 181, to: 215, visual: "runs", layer: "runs", title: "Pooled runs and a sale slip she can check", mr: "सामायिक वाहतूक आणि तपासता येणारी पट्टी", body: "Pickings are known days ahead, so pooled runs leave village collection points at 05:15. She photographs the agent's slip; the phone reads it and checks every deduction against the agreed rate card." },
-  { from: 216, to: SEASON_DAYS - 1, visual: "kept", title: "What the village kept", mr: "गावाने काय वाचवले", body: "At the season's close the records add up: water left in the ground, crates moved together, blight caught early. The same records start next season's chart." },
+  { from: 0, to: 40, visual: "wheel", short: "The chart", title: "Each plot's chart is drawn", mr: "प्रत्येक शेताची कुंडली मांडली जाते", body: "Mrig bahar is regulated across 192 plots. From now on every irrigation, spray, scan and picking is written into the plot's own record, in the ink of whoever wrote it." },
+  { from: 41, to: 110, visual: "pest", layer: "pest", short: "Blight", title: "Blight moves through the taluka", mr: "तेल्या रोग तालुक्यात पसरतो", body: "Wet canopies and wind-driven rain carry bacterial blight between orchards; the season runs on Phaltan's recorded 2026 weather, hour by hour. No farmer sees it from one phone; the records together draw the front, and the wind shows where it goes next." },
+  { from: 111, to: 124, visual: "voice", short: "Washed off", title: "The record remembers a washed-off spray", mr: "पावसाने धुतलेली फवारणी नोंदीत राहते", body: "Sunita sprayed at three in the afternoon; that evening the real monsoon of 2026 dropped heavy rain on Phaltan. When she asks why it failed, the answer comes from her own record, in Marathi, at once and with no signal." },
+  { from: 125, to: 138, visual: "agent", short: "The agent", title: "A reasoning agent, on this laptop", mr: "या लॅपटॉपवरच विचार करणारा सहाय्यक", body: "With signal, the same question goes further. A router trained here reads her Marathi, tools pull the facts from her record, the weather and the spray table, and a local Llama model writes the answer. Every date, number and dose is checked against the evidence before she sees it." },
+  { from: 139, to: 152, visual: "ripple", short: "One leaf", title: "One leaf, scanned offline, ripples outward", mr: "एका पानाचा स्कॅन, सगळीकडे परिणाम", body: "She scans a spotted leaf with no signal. When it syncs, her spray is set for the first dry morning, her neighbours are warned, the radar redraws, and her harvest grade improves." },
+  { from: 153, to: 180, visual: "wave", layer: "wave", short: "The wave", title: "The harvest wave, and a glut in Pune", mr: "तोडणीची लाट आणि पुण्यातील आवक", body: "Crop stage on every plot forecasts when each village will pick. The wave shows the Pune glut coming, so a farmer can move her picking and her market before prices fall." },
+  { from: 181, to: 215, visual: "runs", layer: "runs", short: "Runs & slips", title: "Pooled runs and a sale slip she can check", mr: "सामायिक वाहतूक आणि तपासता येणारी पट्टी", body: "Pickings are known days ahead, so pooled runs leave village collection points at 05:15. She photographs the agent's slip; the phone reads it and checks every deduction against the agreed rate card." },
+  { from: 216, to: SEASON_DAYS - 1, visual: "kept", short: "Kept", title: "What the village kept", mr: "गावाने काय वाचवले", body: "At the season's close the records add up: water left in the ground, crates moved together, blight caught early. The same records start next season's chart." },
 ];
 
 const MR = { fontFamily: "var(--font-tiro-marathi), var(--font-anek-deva)" } as const;
 
-function Figure({ value, decimals = 0, unit, label, live }: { value: number; decimals?: number; unit?: string; label: string; live: boolean }) {
+/** Scales its content down (never up) so a visual always fits the stage: nothing is clipped at any screen size. */
+function FitBox({ children }: { children: React.ReactNode }) {
+  const outer = useRef<HTMLDivElement>(null);
+  const inner = useRef<HTMLDivElement>(null);
+  const [scale, setScale] = useState(1);
+  useLayoutEffect(() => {
+    const o = outer.current;
+    const i = inner.current;
+    if (!o || !i) return;
+    const fit = () => setScale(Math.min(1, o.clientHeight / Math.max(1, i.scrollHeight), o.clientWidth / Math.max(1, i.scrollWidth)));
+    const ro = new ResizeObserver(fit);
+    ro.observe(o);
+    ro.observe(i);
+    fit();
+    return () => ro.disconnect();
+  }, []);
+  return (
+    <div ref={outer} className="flex h-full w-full items-center justify-center overflow-hidden">
+      <div ref={inner} className="w-full shrink-0" style={{ transform: `scale(${scale})`, transformOrigin: "center center" }}>{children}</div>
+    </div>
+  );
+}
+
+function Figure({ value, decimals = 0, unit, label, live, recorded }: { value: number; decimals?: number; unit?: string; label: string; live: boolean; recorded?: boolean }) {
   return (
     <div className="mt-5 flex items-end gap-3 border-t-2 border-ink pt-3">
       <p className="flex items-baseline leading-[0.85]">
-        <Counter value={value} decimals={decimals} fontSize={64} fontWeight={700} intro={false} duration={0.5} bounce={0.1} motionBlur={false} style={{ fontStretch: "75%", letterSpacing: "-0.03em" }} />
-        {unit ? <span className="ml-1 text-[22px] font-semibold [font-stretch:80%]">{unit}</span> : null}
+        <Counter value={value} decimals={decimals} fontSize={58} fontWeight={700} intro={false} duration={0.5} bounce={0.1} motionBlur={false} style={{ fontStretch: "75%", letterSpacing: "-0.03em" }} />
+        {unit ? <span className="ml-1 text-[20px] font-semibold [font-stretch:80%]">{unit}</span> : null}
       </p>
-      <p className="flex-1 pb-1 text-[13.5px] leading-snug text-ink-2">{label}</p>
-      <div className="pb-1"><SourceStamp live={live} /></div>
+      <p className="flex-1 pb-1 text-[13px] leading-snug text-ink-2">{label}</p>
+      <div className="pb-1"><SourceStamp live={live} recorded={recorded} /></div>
     </div>
   );
 }
@@ -58,7 +84,21 @@ function VoiceVisual({ day }: { day: number }) {
         <p className="text-[18px] leading-[30px]" style={MR}>{a.mr}</p>
         <p className="typed text-[13.5px] leading-[30px]">{a.en}</p>
       </div>
-      <p className="mt-2 text-[12px] text-ink-3">From her record: {a.sources.join(" · ")}</p>
+      <p className="mt-2 text-[12px] text-ink-3">From her record: {a.sources.join(" · ")} · answered on the phone, no signal needed</p>
+    </Sheet>
+  );
+}
+
+/** The real agent, asked live on the laptop when the chapter opens. */
+function AgentVisual() {
+  const season = useDesk((s) => s.season);
+  return (
+    <Sheet className="px-5 py-5">
+      <p className="label-form text-ink-3">Sunita asks, by voice <span className="normal-case tracking-normal" style={MR}>सुनीता बोलून विचारते</span></p>
+      <p className="ballpoint mt-1 text-[22px] leading-snug">“पुढची फवारणी कधी करू?”</p>
+      <p className="ballpoint text-[16px] text-ballpoint/80">When should I spray next?</p>
+      <AgentAnswerCard question="पुढची फवारणी कधी करू?" plot={season.heroPlot} day={CHAPTERS[3].from + 7} />
+      <p className="mt-2 text-[12px] text-ink-3">Live: asked of the local model now. Without it, the rules-based answer appears instead.</p>
     </Sheet>
   );
 }
@@ -73,21 +113,21 @@ function RippleVisual({ day }: { day: number }) {
   }, [season, live, day]);
   return (
     <div className="slip-shadow">
-    <motion.div initial={{ rotate: -1.2, y: 10 }} animate={{ rotate: -0.6, y: 0 }} className="perforated bg-slip px-5 pb-5 pt-6">
-      <div className="flex items-start justify-between gap-3">
-        <p className="text-[19px] font-semibold leading-tight">{ripple.label}</p>
-        <Stamp tone="alert" size="sm" rotate={4}>Re-planned</Stamp>
-      </div>
-      <ol className="mt-3 space-y-2">
-        {ripple.items.map((it, i) => (
-          <motion.li key={it} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }} className="grid grid-cols-[1.2rem_1fr] gap-1">
-            <span className="typed text-alert">→</span>
-            <span className="typed text-[14px] leading-snug">{it}</span>
-          </motion.li>
-        ))}
-      </ol>
-      <p className="mt-3 text-[12px] text-ink-3">Computed live by the same engine the desk uses; the plot and scan are synthetic.</p>
-    </motion.div>
+      <motion.div initial={{ rotate: -1.2, y: 10 }} animate={{ rotate: -0.6, y: 0 }} className="perforated bg-slip px-5 pb-5 pt-6">
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[19px] font-semibold leading-tight">{ripple.label}</p>
+          <Stamp tone="alert" size="sm" rotate={4}>Re-planned</Stamp>
+        </div>
+        <ol className="mt-3 space-y-2">
+          {ripple.items.map((it, i) => (
+            <motion.li key={it} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 + i * 0.08 }} className="grid grid-cols-[1.2rem_1fr] gap-1">
+              <span className="typed text-alert">→</span>
+              <span className="typed text-[14px] leading-snug">{it}</span>
+            </motion.li>
+          ))}
+        </ol>
+        <p className="mt-3 text-[12px] text-ink-3">Computed live by the same engine the desk uses; the plot and scan are synthetic.</p>
+      </motion.div>
     </div>
   );
 }
@@ -147,11 +187,13 @@ function ChapterVisual({ chapter, day }: { chapter: Chapter; day: number }) {
   const season = useDesk((s) => s.season);
   switch (chapter.visual) {
     case "wheel":
-      return <Sheet className="mx-auto w-full max-w-[460px] p-3"><SeasonWheel plot={season.heroPlot} /></Sheet>;
+      return <Sheet className="mx-auto w-full max-w-[520px] p-3"><SeasonWheel plot={season.heroPlot} /></Sheet>;
     case "pest":
       return <Sheet className="overflow-hidden"><SurveyMap /></Sheet>;
     case "voice":
       return <VoiceVisual day={day} />;
+    case "agent":
+      return <AgentVisual />;
     case "ripple":
       return <RippleVisual day={day} />;
     case "wave":
@@ -166,13 +208,64 @@ function ChapterVisual({ chapter, day }: { chapter: Chapter; day: number }) {
 function chapterFigure(chapter: Chapter, day: number, season: ReturnType<typeof useDesk.getState>["season"]) {
   switch (chapter.visual) {
     case "wheel": return { value: season.plots.length, label: "plots on record, each with its own season chart", live: false };
-    case "pest": { const r = riskCounts(season, day); return { value: r[2] + r[3], label: `hexes on blight warning today; ${recentDetections(season, day)} scans reported in 14 days`, live: false }; }
-    case "voice": return { value: 14, unit: "mm", label: "of evening rain washed off her 3 pm spray", live: false };
+    case "pest": { const r = riskCounts(season, day); return { value: r[2] + r[3], label: `cells on blight warning today; ${recentDetections(season, day)} scans reported in 14 days`, live: false }; }
+    case "voice": return { value: 24, unit: "mm", label: "of recorded evening rain on 21 September washed off her 3 pm spray", live: false, recorded: true };
+    case "agent": return { value: 12, label: "tools over her record, the weather and the spray table; every date and dose checked", live: true };
     case "ripple": return { value: season.events.filter((e) => e.type === "advisory" && e.text.startsWith("Blight confirmed") && e.day <= day).length, label: "neighbour warnings sent so far this season", live: false };
     case "wave": return { value: weekTotals(season)[weekOf(day)] ?? 0, label: "crates expected across the taluka this week", live: false };
     case "runs": { const runs = season.runsByDay[day] ?? []; return { value: runs.length, label: `pooled runs leaving at 05:15 today, ${runs.reduce((a, r) => a + r.crates, 0).toLocaleString("en-IN")} crates`, live: false }; }
     case "kept": return { value: season.waterSavedByDay[day] / 1e6, decimals: 1, unit: "ML", label: "of groundwater kept in the ground by skipping irrigation before rain", live: false };
   }
+}
+
+/** Month boundaries inside the season, for the rail's ticks. */
+const MONTH_TICKS = (() => {
+  const out: { day: number; label: string }[] = [];
+  let last = -1;
+  for (let d = 0; d < SEASON_DAYS; d++) {
+    const { m } = dateOf(d);
+    if (m !== last) { out.push({ day: d, label: MONTHS[m] }); last = m; }
+  }
+  return out;
+})();
+
+const pct = (day: number) => `${(day / (SEASON_DAYS - 1)) * 100}%`;
+
+/** The season as a rail: months, the chapters as segments you can jump to, and today's mark. */
+function SeasonRail({ day, index, jump }: { day: number; index: number; jump: (i: number) => void }) {
+  return (
+    <div className="select-none">
+      <div className="relative hidden h-5 lg:block" aria-hidden>
+        {CHAPTERS.map((c, i) => (
+          <span key={c.short} className={cn("absolute top-0 -translate-x-1/2 whitespace-nowrap text-[11.5px] font-semibold transition-colors", i === index ? "text-board-ink" : "text-board-ink-2/70")} style={{ left: pct((c.from + c.to) / 2) }}>
+            {c.short}
+          </span>
+        ))}
+      </div>
+      <div className="relative h-7">
+        <div className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-board-ink/30" />
+        {CHAPTERS.map((c, i) => (
+          <button
+            key={c.short}
+            type="button"
+            onClick={() => jump(i)}
+            aria-label={`Chapter ${i + 1}: ${c.title}`}
+            aria-current={i === index ? "step" : undefined}
+            className="group absolute top-1/2 h-7 -translate-y-1/2"
+            style={{ left: pct(c.from), width: `calc(${pct(c.to - c.from)} - 4px)` }}
+          >
+            <span className={cn("absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 rounded-full transition-all", i < index ? "bg-board-ink/70" : i === index ? "h-2.5 bg-stamp" : "bg-board-deep group-hover:bg-board-ink/40")} />
+          </button>
+        ))}
+        <motion.span className="pointer-events-none absolute top-0 h-7 w-[3px] -translate-x-1/2 rounded-full bg-alert shadow-[0_0_0_2px_var(--color-board)]" style={{ left: pct(day) }} aria-hidden />
+      </div>
+      <div className="relative h-4" aria-hidden>
+        {MONTH_TICKS.map((m) => (
+          <span key={m.label + m.day} className="typed absolute top-0 text-[10.5px] text-board-ink-2" style={{ left: pct(m.day) }}>{m.label}</span>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 /** One season, one taluka: scrolling this section turns the shared season clock from June to January. */
@@ -182,6 +275,7 @@ export function SeasonStory() {
   const t = useDesk((s) => s.t);
   const setTime = useDesk((s) => s.setTime);
   const setLayer = useDesk((s) => s.setLayer);
+  const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start start", "end end"] });
   const day = Math.floor(t);
   const index = Math.max(0, CHAPTERS.findLastIndex((c) => day >= c.from));
@@ -192,51 +286,81 @@ export function SeasonStory() {
   useEffect(() => { setTime(Math.min(SEASON_DAYS - 1, scrollYProgress.get() * (SEASON_DAYS - 1)) + 0.23); }, [scrollYProgress, setTime]);
   useEffect(() => { if (chapter.layer) setLayer(chapter.layer); }, [chapter.layer, setLayer]);
 
+  /** Scroll to the start of a chapter: the clock follows the scroll, so this is the only control. */
+  const jump = (i: number) => {
+    const el = ref.current;
+    if (!el) return;
+    const c = CHAPTERS[Math.max(0, Math.min(CHAPTERS.length - 1, i))];
+    const range = el.offsetHeight - window.innerHeight;
+    window.scrollTo({ top: el.offsetTop + ((c.from + 2) / (SEASON_DAYS - 1)) * range, behavior: reduce ? "auto" : "smooth" });
+  };
+  const skip = () => {
+    const el = ref.current;
+    if (el) window.scrollTo({ top: el.offsetTop + el.offsetHeight, behavior: reduce ? "auto" : "smooth" });
+  };
+
+  // ← and → step through the chapters while the story fills the screen.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = ref.current;
+      if (!el || (e.key !== "ArrowRight" && e.key !== "ArrowLeft") || e.target instanceof HTMLInputElement) return;
+      const r = el.getBoundingClientRect();
+      if (r.top > 1 || r.bottom < window.innerHeight - 1) return;
+      e.preventDefault();
+      jump(index + (e.key === "ArrowRight" ? 1 : -1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
+
   return (
-    <section ref={ref} aria-label="One season of Phaltan taluka" style={{ height: `${CHAPTERS.length * 95 + 100}vh` }} className="relative">
-      <div className="sticky top-0 flex h-dvh flex-col px-3 pb-4 pt-3 sm:px-6 lg:px-10">
-        <div className="flex items-center justify-between gap-4 pb-3">
-          <p className="typed text-[12px] text-board-ink-2">
-            Chapter {index + 1} of {CHAPTERS.length} · {fmtDay(chapter.from)} to {fmtDay(chapter.to)}
-          </p>
-          <PosterStamp size={26} />
-        </div>
-        <div className="grid min-h-0 flex-1 grid-cols-1 gap-4 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:gap-8">
-          <AnimatePresence mode="wait" initial={false}>
-            <motion.div
-              key={`text-${index}`}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              transition={{ duration: 0.22, ease: "easeOut" }}
-              className="order-2 self-center lg:order-1"
-            >
-              <Sheet className="px-5 py-5 sm:px-7 sm:py-6">
-                <h2 className="text-[clamp(1.5rem,2.6vw,2.4rem)] font-bold leading-[1.05] [font-stretch:82%]">{chapter.title}</h2>
-                <p className="mt-1 text-[clamp(1.05rem,1.6vw,1.35rem)] leading-snug text-ink-2" style={MR}>{chapter.mr}</p>
-                <p className="mt-3 max-w-[56ch] text-[15px] leading-relaxed text-ink">{chapter.body}</p>
-                <Figure value={fig.value} decimals={"decimals" in fig ? fig.decimals : 0} unit={"unit" in fig ? fig.unit : undefined} label={fig.label} live={fig.live} />
-              </Sheet>
-            </motion.div>
-          </AnimatePresence>
-          <div className="order-1 min-h-0 self-center lg:order-2">
-            <AnimatePresence mode="wait" initial={false}>
-              <motion.div
-                key={`visual-${index}`}
-                initial={{ opacity: 0, y: 18, rotate: 0.6 }}
-                animate={{ opacity: 1, y: 0, rotate: 0 }}
-                exit={{ opacity: 0, y: -12 }}
-                transition={{ type: "spring", stiffness: 300, damping: 32 }}
-                className={cn("max-h-[48dvh] overflow-hidden lg:max-h-[78dvh]")}
-              >
-                <ChapterVisual chapter={chapter} day={day} />
-              </motion.div>
-            </AnimatePresence>
+    <section ref={ref} aria-label="One season of Phaltan taluka" style={{ height: `${CHAPTERS.length * 90 + 100}vh` }} className="relative">
+      <div className="sticky top-0 grid h-dvh grid-rows-[auto_minmax(0,1fr)_auto] gap-3 px-3 pb-3 pt-3 sm:px-6 lg:gap-4 lg:px-10 lg:pb-5">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <p className="typed flex items-baseline gap-1.5 text-board-ink">
+              <span className="text-[26px] font-bold leading-none">{String(index + 1).padStart(2, "0")}</span>
+              <span className="text-[13px] text-board-ink-2">/ {String(CHAPTERS.length).padStart(2, "0")}</span>
+            </p>
+            <div className="flex gap-1">
+              <button type="button" onClick={() => jump(index - 1)} disabled={index === 0} aria-label="Previous chapter" className="grid size-8 place-items-center rounded-full border-2 border-board-ink/60 text-board-ink disabled:opacity-30"><ChevronLeft className="size-4" /></button>
+              <button type="button" onClick={() => jump(index + 1)} disabled={index === CHAPTERS.length - 1} aria-label="Next chapter" className="grid size-8 place-items-center rounded-full border-2 border-board-ink/60 text-board-ink disabled:opacity-30"><ChevronRight className="size-4" /></button>
+            </div>
+            <p className="typed hidden text-[12px] text-board-ink-2 md:block">{fmtDay(chapter.from)} to {fmtDay(chapter.to)} · ← → to step</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button type="button" onClick={skip} className="typed hidden items-center gap-1 text-[12px] text-board-ink-2 underline-offset-2 hover:underline sm:inline-flex">skip the story <ArrowDown className="size-3.5" /></button>
+            <PosterStamp size={24} />
           </div>
         </div>
-        <div className="mt-3 h-1.5 rounded-full bg-board-deep" aria-hidden>
-          <motion.div className="h-full origin-left rounded-full bg-stamp" style={{ scaleX: scrollYProgress }} />
+
+        <div className="grid min-h-0 grid-rows-[minmax(0,1fr)_auto] gap-3 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:grid-rows-1 lg:gap-10">
+          <div className="order-2 max-h-[38dvh] min-h-0 overflow-y-auto lg:order-1 lg:max-h-none lg:self-center lg:overflow-visible">
+            {/* Keyed fade-in, no exit: an exit that waits can stall half-faded when the scroll moves fast. */}
+            <motion.div key={`text-${index}`} initial={reduce ? false : { opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: "easeOut" }}>
+                <Sheet className="px-5 py-5 sm:px-7 sm:py-6">
+                  <p className="typed text-[11.5px] uppercase tracking-[0.08em] text-stamp">Chapter {index + 1} · {chapter.short}</p>
+                  <h2 className="mt-1 text-[clamp(1.5rem,2.5vw,2.4rem)] font-bold leading-[1.05] [font-stretch:82%]">{chapter.title}</h2>
+                  <p className="mt-1 text-[clamp(1.05rem,1.5vw,1.3rem)] leading-snug text-ink-2" style={MR}>{chapter.mr}</p>
+                  <p className="mt-3 max-w-[56ch] text-[15px] leading-relaxed text-ink">{chapter.body}</p>
+                  <Figure value={fig.value} decimals={"decimals" in fig ? fig.decimals : 0} unit={"unit" in fig ? fig.unit : undefined} label={fig.label} live={fig.live} recorded={"recorded" in fig ? fig.recorded : false} />
+                </Sheet>
+            </motion.div>
+          </div>
+          <div className="order-1 min-h-0 lg:order-2">
+            <motion.div
+              key={`visual-${index}`}
+              initial={reduce ? false : { opacity: 0, y: 16, rotate: 0.5 }}
+              animate={{ opacity: 1, y: 0, rotate: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 32 }}
+              className="h-full"
+            >
+              <FitBox><ChapterVisual chapter={chapter} day={day} /></FitBox>
+            </motion.div>
+          </div>
         </div>
+
+        <SeasonRail day={day} index={index} jump={jump} />
       </div>
     </section>
   );

@@ -48,6 +48,18 @@ flowchart TB
   ST <--> SB <--> S1
 ```
 
+## The local backend
+
+The prototype runs on one laptop, so its backend is local and restart-proof rather than hosted:
+
+| Piece | What it does | Code |
+| --- | --- | --- |
+| **SQLite database** | One file, `web/data/khetkundli.db`, through Node's built-in `node:sqlite`. Tables: `events` (every durable synced message, keyed by its clock stamp, so a retry is recognised), `kv` (the relay's current overrides and inbox), `messages` (advisories with sent, delivered and read times), `agent_log` (every answer with its route, engine, guard result and timing), `snapshots` (the last good weather, wind and ensemble answers) | `src/lib/server/db.ts` |
+| **Relay** | Accepts messages from devices, writes them to the database, fans them out over server-sent events; on start it reloads its state from the database | `src/lib/server/relay.ts`, `app/api/sync` |
+| **Messages** | `POST /api/messages` sends an approved batch; the demo phone sends its own receipts; a gateway simulator marks the others after a few seconds and says so | `app/api/messages` |
+| **Offline mode** | `KHETKUNDLI_OFFLINE=1` serves the saved weather, wind and ensemble; any network failure falls back to them too | `src/lib/server/snapshot.ts` |
+| **Start-up** | `instrumentation.ts` warms the local models; `npm run demo` checks everything, starts the app on the Wi-Fi (optionally HTTPS with a self-signed certificate) and prints a QR code; `/status` shows it all | `src/instrumentation.ts`, `scripts/demo.mjs`, `scripts/cert.mjs`, `app/status` |
+
 ## The agent backend
 
 `/api/agent/ask`, `/api/agent/advisories` and `/api/agent/health` run the reasoning pipeline on the server: the season engine regenerated from the phone's overrides and the recorded weather, a router trained in `ml/router/`, tools over the record, Llama 3.1 8B and `nomic-embed-text` through a local Ollama server, and deterministic guards. Design, training and evaluation are in [AGENTS.md](AGENTS.md).
@@ -154,7 +166,9 @@ Two transports carry one message stream: `BroadcastChannel("khetkundli")` betwee
 | `time` | The clock moves (throttled to 250 ms on the network) | Receivers follow the clock |
 | `escalation` | A question the record cannot answer, or a slip dispute | Lands in the desk inbox |
 | `reply` | The officer answers | Lands in the farmer's Ask sheet |
-| `reset` | Reset on the desk | Clears overrides and inbox everywhere, including the relay |
+| `reset` | Reset on the desk | Clears overrides, inbox and messages everywhere, including the relay and its database |
+| `message` | The officer approves an advisory batch (or warns downwind) | The server sends it to every screen; the farmer's phone shows a banner and adds it to Messages |
+| `receipt` | A phone receives or opens a message; or the gateway simulator, for farmers with no phone in the room (`simulated: true`) | The desk's advisory console shows *delivered* and *read* |
 
 ```mermaid
 sequenceDiagram
@@ -216,7 +230,7 @@ The service worker (production builds) precaches the phone page, the leaf model,
 | Command | What it proves |
 | --- | --- |
 | `npm run backtest` | Spread-forecast skill over the recorded season: ROC AUC, precision and recall of the warn cells, against distance-only and oracle baselines |
-| `npm run smoke` | 21 checks in real Chrome, including the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
+| `npm run smoke` | 22 checks in real Chrome, including the pomegranate model finding blight on a held-out photo, the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
 | `npm run test:slips` | The three specimen slips (two English, one Marathi) read in Node; gross, net, charge count and the amount above the card |
 | `npx tsx --tsconfig tsconfig.json scripts/simtest.ts` | Engine statistics and causal isolation |
 | `npx tsc --noEmit`, `npx eslint src`, `npm run build` | Types, lint, production build |

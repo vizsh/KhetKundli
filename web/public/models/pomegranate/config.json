@@ -1,0 +1,30 @@
+{
+ "architecture": "MobileNetV3-Large, ImageNet weights, fine-tuned",
+ "id2label": {
+  "0": "Pomegranate Alternaria fruit spot",
+  "1": "Pomegranate anthracnose",
+  "2": "Pomegranate bacterial blight",
+  "3": "Pomegranate Cercospora fruit spot",
+  "4": "Healthy pomegranate fruit"
+ },
+ "mr": {
+  "Pomegranate Alternaria fruit spot": "डाळिंब: अल्टरनेरिया फळ ठिपके",
+  "Pomegranate anthracnose": "डाळिंब: करपा (अँथ्रॅकनोज)",
+  "Pomegranate bacterial blight": "डाळिंब: तेल्या (जिवाणूजन्य करपा)",
+  "Pomegranate Cercospora fruit spot": "डाळिंब: सर्कोस्पोरा फळ ठिपके",
+  "Healthy pomegranate fruit": "निरोगी डाळिंब फळ"
+ },
+ "size": 224,
+ "resize": 256,
+ "mean": [
+  0.5,
+  0.5,
+  0.5
+ ],
+ "std": [
+  0.5,
+  0.5,
+  0.5
+ ],
+ "trainedOn": "Pomegranate Fruit Diseases Dataset (Pakruddin and Hemavathy, Data in Brief 2024; doi:10.17632/b6s2rkpmvh.1; CC BY 4.0)"
+}

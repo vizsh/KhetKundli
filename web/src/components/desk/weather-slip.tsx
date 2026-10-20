@@ -1,11 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { CloudRain, CloudSun, Sun } from "lucide-react";
 import { SourceStamp } from "@/components/record/stamp";
 import { dateOf, MONTHS } from "@/lib/sim/calendar";
 import { useDesk } from "@/lib/store";
 import type { LiveDaily, LiveHourly } from "@/lib/sim/weather";
+
+/** When the forecast came from the saved snapshot (offline mode), the time it was saved. */
+let snapshotAt: string | null = null;
+const listeners = new Set<() => void>();
+const subscribe = (fn: () => void) => { listeners.add(fn); return () => listeners.delete(fn); };
+export const useSnapshotAt = () => useSyncExternalStore(subscribe, () => snapshotAt, () => null);
 
 /** Fetches the live Open-Meteo forecast once and splices it into the season. */
 export function LiveWeatherLoader() {
@@ -16,8 +22,11 @@ export function LiveWeatherLoader() {
     let cancelled = false;
     fetch("/api/weather")
       .then((r) => r.json())
-      .then((j: { status: string; days: LiveDaily[]; hours?: LiveHourly[] }) => {
-        if (!cancelled) setLive(j.days ?? [], j.hours ?? [], j.status === "live" && j.days?.length ? "live" : "unavailable");
+      .then((j: { status: string; days: LiveDaily[]; hours?: LiveHourly[]; snapshotAt?: string }) => {
+        if (cancelled) return;
+        snapshotAt = j.snapshotAt ?? null;
+        listeners.forEach((fn) => fn());
+        setLive(j.days ?? [], j.hours ?? [], j.status === "live" && j.days?.length ? "live" : "unavailable");
       })
       .catch(() => !cancelled && setLive([], [], "unavailable"));
     return () => { cancelled = true; };
@@ -29,6 +38,7 @@ export function WeatherSlip() {
   const season = useDesk((s) => s.season);
   const t = useDesk((s) => s.t);
   const status = useDesk((s) => s.liveStatus);
+  const saved = useSnapshotAt();
   const day = Math.floor(t);
   const days = season.weather.slice(day, day + 4);
   const live = days[0]?.live === true && !days[0]?.observed;
@@ -37,7 +47,8 @@ export function WeatherSlip() {
     <div className="flex items-center gap-3 rounded-[2px] bg-paper px-3 py-1.5 shadow-[var(--shadow-sheet)]">
       <div className="flex flex-col items-start gap-1">
         <span className="label-form text-ink-2">Phaltan weather</span>
-        <SourceStamp live={live} recorded={recorded} label={live ? "Open-Meteo forecast" : recorded ? "Recorded weather, Open-Meteo archive" : status === "loading" ? "Loading live forecast" : "Synthetic season weather"} />
+        <SourceStamp live={live} recorded={recorded} label={live ? (saved ? `Open-Meteo forecast saved ${new Date(saved).toLocaleString("en-IN", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", hour12: false })} (offline mode)` : "Open-Meteo forecast") : recorded ? "Recorded weather, Open-Meteo archive" : status === "loading" ? "Loading live forecast" : "Synthetic season weather"} />
+        {saved && <span className="typed text-[10px] leading-none text-alert">saved forecast · offline</span>}
       </div>
       <ol className="flex gap-3">
         {days.map((w, i) => {

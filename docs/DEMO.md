@@ -6,11 +6,11 @@ Seven minutes. The thread is Sunita's plot, but every step shows something only 
 
 | Option | How | When to use |
 | --- | --- | --- |
-| **Two devices** (best) | Laptop runs `npm run dev -- -H 0.0.0.0` (or `npm run build && npm start`); laptop opens `/desk`; a phone on the same Wi-Fi opens `http://<laptop-ip>:3000/farmer` | Venue Wi-Fi allows device-to-device traffic |
+| **Two devices** (best) | `npm run demo -- --https` on the laptop; it opens `/desk` and prints a QR code; scan it with a phone on the same Wi-Fi and accept the certificate warning once | Venue Wi-Fi allows device-to-device traffic |
 | **One laptop, two windows** | Open `/desk`, then *Open Sunita's phone* in the desk's demo slip (a narrow popup) | Wi-Fi isolates devices |
-| **Offline** | `npm run build && npm start`; open `/farmer` once online and read one slip (to cache the OCR core); then airplane mode | No internet at all: weather falls back to simulated, and every stamp says so |
+| **Offline** | Run `npm run demo` once with the network (it saves the forecast); at the venue run `npm run demo -- --offline` | No internet at all: the saved forecast is served and the desk says *saved forecast · offline*; the agent runs on the laptop; Chrome's voice input needs the internet, so type questions |
 
-Before going on stage: press **Reset** on the desk (clears every screen and the relay), check the weather slip says **Live**, and check the Pest Radar's leaf-wet strip says *recorded to* yesterday.
+Before going on stage: open `/status` (models warm, database, saved forecast, screens connected), press **Reset** on the desk (clears every screen, the relay and the messages), check the weather slip says **Live** (or *saved forecast* offline), and check the Pest Radar's leaf-wet strip says *recorded to* yesterday.
 
 ## Script
 
@@ -23,6 +23,7 @@ Before going on stage: press **Reset** on the desk (clears every screen and the 
 | 2:20 | Desk | Read the ripple | "Her spray is set for the first dry morning, neighbours are warned, the radar redraws, and her harvest grade rises." |
 | 2:50 | Desk | *Rain forecast in 18 h* → press play on the 72-hour strip | "If a storm comes, the wind carries blight from the reported cells: watch the plume grow, hour by hour." |
 | 3:30 | Desk | *Warn* | "One tap: an advisory to every plot in the plume, on the app or by SMS, and the season re-plans." |
+| 3:40 | Desk → phone | *Advisories* tab → *One village* → Taradgaon → *Prepare* → *Approve and send*; the phone shows the banner; open it | "The officer reads exactly what goes out, in Marathi, and approves it. Sunita's phone has it now: delivered, and read when she opens it. The receipts are real." |
 | 3:45 | Desk | *Storm brush* → drag from south-west of Adarki to the north-east | "Or ask what if: draw a storm and watch the gust front carry blight from the warning cell. The ensemble line says all 51 forecast runs are dry this week; this is the what-if." |
 | 4:00 | Desk | *Clear storm*; click the season track at 19 September; play the strip | "The same forecast on the real monsoon. Warning the plume books 52 preventive sprays and cuts new infections from 14 to 11." |
 | 4:50 | Desk | *Harvest Wave*, hover the Pune glut week | "Crop stage on every plot is the harvest forecast, and the harvest forecast is the transport plan." |

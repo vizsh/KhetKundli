@@ -1,0 +1,165 @@
+{
+ "testAccuracy": 0.9974,
+ "macroF1": 0.9969,
+ "testImages": 765,
+ "trainImages": 3569,
+ "valImages": 765,
+ "perClass": {
+  "Pomegranate Alternaria fruit spot": {
+   "precision": 0.993,
+   "recall": 1.0,
+   "f1": 0.996,
+   "support": 133
+  },
+  "Pomegranate anthracnose": {
+   "precision": 1.0,
+   "recall": 0.994,
+   "f1": 0.997,
+   "support": 175
+  },
+  "Pomegranate bacterial blight": {
+   "precision": 1.0,
+   "recall": 0.993,
+   "f1": 0.997,
+   "support": 145
+  },
+  "Pomegranate Cercospora fruit spot": {
+   "precision": 0.989,
+   "recall": 1.0,
+   "f1": 0.995,
+   "support": 94
+  },
+  "Healthy pomegranate fruit": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "f1": 1.0,
+   "support": 218
+  }
+ },
+ "labels": [
+  "Pomegranate Alternaria fruit spot",
+  "Pomegranate anthracnose",
+  "Pomegranate bacterial blight",
+  "Pomegranate Cercospora fruit spot",
+  "Healthy pomegranate fruit"
+ ],
+ "confusion": [
+  [
+   133,
+   0,
+   0,
+   0,
+   0
+  ],
+  [
+   0,
+   174,
+   0,
+   1,
+   0
+  ],
+  [
+   1,
+   0,
+   144,
+   0,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   94,
+   0
+  ],
+  [
+   0,
+   0,
+   0,
+   0,
+   218
+  ]
+ ],
+ "history": [
+  {
+   "epoch": 1,
+   "loss": 0.9836,
+   "valAccuracy": 0.9098,
+   "seconds": 92.4
+  },
+  {
+   "epoch": 2,
+   "loss": 0.4581,
+   "valAccuracy": 0.9373,
+   "seconds": 20.8
+  },
+  {
+   "epoch": 3,
+   "loss": 0.4303,
+   "valAccuracy": 0.9922,
+   "seconds": 19.8
+  },
+  {
+   "epoch": 4,
+   "loss": 0.4225,
+   "valAccuracy": 0.9843,
+   "seconds": 19.6
+  },
+  {
+   "epoch": 5,
+   "loss": 0.4149,
+   "valAccuracy": 0.9895,
+   "seconds": 19.5
+  },
+  {
+   "epoch": 6,
+   "loss": 0.4111,
+   "valAccuracy": 0.9935,
+   "seconds": 20.0
+  },
+  {
+   "epoch": 7,
+   "loss": 0.4029,
+   "valAccuracy": 0.9948,
+   "seconds": 19.8
+  },
+  {
+   "epoch": 8,
+   "loss": 0.4064,
+   "valAccuracy": 0.9974,
+   "seconds": 19.4
+  },
+  {
+   "epoch": 9,
+   "loss": 0.398,
+   "valAccuracy": 0.9948,
+   "seconds": 19.4
+  },
+  {
+   "epoch": 10,
+   "loss": 0.3966,
+   "valAccuracy": 0.9948,
+   "seconds": 19.4
+  },
+  {
+   "epoch": 11,
+   "loss": 0.3948,
+   "valAccuracy": 0.9961,
+   "seconds": 19.6
+  },
+  {
+   "epoch": 12,
+   "loss": 0.3942,
+   "valAccuracy": 0.9961,
+   "seconds": 19.6
+  }
+ ],
+ "onnxParityMaxDiff": 1.430511474609375e-06,
+ "device": "NVIDIA GeForce RTX 4060 Laptop GPU",
+ "trainedAt": "2026-10-20",
+ "caveats": [
+  "Fruit photos only: leaves are not in this dataset.",
+  "Random stratified split of one dataset: photos of the same fruit or orchard may sit on both sides, so this accuracy is likely higher than on new orchards.",
+  "Not yet tested on photos from Phaltan."
+ ]
+}

@@ -1,5 +1,6 @@
 import { runAgent, type AgentStep, type Audience } from "@/lib/agent/agent";
 import { seasonFor } from "@/lib/agent/season-server";
+import { logAnswer } from "@/lib/server/agent-log";
 import { clampDay } from "@/lib/sim/calendar";
 import type { Overrides } from "@/lib/sim/types";
 
@@ -26,7 +27,9 @@ export async function POST(req: Request) {
       const send = (event: string, data: unknown) => ctrl.enqueue(enc.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`));
       try {
         const answer = await runAgent({ question, season, plot, day, audience, useLlm: body.useLlm }, (s: AgentStep) => send("step", s));
-        send("answer", answer);
+        let logId: number | undefined;
+        try { logId = logAnswer(answer, plot, day); } catch { /* logging never blocks an answer */ }
+        send("answer", { ...answer, logId });
       } catch (err) {
         send("error", { message: String(err) });
       } finally {

@@ -1,12 +1,14 @@
 "use client";
 
+import { SPRAYS } from "@/lib/sim/rules";
+
 export type Ranked = { label: string; p: number };
 export type ScanEvent =
-  | { type: "ready"; ms: number; classes: number }
+  | { type: "ready"; model?: string; ms: number; classes: number }
   | { type: "result"; top: Ranked[]; raw: Ranked[]; cropShare: number; ms: number }
   | { type: "progress"; done: number }
   | { type: "heat"; heat: number[]; grid: number; ms: number }
-  | { type: "error"; message: string };
+  | { type: "error"; model?: string; message: string };
 
 const SIZE = 224;
 let worker: Worker | null = null;
@@ -38,7 +40,7 @@ export function preprocess(source: CanvasImageSource, sw: number, sh: number) {
 export type ScanCrop = "pomegranate" | "tomato" | "capsicum";
 
 export const CROPS: { id: ScanCrop; en: string; mr: string; live: boolean }[] = [
-  { id: "pomegranate", en: "Pomegranate", mr: "डाळिंब", live: false },
+  { id: "pomegranate", en: "Pomegranate", mr: "डाळिंब", live: true },
   { id: "tomato", en: "Tomato", mr: "टोमॅटो", live: true },
   { id: "capsicum", en: "Capsicum", mr: "ढोबळी मिरची", live: true },
 ];
@@ -52,6 +54,10 @@ export type Advice = { en: string; mr: string; tone: "alert" | "act" | "calm" };
  * the product dose comes from the label and the local agriculture assistant, never from this app.
  */
 export function adviceFor(label: string): Advice {
+  // Pomegranate: blight advice comes from the reviewed spray table; the table does not cover the fungal spots yet.
+  if (/Pomegranate bacterial blight/.test(label)) return { tone: "alert", en: `Bacterial blight (telya). Spray ${SPRAYS.curative.product}, ${SPRAYS.curative.dose}, in the first dry, calm morning; remove and destroy spotted fruit.`, mr: `तेल्या. पहिल्या कोरड्या, शांत सकाळी ${SPRAYS.curative.mr} फवारा; डाग असलेली फळे काढून नष्ट करा.` };
+  if (/Pomegranate (anthracnose|Alternaria|Cercospora)/.test(label)) return { tone: "act", en: "A fungal fruit spot, not blight. Remove spotted fruit and keep the canopy open. The app's spray table covers blight only, so ask the extension officer before spraying for this.", mr: "हा बुरशीजन्य फळ ठिपका आहे, तेल्या नाही. डाग असलेली फळे काढा. ॲपमधील फवारणी तक्ता फक्त तेल्यासाठी आहे; फवारणीपूर्वी कृषी सहाय्यकांना विचारा." };
+  if (/Healthy pomegranate/.test(label)) return { tone: "calm", en: "The fruit looks healthy. Scan again if spots appear.", mr: "फळ निरोगी दिसते. डाग दिसल्यास पुन्हा स्कॅन करा." };
   if (/Healthy/.test(label)) return { tone: "calm", en: "Looks healthy. Scan again if spots appear.", mr: "पान निरोगी दिसते. डाग दिसल्यास पुन्हा स्कॅन करा." };
   if (/Bacterial Spot/.test(label)) return { tone: "alert", en: "Bacterial spot. Remove badly spotted leaves; spray a copper-based bactericide at the label dose in a dry morning window.", mr: "जिवाणूजन्य ठिपके. जास्त डाग असलेली पाने काढा; कोरड्या सकाळी तांबेयुक्त जिवाणूनाशक लेबलवरील प्रमाणात फवारा." };
   if (/Early Blight|Late Blight|Septoria|Target Spot|Leaf Mold/.test(label)) return { tone: "alert", en: "Fungal leaf disease. Remove infected lower leaves, avoid wetting the foliage, and use a recommended fungicide at the label dose.", mr: "बुरशीजन्य पानांचा रोग. खालची रोगट पाने काढा, पानांवर पाणी पडू देऊ नका आणि शिफारस केलेले बुरशीनाशक लेबलवरील प्रमाणात वापरा." };
@@ -68,6 +74,10 @@ export type Sample = { file: string; crop: ScanCrop; label: string; credit: stri
 
 const MR_NAMES: [RegExp, string][] = [
   [/Pomegranate bacterial blight/, "डाळिंब: तेल्या (जिवाणूजन्य करपा)"],
+  [/Pomegranate anthracnose/, "डाळिंब: करपा (अँथ्रॅकनोज)"],
+  [/Pomegranate Alternaria/, "डाळिंब: अल्टरनेरिया फळ ठिपके"],
+  [/Pomegranate Cercospora/, "डाळिंब: सर्कोस्पोरा फळ ठिपके"],
+  [/Healthy pomegranate/, "निरोगी डाळिंब फळ"],
   [/Healthy Tomato/, "निरोगी टोमॅटो"],
   [/Healthy Bell Pepper/, "निरोगी ढोबळी मिरची"],
   [/Bacterial Spot/, "जिवाणूजन्य ठिपके"],

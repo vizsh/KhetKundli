@@ -70,12 +70,22 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
   const [quality, setQuality] = useState<PhotoQuality | null>(null);
   const [liveQuality, setLiveQuality] = useState<PhotoQuality | null>(null);
   const [samples, setSamples] = useState<Sample[]>([]);
+  /** The pomegranate model trained on this laptop (ml/scanlens), with its measured test accuracy; null until checked. */
+  const [pom, setPom] = useState<{ accuracy: number; testImages: number } | null | false>(null);
   const video = useRef<HTMLVideoElement>(null);
   const file = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (!open) return;
     fetch("/samples/samples.json").then((r) => r.json()).then(setSamples).catch(() => setSamples([]));
+    // Load the pomegranate model only where it is installed (npm run train:pomegranate), so its absence is not an error.
+    fetch("/models/pomegranate/metrics.json")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((m) => {
+        setPom(m ? { accuracy: m.testAccuracy, testImages: m.testImages } : false);
+        if (m) scanWorker().postMessage({ type: "load", model: "pomegranate" });
+      })
+      .catch(() => setPom(false));
     const w = scanWorker();
     const onMsg = (e: MessageEvent<ScanEvent>) => {
       const m = e.data;
@@ -86,7 +96,7 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
       if (m.type === "heat") setResult((r) => (r ? { ...r, heat: m.heat, grid: m.grid, progress: 1 } : r));
     };
     w.addEventListener("message", onMsg);
-    w.postMessage({ type: "load" });
+    w.postMessage({ type: "load", model: "plant" });
     return () => w.removeEventListener("message", onMsg);
   }, [open]);
 
@@ -117,6 +127,11 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
     setQuality(photoQuality(source, w, h));
     const { pixels, preview } = preprocess(source, w, h);
     setSaved(false);
+    if (crop === "pomegranate" && pom) {
+      setResult({ crop, preview, simulated: false, top: [], advice: adviceFor(""), progress: 0 });
+      scanWorker().postMessage({ type: "classify", pixels, model: "pomegranate" }, [pixels.buffer]);
+      return;
+    }
     if (crop === "pomegranate") {
       setResult({
         crop,
@@ -128,7 +143,7 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
       return;
     }
     setResult({ crop, preview, simulated: false, top: [], advice: adviceFor(""), progress: 0 });
-    scanWorker().postMessage({ type: "classify", pixels, crop: MATCH[crop].source }, [pixels.buffer]);
+    scanWorker().postMessage({ type: "classify", pixels, model: "plant", crop: MATCH[crop as Exclude<ScanCrop, "pomegranate">].source }, [pixels.buffer]);
   };
 
   const startCamera = async () => {
@@ -210,7 +225,9 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
             </div>
             <p className="mt-2 text-[12px] leading-snug text-ink-3">
               {crop === "pomegranate"
-                ? "Pomegranate model is still being trained on Phaltan photos; this result is a scripted demonstration."
+                ? pom
+                  ? `Photograph the fruit. MobileNetV3 trained on this laptop on 5,099 pomegranate fruit photos (CC BY 4.0): ${(pom.accuracy * 100).toFixed(1)}% on ${pom.testImages} test photos it never saw (one dataset, so likely optimistic), but not yet tested in Phaltan orchards.`
+                  : "Pomegranate model not installed here; this result is a scripted demonstration."
                 : "Runs a MobileNetV2 model (PlantVillage, 38 classes) on this phone with ONNX Runtime. 95% on lab photos, but often wrong on field photos until it is retrained on local ones."}
             </p>
           </div>
@@ -277,7 +294,7 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
               />
             </div>
 
-            {crop !== "pomegranate" && samples.length > 0 && !camera && (
+            {samples.some((s) => s.crop === crop) && !camera && (
               <div className="mt-3">
                 <p className="label-form text-ink-3">No leaf to hand? Try a sample photo <span className="normal-case tracking-normal" style={{ fontFamily: "var(--font-anek-deva)" }}>नमुना फोटो</span></p>
                 <div className="mt-1.5 flex gap-2">
@@ -330,12 +347,12 @@ export function ScanLens({ open, onClose }: { open: boolean; onClose: () => void
                   ))}
                 </ol>
               )}
-              {result.heat && <p className="mt-2 text-[12px] text-ink-3">Red shows where hiding part of the leaf changed the model&apos;s answer most. <span style={{ fontFamily: "var(--font-anek-deva)" }}>लाल भाग: मॉडेलने जिथे पाहिले.</span></p>}
+              {result.heat && <p className="mt-2 text-[12px] text-ink-3">Red shows where hiding part of the photo changed the model&apos;s answer most. <span style={{ fontFamily: "var(--font-anek-deva)" }}>लाल भाग: मॉडेलने जिथे पाहिले.</span></p>}
               <div className="perforated mt-3 bg-slip px-3.5 pb-3 pt-4">
                 <p className="text-[15px] font-semibold leading-snug">{result.advice.en}</p>
                 <p className="mt-1 text-[15px] leading-snug" style={{ fontFamily: "var(--font-anek-deva)" }}>{result.advice.mr}</p>
               </div>
-              {result.simulated && (
+              {(result.simulated || (result.crop === "pomegranate" && /bacterial blight/.test(top.label) && top.p >= 0.6)) && (
                 <button
                   type="button"
                   disabled={saved}

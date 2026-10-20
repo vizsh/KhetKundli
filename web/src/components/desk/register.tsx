@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
+import { Advisories } from "./advisories";
 import { Inbox } from "./inbox";
 import { X } from "lucide-react";
 import { Ink, InkKey, Sheet } from "@/components/record/sheet";
@@ -71,7 +72,7 @@ export function Register({ className }: { className?: string }) {
   const day = Math.floor(t);
   const lines = registerFor(season, day);
   const open = inbox.filter((q) => !q.reply).length;
-  const [tab, setTab] = useState<"register" | "inbox">("register");
+  const [tab, setTab] = useState<"register" | "inbox" | "advisories">("register");
   // A new question from a farmer brings the inbox forward.
   const seen = useRef(inbox.length);
   useEffect(() => {
@@ -79,7 +80,7 @@ export function Register({ className }: { className?: string }) {
     seen.current = inbox.length;
   }, [inbox.length]);
 
-  const tabBtn = (id: "register" | "inbox", label: string, mr: string, badge?: number) => (
+  const tabBtn = (id: "register" | "inbox" | "advisories", label: string, mr: string, badge?: number) => (
     <button
       type="button"
       role="tab"
@@ -95,9 +96,10 @@ export function Register({ className }: { className?: string }) {
   return (
     <Sheet className={cn("flex min-h-0 flex-col", className)}>
       <header className="flex items-end justify-between gap-3 border-b-2 border-ink px-4 pt-2.5">
-        <div role="tablist" aria-label="Register or inbox" className="flex min-w-0 flex-wrap gap-x-4">
+        <div role="tablist" aria-label="Register, inbox or advisories" className="flex min-w-0 flex-wrap gap-x-4">
           {tabBtn("register", "Daily register", "नोंदवही")}
           {tabBtn("inbox", "Inbox", "प्रश्न", open)}
+          {tabBtn("advisories", "Advisories", "सल्ला")}
         </div>
         <div className="flex shrink-0 items-center gap-2 pb-2">
           <SourceStamp live={false} label="Entries from the simulated network" />
@@ -109,6 +111,8 @@ export function Register({ className }: { className?: string }) {
       <RippleSlip />
       {tab === "inbox" ? (
         <div className="min-h-0 flex-1 overflow-y-auto"><Inbox /></div>
+      ) : tab === "advisories" ? (
+        <Advisories />
       ) : (
       <>
       <div className="ruled min-h-0 flex-1 overflow-y-auto" style={{ ["--rule-gap" as string]: "26px", ["--margin-x" as string]: "62px" }}>

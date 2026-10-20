@@ -141,10 +141,25 @@ Bookings are grouped by day, village collection point and market and packed larg
 
 ## 7. Scan Lens (on device)
 
-- MobileNetV2, PlantVillage, 38 classes, fp32 ONNX in ONNX Runtime Web (wasm, single thread), in a module worker. 224 × 224, ImageNet normalisation.
+Two models in one module worker (ONNX Runtime Web, WebAssembly, single thread), both 224 × 224 scaled to [-1, 1], cached for offline use.
+
+**Pomegranate (trained on this laptop).** `ml/scanlens/train_pomegranate.py` fine-tunes MobileNetV3-Large (ImageNet weights) on the *Pomegranate Fruit Diseases Dataset* (Pakruddin and Hemavathy, *Data in Brief* 2024; doi:10.17632/b6s2rkpmvh.1; CC BY 4.0): 5,099 fruit photos in five classes (bacterial blight, anthracnose, Alternaria and Cercospora fruit spots, healthy), split 70 / 15 / 15 stratified, 12 epochs on the RTX 4060 in about 5 minutes, exported to a 16.8 MB fp32 ONNX (parity with PyTorch 1.4 × 10⁻⁶).
+
+| 765 test photos never used in training or model selection | Precision | Recall |
+| --- | --- | --- |
+| Bacterial blight | 1.000 | 0.993 |
+| Anthracnose | 1.000 | 0.994 |
+| Alternaria fruit spot | 0.993 | 1.000 |
+| Cercospora fruit spot | 0.989 | 1.000 |
+| Healthy fruit | 1.000 | 1.000 |
+| **Accuracy 99.7%, macro F1 0.997** | | |
+
+Read these numbers as an upper bound: the split is random within one dataset, so photos of the same fruit or orchard can fall on both sides; the photos are of fruit, not leaves; and none is from Phaltan. The app says so beside the result. Blight advice comes from the spray table; for the fungal spots the app says the table covers blight only and to ask the officer. Three test photos ship as samples (`public/samples/pom-*.jpg`, with credit).
+
+**Tomato and capsicum.** MobileNetV2, PlantVillage, 38 classes, fp32 ONNX.
 - **Crop-conditioned**: the farmer picks the crop, the softmax is renormalised over that crop's classes, and the unconditioned first guess is shown when it disagrees.
 - **Where it looked**: a 7 × 7 occlusion map, batched, drawn as a red heat overlay.
-- Honest numbers: 95.4% on PlantVillage lab photos (model card); on three public field photos it misread two diseases. Pomegranate has no class in PlantVillage, so the pomegranate result is scripted until `ml/train.py` is run on Phaltan photos.
+- Honest numbers: 95.4% on PlantVillage lab photos (model card); on three public field photos it misread two diseases.
 
 **Photo check.** Before inference, a 192 px grey copy of the photo gives sharpness (variance of the Laplacian) and light (mean brightness). On the sample leaves, sharp photos scored 230 to 5,900 and a 1.5 px blur 10 to 36, so under 60 is *blurry*; under 65 brightness is *too dark*, over 215 *washed out*. The camera view runs the same check twice a second and turns its frame violet when the photo will read.
 

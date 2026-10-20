@@ -22,6 +22,7 @@ import { ScanLens } from "./scan-lens";
 import { SlipCheck } from "./slip-check";
 import { SeasonWheel, WheelKey } from "./season-wheel";
 import { ShareCard } from "./share-card";
+import { Messages } from "./messages";
 import { SyncChip } from "./sync-chip";
 import { TodaySlip } from "./today-slip";
 
@@ -58,7 +59,10 @@ export function Phone() {
               <span className="truncate text-[22px] font-bold text-board-ink [font-stretch:82%]">{p.farmer.name}</span>
               <span className="whitespace-nowrap font-marathi text-[18px] text-board-ink-2">{p.farmer.mr}</span>
             </p>
-            <DatedImpression day={Math.floor(t)} playing={playing} size="sm" />
+            <div className="flex shrink-0 items-center gap-2">
+              <Messages plot={plot} />
+              <DatedImpression day={Math.floor(t)} playing={playing} size="sm" />
+            </div>
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
             <p className="typed truncate text-[12px] text-board-ink-2">Gat {p.gat} · {village.name} · {p.acres} ac</p>

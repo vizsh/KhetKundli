@@ -2,6 +2,18 @@
 
 Status on 20 October 2026, after commit `e9fa3bd`. KhetKundli will not be registered or deployed. The goal is a prototype that runs on one laptop (with a phone on the same Wi-Fi), where **every button does something real, nothing is lost on a restart, it works with no internet in the room, and nothing breaks in front of judges**. This plan is ordered by that goal. Effort is in working days for one developer and is an estimate. [ROADMAP.md](ROADMAP.md) keeps the long view, if the project ever goes live.
 
+## 0. Done on 20 October: the top five
+
+| Item | What now works | Where |
+| --- | --- | --- |
+| **A1 Local database** | One SQLite file (`web/data/khetkundli.db`, Node's built-in driver). The relay keeps its overrides and inbox there; every synced event is appended by clock stamp (a retry is recognised); messages, receipts, agent answers and weather snapshots are stored. A server restart loses nothing | `src/lib/server/db.ts`, `relay.ts` |
+| **A5 + C1 Advisories that arrive** | Desk → *Advisories* tab: prepare a batch (plots under a radar warning, or one village), read the English and Marathi SMS, untick anyone, approve and send. The phone shows a banner and a message bell; its own receipts come back (*delivered*, *read*). Farmers with no phone in the room get receipts from a gateway simulator, marked *sim*. *Warn downwind* on the forecast now sends real messages too | `components/desk/advisories.tsx`, `app/api/messages`, `components/farmer/messages.tsx` |
+| **D1 + B4 One command, warm models** | `npm run demo` checks Ollama and the models, the database and the saved forecast, warms the models and every route, starts the app for the laptop and the Wi-Fi, and prints the desk and phone addresses with a QR code. The server also warms the models itself at start-up | `scripts/demo.mjs`, `src/instrumentation.ts` |
+| **D2 HTTPS for the phone** | `npm run demo -- --https` serves a self-signed certificate for this laptop's Wi-Fi addresses. Nothing is installed into Windows' trust store; the phone accepts a one-time warning and then has camera and microphone | `scripts/cert.mjs` |
+| **D3 Offline venue mode** | Every successful weather, wind and ensemble answer is saved; `npm run demo -- --offline` serves the saved forecast, labelled *saved forecast · offline* on the desk | `src/lib/server/snapshot.ts` |
+| **B1 Pomegranate Scan Lens** | A MobileNetV3 trained on this laptop's GPU on 5,099 pomegranate fruit photos (CC BY 4.0) replaces the scripted result, with its test accuracy shown in the app | `ml/scanlens/train_pomegranate.py`, `public/models/pomegranate/` |
+| Also | `/status` page (A7); every agent answer logged (A6, without the review screen yet); the landing page's scroll story rebuilt: visuals fit the screen, a season rail with chapters and months, ← → keys, and a new chapter where the local agent answers live | `app/status`, `components/pitch/season-story.tsx` |
+
 ## 1. The bar: what "extremely good, locally functional" means
 
 | Test | Today | Target |

@@ -13,7 +13,15 @@ const seasons = new Map<string, Season>();
 export async function liveDays(origin: string): Promise<LiveDaily[]> {
   if (weather && Date.now() - weather.at < 10 * 60_000) return weather.days;
   try {
-    const res = await fetch(`${origin}/api/weather`);
+    // In the server, call the weather handler directly: no network hop, and it works under the
+    // self-signed HTTPS of the local demo. Scripts outside Next fall back to HTTP.
+    let res: Response;
+    try {
+      const { GET } = await import("@/app/api/weather/route");
+      res = await GET();
+    } catch {
+      res = await fetch(`${origin}/api/weather`);
+    }
     const j = (await res.json()) as { days?: LiveDaily[] };
     weather = { at: Date.now(), days: j.days ?? [] };
   } catch {

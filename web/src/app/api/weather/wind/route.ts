@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+import { withSnapshot } from "@/lib/server/snapshot";
 import { cacheLife } from "next/cache";
 import { geo } from "@/lib/geo";
 import type { WindGrid } from "@/lib/spread";
@@ -43,9 +45,6 @@ async function windGrid(): Promise<WindGrid> {
 }
 
 export async function GET() {
-  try {
-    return Response.json({ status: "live", ...(await windGrid()) });
-  } catch (err) {
-    return Response.json({ status: "unavailable", error: String(err) });
-  }
+  await connection();
+  return withSnapshot("wind", async () => ({ status: "live", ...(await windGrid()) }));
 }

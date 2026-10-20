@@ -1,7 +1,7 @@
 "use client";
 
 import { create } from "zustand";
-import { post, SELF, type Escalation } from "@/lib/channel";
+import { post, SELF, type Escalation, type FarmMessage } from "@/lib/channel";
 import { clampDay, fmtDay, realToday, SEASON_DAYS, TODAY } from "@/lib/sim/calendar";
 import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, type Ripple } from "@/lib/sim/selectors";
@@ -36,6 +36,8 @@ type DeskState = {
   ripple: (Ripple & { at: number }) | null;
   /** Questions farmers handed to the extension officer, newest first. */
   inbox: Escalation[];
+  /** Advisories the officer sent, with delivery and read receipts, newest first. */
+  messages: FarmMessage[];
   /** Live hourly forecast on a 3 × 3 grid over the taluka, for the wind field and spread forecast. */
   wind: WindGrid | null;
   /** Hour into the 72-hour spread forecast the desk is looking at; null follows the clock. */
@@ -80,6 +82,11 @@ type DeskState = {
   receiveEscalation: (item: Escalation) => void;
   receiveReply: (id: string, reply: NonNullable<Escalation["reply"]>) => void;
   mergeInbox: (items: Escalation[]) => void;
+  receiveMessage: (item: FarmMessage) => void;
+  mergeMessages: (items: FarmMessage[]) => void;
+  receiveReceipt: (id: string, status: "delivered" | "read", at: string, simulated?: boolean) => void;
+  /** This phone marks a message delivered or read; the receipt goes back through the outbox. */
+  acknowledge: (id: string, status: "delivered" | "read") => void;
 };
 
 const initial = generateSeason();
@@ -113,6 +120,7 @@ export const useDesk = create<DeskState>((set, get) => {
     season: initial,
     ripple: null,
     inbox: [],
+    messages: [],
     wind: null,
     forecastHour: null,
     ensemble: null,
@@ -133,6 +141,13 @@ export const useDesk = create<DeskState>((set, get) => {
       const day = Math.floor(t);
       const advisories = [...(overrides.advisories ?? []).filter((a) => a.day !== day), { day, hexes }];
       local({ ...overrides, advisories }, `Preventive advisory for ${hexes.length} ${hexes.length === 1 ? "cell" : "cells"} downwind (${plots} ${plots === 1 ? "plot" : "plots"})`);
+      // The warning is not only modelled: the messages go out to the phones in the room, with receipts.
+      void import("@/lib/deliver")
+        .then(async ({ prepareAdvisories, sendAdvisories }) => {
+          const batch = await prepareAdvisories(day, { by: "hexes", hexes }, overrides);
+          if (batch.advisories.length) await sendAdvisories(day, batch.advisories);
+        })
+        .catch(() => { /* the server is unreachable: the modelled advisory still stands */ });
     },
     setDay: (day) => set({ t: clampDay(day) + START_HOUR }),
     syncToday: () => {
@@ -174,7 +189,7 @@ export const useDesk = create<DeskState>((set, get) => {
     },
     resetDemo: () => {
       get().applyOverrides({}, "Demo reset", "remote");
-      set({ ripple: null, inbox: [] });
+      set({ ripple: null, inbox: [], messages: [] });
       post({ kind: "reset", from: SELF });
     },
     fileSlip: (slip) => {
@@ -220,6 +235,24 @@ export const useDesk = create<DeskState>((set, get) => {
       const known = new Map(get().inbox.map((q) => [q.id, q]));
       for (const q of items) known.set(q.id, { ...known.get(q.id), ...q, reply: q.reply ?? known.get(q.id)?.reply });
       set({ inbox: [...known.values()].sort((a, b) => b.askedAt.localeCompare(a.askedAt)) });
+    },
+    receiveMessage: (item) => {
+      if (get().messages.some((m) => m.id === item.id)) return;
+      set({ messages: [item, ...get().messages].slice(0, 400) });
+    },
+    mergeMessages: (items) => {
+      const known = new Map(get().messages.map((m) => [m.id, m]));
+      for (const m of items) known.set(m.id, { ...known.get(m.id), ...m });
+      set({ messages: [...known.values()].sort((a, b) => b.sentAt.localeCompare(a.sentAt)).slice(0, 400) });
+    },
+    receiveReceipt: (id, status, at, simulated) =>
+      set({ messages: get().messages.map((m) => (m.id === id ? { ...m, ...(status === "delivered" ? { deliveredAt: m.deliveredAt ?? at } : { readAt: m.readAt ?? at, deliveredAt: m.deliveredAt ?? at }), simulated: simulated ?? m.simulated } : m)) }),
+    acknowledge: (id, status) => {
+      const m = get().messages.find((x) => x.id === id);
+      if (!m || (status === "delivered" && m.deliveredAt) || (status === "read" && m.readAt)) return;
+      const at = new Date().toISOString();
+      get().receiveReceipt(id, status, at);
+      post({ kind: "receipt", from: SELF, id, status, at });
     },
   };
 });

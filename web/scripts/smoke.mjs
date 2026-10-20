@@ -58,11 +58,12 @@ try {
   await clickText(page, "nav button", "Scan a leaf");
   await sleep(500);
   await clickText(page, "[role=dialog] button", "Pomegranate");
-  // No pomegranate samples exist; feed a photo through the file input instead.
-  const input = await page.$("[role=dialog] input[type=file]");
-  await input.uploadFile(new URL("../public/samples/s1.jpg", import.meta.url).pathname.replace(/^\/([A-Z]:)/, "$1"));
-  const saved = await page.waitForFunction(() => [...document.querySelectorAll("[role=dialog]")].some((d) => d.textContent?.includes("Save to my record")), { timeout: 10000, polling: 200 }).then(() => true, () => false);
-  if (!saved) check("pomegranate scan reaches save", false, (await textOf(page, "body")).slice(0, 300));
+  // The held-out blight photo, read by the pomegranate model trained in ml/scanlens (first load takes longer).
+  await page.waitForFunction(() => [...document.querySelectorAll("[role=dialog] button[title]")].some((b) => b.title.startsWith("Pomegranate fruit, bacterial blight")), { timeout: 10000, polling: 200 }).catch(() => {});
+  await page.evaluate(() => [...document.querySelectorAll("[role=dialog] button[title]")].find((b) => b.title.startsWith("Pomegranate fruit, bacterial blight"))?.click());
+  const saved = await page.waitForFunction(() => [...document.querySelectorAll("[role=dialog]")].some((d) => d.textContent?.includes("Save to my record")), { timeout: 30000, polling: 200 }).then(() => true, () => false);
+  const pomResult = (await textOf(page, "[role=dialog][aria-label='Scan a leaf']")).match(/Pomegranate bacterial blight[^]*?on-device, \d+ ms/)?.[0]?.replace(/\s+/g, " ");
+  check("pomegranate scan: real model finds blight and offers save", saved && Boolean(pomResult), pomResult ?? (await textOf(page, "body")).slice(0, 300));
   await clickText(page, "[role=dialog] button", "Save to my record");
   await desk.waitForFunction(() => document.body.textContent?.includes("Leaf scan synced from Sunita"), { timeout: 10000, polling: 200 }).then(
     () => check("sync: desk shows the ripple from the phone", true),

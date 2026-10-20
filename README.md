@@ -26,7 +26,7 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | --- | --- | --- |
 | Farmer | **Kundli wheel**: the whole season on one dial (stage, rain, water, sprays, scans, pickings); drag the dot to move through time | Rain ticks are Phaltan's recorded 2026 weather |
 | Farmer | **Today slip**: the one thing to do today, and a 72-hour spray window from the hourly forecast | Live Open-Meteo forecast |
-| Farmer | **Scan Lens**: photograph a leaf, get a diagnosis with no signal, see where the model looked | MobileNetV2 in the browser, ~80 ms; pomegranate result is scripted until trained |
+| Farmer | **Scan Lens**: photograph a pomegranate fruit (or a tomato or capsicum leaf), get a diagnosis with no signal, see where the model looked | Pomegranate: MobileNetV3 trained on this laptop's GPU on 5,099 fruit photos (CC BY 4.0), 99.7% on 765 test photos it never saw (one dataset, so likely optimistic for new orchards); tomato and capsicum: MobileNetV2 (PlantVillage) |
 | Farmer | **Ask**: Marathi or English voice question answered from her own record, read aloud; anything else goes to the officer | Web Speech API; answers built from the record, never invented |
 | Farmer | **Sale slip check**: photograph the agent's patti; every number is read and checked against arithmetic and the agreed rate card | Tesseract OCR on the phone, ~1.2 s |
 | Farmer | **Around your plot**: a radar of the cells within 4 km, with reported blight, the next 72 hours' exposure at her plot and the wind; never a neighbour's plot | Live forecast; reports simulated |
@@ -43,6 +43,8 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | Everyone | **Forecast skill, measured**: a backtest over the recorded season scores the forecast against later reports, a distance-only baseline and an oracle | `npm run backtest`; results in [docs/MODELS.md](docs/MODELS.md) |
 | Officer | **Harvest Wave**, **Water Commons**, **Pooled Runs**, daily register, inbox, plot records | Simulated network |
 | Farmer, officer | **Reasoning agent, on this laptop**: a router trained here (Marathi and English), 12 tools over the plot record, weather and rules, Llama 3.1 8B planning and writing under a JSON schema, retrieval over our agronomy notes, and guards that block any dose, product, date or number not in the evidence; the officer drafts replies with it; an evening advisory pipeline batches warnings by village | Ollama on the laptop GPU; 14/14 routed, every answer guard-checked ([docs/AGENTS.md](docs/AGENTS.md)) |
+| Officer, farmer | **Advisories that arrive**: the desk prepares a batch (radar warnings, or one village), shows the English and Marathi SMS, and sends on approval; the phone gets a banner and a message list and sends back *delivered* and *read*; *Warn downwind* sends real messages too | Local database and relay; receipts from farmers with no phone in the room come from a gateway simulator, marked *sim* |
+| Everyone | **Restart-proof and offline**: one SQLite file keeps the relay, an append-only event log, messages, agent answers and saved forecasts; `npm run demo -- --offline` runs the venue with no internet | `web/data/khetkundli.db` |
 | Everyone | **Season time machine**: one clock for every screen; replay the season on either device | Two devices stay in step over Wi-Fi |
 
 ## How it fits together
@@ -103,18 +105,21 @@ sequenceDiagram
 ```bash
 cd web
 npm install          # also fetches the leaf model, the OCR model, and the ONNX Runtime and Tesseract WebAssembly files
-npm run dev          # http://localhost:3000 (pitch), /farmer and /desk
+npm run demo         # checks the local models, database and saved forecast, warms everything, starts the app for this laptop and the Wi-Fi, prints a QR code for the phone
 ```
 
+`npm run demo -- --https` gives phones on the Wi-Fi a secure origin (camera, microphone) with a self-signed certificate for this laptop's addresses; nothing is installed into Windows' trust store, and the phone accepts a one-time warning. `npm run demo -- --offline` runs with no internet: weather, wind and the ensemble come from the forecast saved on the last online run, and the desk says *saved forecast · offline*. `/status` shows the models, the database, the saved forecast and the screens connected. `npm run dev` still works for development.
+
 ```bash
-npm run smoke        # 21 end-to-end checks in Chrome (dev server running)
+npm run smoke        # 22 end-to-end checks in Chrome (dev server running)
 npm run test:slips   # reads the three specimen slips (English and Marathi) in Node and checks the parser
 npm run backtest     # scores the spread forecast over the recorded season
 npm run eval:agent   # the reasoning agent end to end on the local model (Ollama with llama3.1:8b and nomic-embed-text)
+npm run train:pomegranate   # retrains the pomegranate Scan Lens model on this laptop's GPU (ml/.venv with CUDA PyTorch; dataset in ml/data)
 npm run report:figures && npm run report   # redraws the report's figures and rebuilds the Word report (Windows, needs Word for the contents and PDF)
 ```
 
-For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3000/farmer` on the same Wi-Fi. For live mandi prices, copy `web/.env.example` to `web/.env.local` and add a data.gov.in key. The full demo script is in [docs/DEMO.md](docs/DEMO.md).
+For a real phone, scan the QR code `npm run demo` prints (same Wi-Fi). For live mandi prices, copy `web/.env.example` to `web/.env.local` and add a data.gov.in key. The full demo script is in [docs/DEMO.md](docs/DEMO.md).
 
 ## Documentation
 

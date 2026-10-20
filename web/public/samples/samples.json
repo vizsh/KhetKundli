@@ -19,5 +19,26 @@
     "label": "Tomato leaves, Septoria leaf spot (close-up)",
     "credit": "Wolan268, CC0",
     "source": "https://commons.wikimedia.org/wiki/File:Tomato_septoria_leaf_spot_3047.jpg"
+  },
+  {
+    "file": "/samples/pom-bacterial-blight.jpg",
+    "crop": "pomegranate",
+    "label": "Pomegranate fruit, bacterial blight",
+    "credit": "Pakruddin & Hemavathy 2024, CC BY 4.0; a test photo the model never trained on",
+    "source": "https://doi.org/10.17632/b6s2rkpmvh.1"
+  },
+  {
+    "file": "/samples/pom-anthracnose.jpg",
+    "crop": "pomegranate",
+    "label": "Pomegranate fruit, anthracnose",
+    "credit": "Pakruddin & Hemavathy 2024, CC BY 4.0; a test photo the model never trained on",
+    "source": "https://doi.org/10.17632/b6s2rkpmvh.1"
+  },
+  {
+    "file": "/samples/pom-healthy.jpg",
+    "crop": "pomegranate",
+    "label": "Pomegranate fruit, healthy",
+    "credit": "Pakruddin & Hemavathy 2024, CC BY 4.0; a test photo the model never trained on",
+    "source": "https://doi.org/10.17632/b6s2rkpmvh.1"
   }
 ]

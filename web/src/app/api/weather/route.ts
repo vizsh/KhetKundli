@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+import { withSnapshot } from "@/lib/server/snapshot";
 import { cacheLife } from "next/cache";
 import type { LiveDaily, LiveHourly } from "@/lib/sim/weather";
 
@@ -123,15 +125,16 @@ async function recorded(): Promise<LiveDaily[]> {
   return toDays(daily, wetHoursByDay(hourly), true);
 }
 
-export async function GET() {
+/** Recorded season plus forecast, merged; saved for offline mode on every success. */
+async function merged(): Promise<Record<string, unknown> & { status: string }> {
   const [now, past] = await Promise.allSettled([forecast(), recorded()]);
   if (now.status === "rejected") {
-    return Response.json({ source: "Open-Meteo", status: "unavailable", days: past.status === "fulfilled" ? past.value : [], hours: [], error: String(now.reason) });
+    return ({ source: "Open-Meteo", status: "unavailable", days: past.status === "fulfilled" ? past.value : [], hours: [], error: String(now.reason) });
   }
   // Forecast days win where the two overlap: the archive lags by a day or two.
   const ahead = new Set(now.value.days.map((d) => d.date));
   const history = past.status === "fulfilled" ? past.value.filter((d) => !ahead.has(d.date)) : [];
-  return Response.json({
+  return ({
     source: "Open-Meteo",
     status: "live",
     ...now.value,
@@ -139,4 +142,9 @@ export async function GET() {
     recordedThrough: history.at(-1)?.date ?? null,
     archive: past.status === "fulfilled" ? "ok" : "unavailable",
   });
+}
+
+export async function GET() {
+  await connection();
+  return withSnapshot("weather", merged);
 }

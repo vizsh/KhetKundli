@@ -16,7 +16,7 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
   const s = useDesk.getState();
   switch (m.kind) {
     case "hello":
-      reply({ kind: "state", from: SELF, overrides: s.overrides, inbox: s.inbox, t: s.t, hlc: appliedHlc() });
+      reply({ kind: "state", from: SELF, overrides: s.overrides, inbox: s.inbox, messages: s.messages, t: s.t, hlc: appliedHlc() });
       break;
     case "state":
       // Last writer wins: a snapshot older than what this screen already shows is ignored.
@@ -25,6 +25,13 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
         s.applyOverrides(m.overrides, "Synced from another screen", "remote");
       }
       if (m.inbox.length) s.mergeInbox(m.inbox);
+      if (m.messages?.length) s.mergeMessages(m.messages);
+      break;
+    case "message":
+      s.receiveMessage(m.item);
+      break;
+    case "receipt":
+      s.receiveReceipt(m.id, m.status, m.at, m.simulated);
       break;
     case "overrides":
       if (isStale(m.hlc)) break;
@@ -47,7 +54,7 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
       if (isStale(m.hlc)) break;
       noteApplied(m.hlc);
       s.applyOverrides({}, "Demo reset on another screen", "remote");
-      useDesk.setState({ ripple: null, inbox: [] });
+      useDesk.setState({ ripple: null, inbox: [], messages: [] });
       break;
   }
 }

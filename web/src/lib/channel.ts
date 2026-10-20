@@ -15,19 +15,44 @@ export type Escalation = {
   reply?: { text: string; by: string; at: string };
 };
 
-/** `hlc` stamps the durable messages (overrides, escalation, reply, reset) with a hybrid logical clock. */
+/**
+ * A message the officer sends to a farmer (an advisory), delivered to her phone in the app or as an SMS.
+ * Receipts come back from the phone itself; for farmers with no phone in the room, the SMS gateway
+ * simulator marks them, and `simulated` says so.
+ */
+export type FarmMessage = {
+  id: string;
+  batch: string;
+  plot: number;
+  plotId: string;
+  farmer: string;
+  village: string;
+  channel: "app" | "sms";
+  kind: "advisory";
+  day: number;
+  text: string;
+  textMr: string;
+  sentAt: string;
+  deliveredAt?: string;
+  readAt?: string;
+  simulated?: boolean;
+};
+
+/** `hlc` stamps the durable messages (overrides, escalation, reply, reset, receipt) with a hybrid logical clock. */
 export type SyncMsg = (
   | { kind: "hello"; from: string }
-  | { kind: "state"; from: string; overrides: Overrides; inbox: Escalation[]; t?: number }
+  | { kind: "state"; from: string; overrides: Overrides; inbox: Escalation[]; t?: number; messages?: FarmMessage[] }
   | { kind: "overrides"; from: string; overrides: Overrides; label: string }
   | { kind: "time"; from: string; t: number }
   | { kind: "escalation"; from: string; item: Escalation }
   | { kind: "reply"; from: string; id: string; reply: NonNullable<Escalation["reply"]> }
   | { kind: "reset"; from: string }
+  | { kind: "message"; from: string; item: FarmMessage }
+  | { kind: "receipt"; from: string; id: string; status: "delivered" | "read"; at: string; simulated?: boolean }
 ) & { hlc?: string };
 
 /** Messages that must arrive even if the device is offline when they are made: queued in the outbox. */
-export const DURABLE = new Set<SyncMsg["kind"]>(["overrides", "escalation", "reply", "reset"]);
+export const DURABLE = new Set<SyncMsg["kind"]>(["overrides", "escalation", "reply", "reset", "receipt"]);
 
 /** This window's id, so a window ignores its own messages coming back from a relay. */
 export const SELF = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);

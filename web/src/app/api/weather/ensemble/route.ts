@@ -1,3 +1,5 @@
+import { connection } from "next/server";
+import { withSnapshot } from "@/lib/server/snapshot";
 import { cacheLife } from "next/cache";
 import type { Ensemble } from "@/lib/spread";
 
@@ -39,9 +41,6 @@ async function ensemble(): Promise<Ensemble> {
 }
 
 export async function GET() {
-  try {
-    return Response.json({ status: "live", ...(await ensemble()) });
-  } catch (err) {
-    return Response.json({ status: "unavailable", error: String(err) });
-  }
+  await connection();
+  return withSnapshot("ensemble", async () => ({ status: "live", ...(await ensemble()) }));
 }

@@ -14,6 +14,8 @@ next-env.d.ts
 web/public/ort/
 web/public/tesseract/
 *.onnx
+# the pomegranate model is trained here (ml/scanlens) and cannot be fetched, so it is committed
+!web/public/models/pomegranate/model_fp32.onnx
 
 # local review captures and machine-only settings
 .impeccable/review/
@@ -37,3 +39,7 @@ Thumbs.db
 
 # Python caches
 __pycache__/
+
+# The prototype's local database (web/data/khetkundli.db) and offline snapshots stay on this machine
+web/data/
+web/certificates/
