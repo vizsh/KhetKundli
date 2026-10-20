@@ -1,171 +1,151 @@
-# What remains, and how to proceed
+# Next steps: an excellent local prototype
 
-Status on 20 October 2026, after commit `74ac692`. This document is the working plan: what is built, what is only simulated, what is missing, and the order to do it in. [ROADMAP.md](ROADMAP.md) keeps the long view (horizons, target architecture, metrics); this is the next twelve weeks in detail. Effort is in working days for one developer and is an estimate.
+Status on 20 October 2026, after commit `e9fa3bd`. KhetKundli will not be registered or deployed. The goal is a prototype that runs on one laptop (with a phone on the same Wi-Fi), where **every button does something real, nothing is lost on a restart, it works with no internet in the room, and nothing breaks in front of judges**. This plan is ordered by that goal. Effort is in working days for one developer and is an estimate. [ROADMAP.md](ROADMAP.md) keeps the long view, if the project ever goes live.
 
-## 1. Where things stand
+## 1. The bar: what "extremely good, locally functional" means
 
-| Area | Built and working | Simulated or scripted | Missing |
+| Test | Today | Target |
+| --- | --- | --- |
+| Restart the server mid-demo | Inbox, overrides and agent answers are lost (kept in memory) | Everything comes back from a local database |
+| No internet at the venue | Weather, wind, ensemble and the map style need the network; voice needs Chrome's online speech service | The whole demo runs from a recorded snapshot, the local model and local speech |
+| A farmer does something | Her record mostly fills itself from the simulation | She logs a spray, a watering or a picking; the record, the agent and the desk change |
+| The officer warns downwind | A ripple shows what would happen | Messages actually arrive on the phones in the room, with sent, delivered and read |
+| A pomegranate leaf is scanned | The pomegranate result is scripted | A model trained on this laptop gives the result, with its measured accuracy |
+| Someone asks in Marathi by voice | Works in Chrome with internet | Works offline with a local speech model |
+| The first agent question | Up to 21 s while the model loads | Under 5 s: the models are warmed at start-up |
+| Starting the demo | Several terminals and steps | One command, with a status page and a QR code for the phone |
+
+## 2. Where things stand
+
+| Area | Real and working | Still simulated or scripted | Missing for an excellent local prototype |
 | --- | --- | --- | --- |
-| **Farmer phone** | Kundli wheel, today slip, spray window, Scan Lens (on device), Ask (voice, rules answer + agent answer), slip check (English and Marathi OCR), lot passports, neighbour pulse, share card, offline outbox | The farmer's history (192 synthetic plots); the pomegranate scan result | Onboarding, entering her own sprays, irrigation and pickings, notifications, settings, more than one plot, household profiles |
-| **Taluka desk** | Survey sheet with real terrain, live wind, 72-hour spread forecast with ensemble, storm brush, Pest Radar, Harvest Wave, Water Commons, pooled runs, register, inbox with agent drafts | Every plot, scan, picking and sale behind the maps | Advisory approval and sending screen, visit planner, agent answer review, cohort and adoption views, login |
-| **Models** | Season engine on recorded weather; spread kernel with backtest; slip parser with self-proving corrections; router trained here; retrieval; guarded Llama 3.1 8B | Scan Lens for pomegranate (no trained model yet); spread kernel parameters (not fitted); prices without a key | A pomegranate leaf model, a fitted spread model, harvest-date and price models, a run optimiser |
-| **Backend** | 8 route handlers: weather, wind, ensemble, prices, sync relay, agent ask, advisories, health; the agent pipeline | Message delivery (SMS, WhatsApp, IVR are shown, not sent) | A database, accounts, consent, job scheduling, delivery, audit logs, security, observability, deployment (section 2) |
-| **Evidence** | Recorded weather, real terrain and map, 51-member ensemble, sourced problem figures | Outcomes in the demo season | Any farmer, officer or FPO using it; any real scan, slip, picking or price; an agronomist's review |
+| **Farmer phone** | Kundli wheel, spray window, Scan Lens (on device), Ask with the reasoning agent, slip check in English and Marathi, lot passports, neighbour pulse, share card, offline outbox | Her history; the pomegranate scan | Logging her own work, notifications, follow-up questions, feedback on answers, choosing which farmer this phone is |
+| **Taluka desk** | Survey sheet with real terrain, live wind, 72-hour forecast with ensemble, storm brush, radar, wave, water, runs, register, inbox with agent drafts | Every plot behind the maps | Advisory console (approve and send), agent review, a status page |
+| **Backend** | 8 route handlers; the agent pipeline on Llama 3.1 8B through Ollama; router trained here; retrieval | Message delivery | A local database, a job runner, a delivery simulator, an agent log, a weather snapshot for offline use, model warm-up |
+| **Models** | Season engine on recorded weather; spread forecast with backtest; slip parser; router; guarded LLM | Pomegranate Scan Lens; spread parameters (not fitted); prices without a key | A pomegranate model trained here; local Marathi speech; optional small fine-tuned answer model |
 
-## 2. Why the backend looks empty, and what it actually needs
+## 3. The work, in five tracks
 
-**Today the server is thin by design.** The season engine runs in every browser, so the demo works on venue Wi-Fi with no database. The server proxies open data (weather, wind, ensemble, prices), relays events between two devices, and now runs the agent. Its state lives in memory: restart the server and the inbox and the overrides are gone. That was right for a demo. For a pilot it is the main gap.
+### Track A · A real local backend
 
-What a pilot needs from the backend, with the reason for each:
+The server is thin today because the demo began as browser-only. These make it a real, restart-proof backend on the laptop, with no accounts or cloud.
+
+| # | Item | What it does | How | Effort |
+| --- | --- | --- | --- | --- |
+| A1 | **Local database** | Inbox, replies, overrides, farmer entries, agent answers, advisories and messages survive restarts | One SQLite file (`web/data/khetkundli.db`) through Node's built-in `node:sqlite` or `better-sqlite3`; an append-only `events` table with the hybrid logical clock the phone already stamps; the relay reads and writes it instead of memory | 2 |
+| A2 | **Farmer entries** | A farmer logs "sprayed today", "watered", "picked 40 crates" by two taps or by voice; they become ballpoint lines in her record | New override kinds (`sprays`, `irrigations`, `picks`) the season engine applies like scans; the agent's `plot_record` tool sees them at once | 2 |
+| A3 | **Several phones, several farmers** | Each phone in the room picks a farmer (Sunita and three others in different villages); the desk sees all of them | A "this phone is…" picker stored on the device; per-farmer inbox and messages | 1 |
+| A4 | **Job runner** | The evening advisory pipeline runs at 18:00 (or "run now" on the desk); weather is snapshotted every six hours | A small scheduler in the server process (`node-cron`), writing to the database; jobs listed on the status page | 1 |
+| A5 | **Delivery simulator** | Warnings and officer replies arrive on the phones as notifications, with sent, delivered and read times; an SMS view shows what a feature-phone farmer would receive | A `messages` table and a channel per phone over the existing server-sent events; Web Push where the browser allows it (it needs HTTPS on the phone, see D2); a desk view of receipts | 2 |
+| A6 | **Agent log and review** | Every question, route, facts used, draft, guard result and answer is kept; the farmer rates the answer; the officer reviews and corrects | `agent_log` table; thumbs up or down on the phone; a review tab on the desk; corrected questions become new router training data (`npm run train:router` reads them) | 1.5 |
+| A7 | **Status page** | One screen shows Ollama and the models, the database, the jobs, the weather snapshot and its age, and the phones connected | `/status`, built on `/api/agent/health` | 0.5 |
+
+### Track B · Models that really run here
+
+| # | Item | What it does | How | Effort |
+| --- | --- | --- | --- | --- |
+| B1 | **Scan Lens for pomegranate** | Removes the biggest scripted piece: a real diagnosis of bacterial blight and the fungal spots on pomegranate leaves and fruit | Train on a public pomegranate disease image dataset (several exist on Mendeley Data and Kaggle; check the licence), on the laptop's RTX 4060 (install the CUDA build of PyTorch; today's is CPU-only); fine-tune MobileNetV3 or EfficientNet-Lite with `ml/train.py`; export ONNX for the phone; report per-class recall and the confusion matrix on a held-out split in the app's model card | 3 |
+| B2 | **Local Marathi speech** | Voice questions work with no internet | Run a speech model locally: Whisper (it supports Marathi) through `faster-whisper` on the GPU, compared on 20 recorded Marathi questions with AI4Bharat's open Indic speech models; pick the better one; a `/api/speech` route | 2 |
+| B3 | **Local Marathi voice out** | Answers are read aloud in Marathi even without a Marathi system voice | An open Indic text-to-speech model (AI4Bharat publishes Marathi voices) served locally; falls back to the browser voice | 1.5 |
+| B4 | **Faster, warmer agent** | First answer under 5 s; tokens appear as they are written | Warm both models at server start; stream the compose step; keep `phi3:mini` as a fallback when the GPU is busy | 1 |
+| B5 | **Follow-up questions** | "And if it rains on Tuesday?" continues the same conversation, with a what-if run of the engine | Conversation memory per plot; a `what_if` tool that applies a rain or a spray date to a copy of the season and returns the ripple | 2 |
+| B6 | **Router v2** | Fewer misroutes on real phrasings | More templates, Hindi and code-mixed questions, and the questions collected in A6; retrain and re-run `eval:agent` | 0.5 |
+| B7 | **Real prices** | Market answers use real numbers | A free data.gov.in key for Agmarknet, or a committed CSV of last season's pomegranate prices at Pune, Phaltan, Vashi and Solapur for offline use | 1 |
+| B8 | *Stretch:* **a small fine-tuned answer model** | Faster answers in the right format and better Marathi on a 3B model | QLoRA on Llama 3.2 3B (fits in 8 GB) with answers generated by the guarded 8B pipeline over many engine states; must beat or match the 8B on `eval:agent`. Stated honestly as distillation on synthetic data | 3–4 |
+
+### Track C · UI and UX
+
+| # | Item | Why | Effort |
+| --- | --- | --- | --- |
+| C1 | **Advisory console** on the desk: preview the evening batch, edit, approve, send, watch receipts arrive | The officer stays in control of what goes out | 1.5 |
+| C2 | **Agent review** on the desk: today's answers, ratings, guard failures and fallbacks, with the trace | Shows that machine advice is accountable | 1 |
+| C3 | **Phone: log what I did, notifications, follow-ups, feedback**, and a shorter agent trace (tap to expand) | The farmer's side of A2, A5, A6 and B5 | 2 |
+| C4 | **Error and empty states**: model down, no weather, no camera, no microphone, nothing in the inbox | A prototype is judged by how it fails | 1 |
+| C5 | **Visual QA pass** at phone and desk sizes, motion review, Marathi typography, the 22 unverified village names | Polish that judges notice | 1.5 |
+| C6 | **Accessibility pass**: sunlight contrast, touch targets, screen-reader order, reduced motion | Commitments in PRODUCT.md | 1 |
+
+### Track D · Demo robustness
+
+| # | Item | How | Effort |
+| --- | --- | --- | --- |
+| D1 | **One command**: `npm run demo` checks Ollama and the models, warms them, starts the server, opens the desk and shows a QR code with the phone's Wi-Fi address | A Node script; clear messages when something is missing | 1 |
+| D2 | **HTTPS on the local network**, so the phone gets the camera, microphone, service worker and notifications (browsers allow these only on secure origins, and `http://192.168…` is not one) | `next dev --experimental-https` with a local certificate authority (mkcert) installed on the demo phone | 0.5 |
+| D3 | **Offline venue mode**: the season, forecast, wind field and ensemble from a saved snapshot; local map tiles; local speech | A `--offline` flag that serves the snapshot through the same routes; tested with Wi-Fi off | 1 |
+| D4 | **Scenarios and reset**: start at "19 September, monsoon", "a storm tonight", "glut week in Pune"; reset restores the database snapshot | Saved database files per scenario | 1 |
+| D5 | **One check command**: `npm run check` runs types, lint, slip tests, router parity, the smoke test and the agent evaluation, and prints one table | Wraps the existing scripts; add the new flows to the smoke test | 1 |
+| D6 | **Rehearsal and backup video** of the full script on the real phone | Twice, on venue-like Wi-Fi | 1 |
+
+### Track E · Honesty and evidence, without going live
+
+None of this needs registration, and all of it makes the prototype more credible.
+
+- **Show it to three to five farmers and one officer** informally, on their own phones; note what confused them and fix the top three.
+- **Ask an agronomist to look at the spray table** (it is one page) and record their comments in AGRONOMY.md.
+- **Use real public data wherever it exists**: pomegranate disease photos (B1), last season's prices (B7), the recorded weather (already).
+- **Keep labelling**: every simulated thing stays marked SIMULATED; every model shows its measured accuracy and what it was trained on.
+
+## 4. The target, on one laptop
 
 ```mermaid
-flowchart TB
-  subgraph Now["Now (demo)"]
-    N1["Route handlers:<br/>weather · wind · ensemble · prices"]
-    N2["In-memory relay<br/>(lost on restart)"]
-    N3["Agent pipeline<br/>Ollama on the laptop"]
+flowchart LR
+  subgraph Laptop["The laptop (RTX 4060)"]
+    APP["Next.js app<br/>desk · pitch · /status"]
+    DB[("SQLite<br/>events · inbox · agent log ·<br/>advisories · messages")]
+    JOBS["Job runner<br/>18:00 advisories ·<br/>weather snapshot"]
+    OLL["Ollama<br/>Llama 3.1 8B · phi3 ·<br/>nomic-embed-text"]
+    SPEECH["Local speech<br/>Marathi in and out"]
+    SNAP[("Weather snapshot<br/>for offline mode")]
+    APP <--> DB
+    JOBS --> DB
+    APP <--> OLL
+    APP <--> SPEECH
+    SNAP --> APP
   end
-  subgraph Pilot["Needed for the pilot"]
-    P1[("Postgres + PostGIS + H3<br/>append-only plot_events")]
-    P2["Accounts, roles,<br/>consent ledger"]
-    P3["Sync API v2<br/>upload by id, download by cursor"]
-    P4["Projections<br/>radar · wave · water · runs<br/>from real events"]
-    P5["Job runner<br/>weather snapshots · prices ·<br/>evening advisories · retraining"]
-    P6["Delivery service<br/>push · WhatsApp · SMS · IVR<br/>with receipts"]
-    P7["Agent log and feedback<br/>every answer, trace, guard, rating"]
-    P8["Security and operations<br/>auth · rate limits · validation ·<br/>logs · metrics · backups"]
-  end
-  N2 -. "replaced by" .-> P1
-  N2 -. "replaced by" .-> P3
-  N3 --> P7
-  P1 --> P4 --> P5 --> P6
-  P2 --> P1
+  P1["Sunita's phone"] <-->|"HTTPS on Wi-Fi<br/>events · answers · notifications"| APP
+  P2["Other farmers' phones"] <--> APP
+  SMS["SMS view<br/>(feature-phone farmer)"] --- APP
 ```
 
-| # | Backend piece | Why it is needed (not nice to have) | How | Effort |
-| --- | --- | --- | --- | --- |
-| B1 | **Event store** | A farmer's season must survive a lost phone and a server restart; the radar must read real reports | Postgres 16 with PostGIS and the `h3` extension; the `plot_events` table already designed in ROADMAP 1.1; migrations with Drizzle or Prisma; nightly backup | 4 |
-| B2 | **Accounts, roles and consent** | Anyone on the Wi-Fi can reply to farmers today; the DPDP Act 2023 needs purpose-bound, revocable consent | Phone-number OTP; roles farmer, household member, officer, FPO staff; consent stored as events (`share-scans-with-fpo`, `share-pickings-for-runs`, `share-slips-for-index`); export and erase | 5 |
-| B3 | **Sync API v2** | The phone's outbox exists; the server must accept its events idempotently and send back others' events | `POST /events` (UUIDv7, HLC, ignore seen ids), `GET /events?cursor=`; server-sent events or WebSocket for live updates; replaces the in-memory relay | 4 |
-| B4 | **Projections from real events** | The desk must show what was reported, not what was simulated | Materialised views per day: radar cells, wave by village and week, water kept, runs; the browser engine stays as the what-if simulator | 5 |
-| B5 | **Job runner** | Advisories must go out every evening without someone pressing a button; forecasts must be reproducible later | `pg-boss` (queues in Postgres): weather and ensemble snapshot every 6 h (stored, so any advice can be replayed), Agmarknet prices daily, evening advisory pipeline, weekly backtest, router retraining | 3 |
-| B6 | **Delivery service** | Today "warn by SMS" is a simulated outcome; the pilot metric is "reached within 2 hours" | One outbox table, adapters for Web Push, WhatsApp Business templates, an SMS gateway and a missed-call IVR; delivery receipts, retries, quiet hours, language per farmer | 5 |
-| B7 | **Agent log and feedback** | The only way to improve the router and the answers is to keep them; the officer must be able to audit what the machine told a farmer | Store every question, route, facts, draft, guard result and final answer; a thumbs up or down on the phone; the officer's correction becomes a label; weekly report of guard failures and fallbacks | 3 |
-| B8 | **Security and operations** | A GPU endpoint open to anyone can be exhausted; errors must be seen before farmers report them | Auth on every write and agent route; rate limits per user; request validation with zod; HTTPS; structured logs, metrics (latency, fallback rate, delivery success) and error tracking; a health page | 4 |
-| B9 | **Model serving** | One GPU, many users: requests must queue, and a smaller model must take over when it is busy | A queue in front of Ollama; per-request timeout; `phi3:mini` or a 3B model as fallback; model and router versions recorded with every answer | 2 |
-| B10 | **Deployment** | The pilot cannot depend on a laptop on a desk | Option A: a small GPU box at the FPO office (Ollama, Postgres, the app) with a tunnel. Option B: the app and database in the cloud, the model on a rented GPU or a CPU-sized model. Decide after measuring latency of a 3B model on CPU | 3 |
-
-Total for B1–B10: about 38 days of work, which is why section 5 starts with B1, B2, B3 and B7 and leaves the rest to follow.
-
-## 3. Functionality and features still to build
-
-### Farmer phone
-
-| Feature | Why | Effort |
-| --- | --- | --- |
-| **Onboarding**: phone number, plot by gat number and a GPS walk of the boundary, bahar date, crop and variety, consent in Marathi | Without it there is no real plot | 4 |
-| **Log what I did**: "I sprayed today", "I watered", "I picked 40 crates" by voice or two taps; ballpoint entries in the record | Today the record fills itself from the simulation; a real one needs the farmer's own entries | 4 |
-| **Notifications**: the 05:30 spray-window message, warnings from the desk, officer replies; a notification list on the phone | The spray window only helps if it reaches her before she sprays | 3 (with B6) |
-| **Several plots and a shared phone**: switch plot, switch person | Two-thirds of rural users share a phone | 2 |
-| **Agent answer feedback**: was this useful? and read the agent's answer aloud in Marathi | Labels for retraining; low-literacy users | 1 |
-| **Settings**: language, text size, voice speed, notification times | Accessibility and trust | 1 |
-
-### Taluka desk
-
-| Feature | Why | Effort |
-| --- | --- | --- |
-| **Advisory console**: preview the evening batch from `/api/agent/advisories`, edit, approve, send, see receipts | The pipeline exists; the officer needs to control what goes out | 3 |
-| **Agent review**: answers given today, guard failures, fallbacks, low ratings; correct an answer | Accountability for machine advice | 2 |
-| **Visit planner**: today's visits from the inbox and the radar, shortest route | Officer time is the scarcest resource | 3 |
-| **Adoption and outcomes**: weekly active farmers, scans per cell, advisories reached, sprays washed off | The pilot's own metrics, live | 2 |
-| **Login and roles** | The desk is open today | with B2 |
-
-### Models
-
-| Model | What to do | Needs |
-| --- | --- | --- |
-| **Scan Lens for pomegranate** | Photo campaign, labels by a plant pathologist, fine-tune MobileNetV3 or EfficientNet-Lite, test on a village never seen, INT8 for the phone | 1,000+ consented photos per class |
-| **Spread forecast, fitted** | Run the existing backtest harness on real reports; fit reach, width and weights by maximum likelihood | One monsoon of real reports |
-| **Router v2** | Retrain on real questions from the agent log, relabelled by the officer | A few hundred real questions |
-| **Answer model** | Keep Llama 3.1 8B with tools and guards; after the pilot, a LoRA fine-tune on officer-approved answers, evaluated with the same harness | Officer-approved answers |
-| **Harvest dates and prices** | Gradient boosting on bahar date, degree days and real pickings; quantile price forecasts from Agmarknet arrivals | Real pickings; a data.gov.in key |
-| **Pooled runs** | OR-Tools vehicle routing with time windows, in a small Python service | Real bookings and vehicles |
-
-## 4. UI and UX
-
-| Item | Why | Effort |
-| --- | --- | --- |
-| **Usability test with five farmers** on their own phones: ask, scan, slip, spray window | Every screen was designed without a farmer in the room | 2 field days |
-| **Marathi copy review** by a native writer; verify the 22 village names marked `mrVerified: false` | Marathi must be first-class, not translated | 2 |
-| **Low-end phone budget**: test on a 2 GB Android; first load under 3 s on 3G; Marathi OCR only on demand | The real device, not a laptop | 2 |
-| **Sunlight and TalkBack pass**: contrast outdoors, screen reader order, touch targets | Accessibility commitments in PRODUCT.md | 1 |
-| **Agent answer card**: shorter trace by default (tap to expand), clearer "machine Marathi" marking, listen button | A farmer needs the answer, an officer needs the trace | 1 |
-| **Desk on a tablet** at the collection point | Mornings happen there, not at a desk | 2 |
-
-## 5. Reality exposure: from demo to evidence
-
-This matters more than any feature. Nothing in the product has met a farmer yet.
-
-| Step | What | Who to approach | Done when |
-| --- | --- | --- | --- |
-| R1 | **Agronomist review** of the spray table, the 60-day interval, and the agent's guard list; confirm the antibiotic ban's gazette status | A plant pathologist at ICAR-NRCP Solapur, MPKV Rahuri or the district KVK | A named reviewer signs off; AGRONOMY.md records it |
-| R2 | **Ten farmer interviews** in two villages: how they decide to spray, irrigate, pick and sell; what phones they use; who reads the patti | Through an FPO or the agriculture office | Notes written up; the three biggest surprises change the backlog |
-| R3 | **Usability sessions** with the prototype on their phones | The same farmers | Tasks completed without help; failures fixed |
-| R4 | **One FPO partner** willing to share rate cards and run the desk weekly | FPOs in Phaltan taluka | A letter of intent for the Ambia bahar pilot |
-| R5 | **Real data**: 200 leaf photos in blight weather, 30 pattis (names blurred), one season of picking dates and prices from the FPO | The FPO and its members, with consent | Data in the event store with consent records |
-| R6 | **Shadow mode**: run the forecast and the advisory pipeline on real reports for four weeks without sending anything; compare with what happened | The officer | Backtest on real reports published, good or bad |
-| R7 | **Pilot**: 150 farmers, three villages, the Ambia bahar of 2027 | FPO and officer | The pilot metrics in ROADMAP.md, measured |
-
-## 6. How to proceed: the next twelve weeks
+## 5. Order of work
 
 ```mermaid
 gantt
-  title Next twelve weeks
+  title Local prototype plan
   dateFormat YYYY-MM-DD
   axisFormat %d %b
-  section Demo
-  Rehearse, backup video, spray table to reviewer :d1, 2026-10-21, 10d
-  section Backend
-  B1 event store + B3 sync API v2                 :b1, 2026-11-02, 8d
-  B2 accounts, roles, consent                     :b2, after b1, 5d
-  B7 agent log and feedback                       :b7, 2026-11-02, 3d
-  B5 job runner + B6 delivery                     :b5, after b2, 8d
-  B8 security, ops + B9 model queue               :b8, after b5, 6d
-  B10 deployment decision and setup               :b10, after b8, 3d
-  section Product
-  Onboarding + log what I did                     :p1, after b2, 8d
-  Advisory console + agent review                 :p2, after b5, 5d
-  section Reality
-  Agronomist review                               :crit, r1, 2026-10-21, 21d
-  Farmer interviews and usability                 :crit, r2, 2026-11-09, 14d
-  FPO partner and data collection                 :crit, r4, 2026-11-16, 40d
-  Shadow mode on real reports                     :r6, 2026-12-21, 28d
+  section Phase 1 · nothing breaks
+  A1 local database                        :a1, 2026-10-21, 2d
+  D1 one command + B4 warm-up              :d1, after a1, 1d
+  D2 HTTPS for the phone                   :d2, after d1, 1d
+  D3 offline venue mode                    :d3, after d2, 1d
+  A6 agent log + A7 status page            :a6, 2026-10-21, 2d
+  B1 pomegranate Scan Lens                 :crit, b1, 2026-10-23, 3d
+  section Phase 2 · close the loops
+  A2 farmer entries + C3 phone screens     :a2, 2026-10-28, 3d
+  A4 jobs + A5 delivery + C1 console       :a5, 2026-10-28, 4d
+  A3 several phones                        :a3, after a2, 1d
+  D4 scenarios + D5 check + D6 rehearsal   :crit, d4, 2026-11-01, 2d
+  section Phase 3 · after the demo
+  B2 B3 local Marathi speech               :b2, 2026-11-04, 4d
+  B5 follow-ups + C2 agent review          :b5, after b2, 3d
+  C4 C5 C6 polish passes                   :c4, after b5, 4d
+  B8 small fine-tuned model (stretch)      :b8, after c4, 4d
 ```
 
-**Weeks 1–2 (to 2 November): finish the demo.** Rehearse the [DEMO.md](DEMO.md) script twice on a real phone, record the backup video, send the spray table to a reviewer (R1). No new features. Decide the pilot hosting question (B10) in principle.
+**Phase 1 (21–27 October): nothing breaks.** The database first (A1), because every later item writes to it. Then one command with warmed models (D1, B4), HTTPS so the phone's camera and microphone work over Wi-Fi (D2), and offline mode (D3). In parallel, the agent log and status page (A6, A7) and the pomegranate model (B1), the single biggest credibility gain. *Done when:* pull the network cable, restart the server, and the full demo script still runs, with a real pomegranate diagnosis.
 
-**Weeks 3–4: make the record real.** B1 event store and B3 sync API, so the phone's outbox writes to Postgres; B7 agent log from the first day, because every answer is future training data. Start R2 interviews in parallel; they will change the onboarding design.
+**Phase 2 (28 October – 2 November): close the loops.** The farmer logs her own work (A2), the officer approves the evening advisories and they arrive on the phones in the room with receipts (A4, A5, C1), several phones act as different farmers (A3). Then scenarios, the one check command and two rehearsals (D4–D6). *Done when:* one event typed on a phone visibly changes the desk, the agent's next answer and another farmer's phone.
 
-**Weeks 5–6: people and consent.** B2 accounts, roles and consent; onboarding and "log what I did" on the phone. Login on the desk. Usability sessions (R3) on the onboarding.
+**Phase 3 (after the demo): depth.** Local Marathi speech in and out (B2, B3), follow-up questions with what-if (B5), agent review (C2), the polish passes (C4–C6), and, if there is time, the small fine-tuned model (B8).
 
-**Weeks 7–8: the evening loop.** B5 job runner (weather snapshots, prices, the advisory pipeline every evening) and B6 delivery (Web Push and SMS first, WhatsApp when the template is approved); the advisory console on the desk, so the officer approves before anything is sent.
+## 6. If time is short, do these five
 
-**Weeks 9–10: harden.** B8 security and operations, B9 model queue and fallback model, agent review on the desk, the low-end phone budget, the Marathi copy review.
+1. **A1 local database**: without it, a restart loses the demo.
+2. **D2 + D3 HTTPS and offline mode**: venue Wi-Fi is the most likely failure.
+3. **B1 pomegranate Scan Lens**: replaces the one result that is scripted today.
+4. **A5 + C1 advisories that actually arrive**: the clearest proof that the collective layer works.
+5. **D1 + B4 one command, warm models**: the first answer in front of judges is fast.
 
-**Weeks 11–12: shadow mode.** Deploy (B10), run everything on real reports from the FPO's members without sending advice (R6), and compare the forecast and the advisories with what happened. Go or no-go for the Ambia bahar pilot on that evidence.
+## 7. Out of scope (the project is not going live)
 
-## 7. Decision gates
-
-| Gate | Question | Evidence needed | If no |
-| --- | --- | --- | --- |
-| End of week 2 | Is the spray table safe to show farmers? | Reviewer sign-off | The agent shows "ask the officer" instead of any product |
-| End of week 6 | Will farmers enter their own data? | Usability: 4 of 5 log a spray without help | Simplify to voice-only logging; FPO staff enter on the farmer's behalf |
-| End of week 10 | Does a 3B model on CPU answer well enough? | `eval:agent` scores within 10 points of Llama 3.1 8B | Budget a GPU box for the FPO office |
-| End of week 12 | Does the forecast beat distance on real reports? | Shadow-mode backtest | Keep the radar and the warnings, drop the forecast from farmer screens until fitted |
-
-## 8. What not to build yet
-
-- A national or multi-crop platform: one crop, one taluka, until the pilot shows people keep the record.
-- A fine-tuned LLM: tools, schemas and guards first; fine-tune only on officer-approved real answers.
-- Payments, loans or any lender integration: out of scope for this product.
-- Carbon or sustainability credits: no claims without measured outcomes.
+Accounts and OTP login, consent records under the DPDP Act, real SMS or WhatsApp gateways, cloud hosting, multi-tenant FPOs, payments. ROADMAP.md keeps them for a future pilot; none of them makes the local prototype better.
