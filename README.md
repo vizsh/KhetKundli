@@ -127,6 +127,7 @@ For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3
 | [docs/DATA.md](docs/DATA.md) | Every data source, schemas, live versus recorded versus simulated, privacy |
 | [docs/AGRONOMY.md](docs/AGRONOMY.md) | The spray table and its sources; why the antibiotic was removed; what still needs an agronomist |
 | [docs/EXPERIENCE.md](docs/EXPERIENCE.md) | The "Living Record" design world, surfaces, motion, Marathi, accessibility |
+| [docs/NEXT-STEPS.md](docs/NEXT-STEPS.md) | What remains and the next twelve weeks: built versus simulated versus missing, a backend audit, features, UI/UX, field validation, decision gates |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | From the demo to a pilot to the taluka: features, technical designs, data, metrics, risks |
 | [docs/DEMO.md](docs/DEMO.md) | The seven-minute demo, two-device setup and fallbacks |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Bahar, telya, patti, adat, gat, H3 and the rest |
