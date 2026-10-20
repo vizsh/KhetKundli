@@ -41,7 +41,7 @@ gantt
 
 | Task | Done when |
 | --- | --- |
-| **Check the spray table.** `rules.ts` lists Streptocycline (streptomycin + tetracycline). India notified a ban on these antibiotics for crop use; confirm the current position and recommended alternatives with ICAR-NRCP Solapur and the CIB&RC lists, and replace them | The table cites a current source and a named reviewer |
+| **Review the spray table.** Streptocycline is removed and the table now follows ICAR-NRCP's copper and Bordeaux advice ([AGRONOMY.md](AGRONOMY.md)); confirm the antibiotic ban's final gazette notification, and have a plant pathologist review doses and the 60-day pre-harvest interval for copper | A named reviewer signs off the table |
 | Rehearse on a real Android phone over venue-like Wi-Fi, both the two-device and one-laptop setups | The [DEMO.md](DEMO.md) script runs twice without a reset |
 | Record a backup video of the full script | A 7-minute file on two drives |
 | Finish review of the pitch page and slip check | Findings fixed or explained |

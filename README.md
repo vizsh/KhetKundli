@@ -102,6 +102,7 @@ For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data model, the sync protocol, offline, performance and tests, with diagrams |
 | [docs/MODELS.md](docs/MODELS.md) | The engine's models: blight, spread forecast, water, harvest, markets, runs, Scan Lens, slip check, voice |
 | [docs/DATA.md](docs/DATA.md) | Every data source, schemas, live versus recorded versus simulated, privacy |
+| [docs/AGRONOMY.md](docs/AGRONOMY.md) | The spray table and its sources; why the antibiotic was removed; what still needs an agronomist |
 | [docs/EXPERIENCE.md](docs/EXPERIENCE.md) | The "Living Record" design world, surfaces, motion, Marathi, accessibility |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | From the demo to a pilot to the taluka: features, technical designs, data, metrics, risks |
 | [docs/DEMO.md](docs/DEMO.md) | The seven-minute demo, two-device setup and fallbacks |

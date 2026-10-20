@@ -198,7 +198,7 @@ node scripts/capture-docs.mjs    # regenerate docs/images
 
 ## Open items
 
-- **Spray table.** `rules.ts` lists copper oxychloride with Streptocycline (streptomycin + tetracycline) for curative sprays. India notified a ban on streptomycin and tetracycline for crop use; confirm the current position with ICAR-NRCP Solapur and the CIB&RC lists, and replace the antibiotic in the table before any field use or public demo.
+- **Spray table.** Streptocycline has been removed; curative sprays are copper hydroxide 77% WP at 2 g per litre and preventive sprays 1% Bordeaux, from ICAR-NRCP advisories (sources and open questions in [AGRONOMY.md](AGRONOMY.md)). An agronomist still has to review the table, the final gazette status of the antibiotic ban has to be confirmed, and pre-harvest intervals are not yet checked.
 - 22 Marathi village names are best-effort transliterations (`mrVerified: false`).
 - The leaf model's licence on Hugging Face is listed as "other"; confirm before distributing beyond the demo.
 - Recorded weather is a reanalysis grid (several kilometres), not a station in the orchard; the wind grid has nine points over the taluka.
