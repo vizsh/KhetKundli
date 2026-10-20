@@ -76,10 +76,11 @@ export function DatedImpression({ day, playing, size = "xs" }: { day: number; pl
   );
 }
 
-export function SourceStamp({ live, label, size = "xs" }: { live: boolean; label?: string; size?: "xs" | "sm" }) {
+/** Where a figure comes from: live (forecast or on-device now), recorded (real past data), or simulated. */
+export function SourceStamp({ live, recorded = false, label, size = "xs" }: { live: boolean; recorded?: boolean; label?: string; size?: "xs" | "sm" }) {
   return (
-    <Stamp tone={live ? "stamp" : "ink"} size={size} rotate={live ? -4 : 2} title={label}>
-      {live ? "Live" : "Simulated"}
+    <Stamp tone={live || recorded ? "stamp" : "ink"} size={size} rotate={live ? -4 : recorded ? -2 : 2} title={label}>
+      {live ? "Live" : recorded ? "Recorded" : "Simulated"}
     </Stamp>
   );
 }

@@ -36,16 +36,21 @@ export function generateSeason(input: SeasonInput = {}): Season {
 
   // ---------------- weather ----------------
   const weather: WeatherDay[] = generateWeather(rng.fork(1));
-  // Scripted: the evening rain that washed off the hero's routine spray.
-  weather[HERO_SPRAY_FAIL_DAY] = { ...weather[HERO_SPRAY_FAIL_DAY], rainMm: 14.2, rainProb: 0.72, rh: 89 };
   for (const l of input.live ?? []) {
     const [y, m, d] = l.date.split("-").map(Number);
     const day = dayOf(y, m - 1, d);
     if (day >= 0 && day < SEASON_DAYS) weather[day] = { ...l, day, live: true };
   }
+  const recordedThrough = weather.reduce((last, w) => (w.observed ? w.day : last), -1);
+  // The evening rain that washed off the hero's routine spray: the wettest recorded day in late
+  // September when the real season is loaded, otherwise a scripted 14 mm on the default day.
+  const wetEvening = weather.slice(108, 125).filter((w) => w.observed && w.rainMm >= 8);
+  const heroSprayFailDay = wetEvening.length ? wetEvening.reduce((a, b) => (b.rainMm > a.rainMm ? b : a)).day : HERO_SPRAY_FAIL_DAY;
+  if (!wetEvening.length) weather[HERO_SPRAY_FAIL_DAY] = { ...weather[HERO_SPRAY_FAIL_DAY], rainMm: 14.2, rainProb: 0.72, rh: 89, wetHours: undefined, observed: false };
   if (ov.rain && weather[ov.rain.day]) {
     const w = weather[ov.rain.day];
-    weather[ov.rain.day] = { ...w, rainMm: ov.rain.mm, rainProb: 0.88, rh: Math.max(w.rh, 87), windKmh: Math.max(w.windKmh, 14) };
+    // Rain wets the canopy for most of the day: without this, a live day's real (dry) wet hours would cancel the demo rain.
+    weather[ov.rain.day] = { ...w, rainMm: ov.rain.mm, rainProb: 0.88, rh: Math.max(w.rh, 87), windKmh: Math.max(w.windKmh, 14), wetHours: Math.max(w.wetHours ?? 0, 14) };
   }
 
   // ---------------- plots ----------------
@@ -191,6 +196,18 @@ export function generateSeason(input: SeasonInput = {}): Season {
       }
     }
 
+    for (const a of (ov.advisories ?? []).filter((x) => x.day === d)) {
+      const cells = new Set(a.hexes);
+      const window = firstSprayWindow(weather, d) ?? d + 1;
+      for (let p = 0; p < n; p++) {
+        if (!cells.has(plots[p].hex) || state[p] === 2) continue;
+        // App users get it on the phone; the rest by SMS from the FPO, and fewer of them act on it.
+        const app = plots[p].farmer.usesApp;
+        say(p, d, 8, "computed", { type: "advisory", text: `Officer advisory${app ? "" : " (SMS)"}: blight weather is forecast with wind from infected orchards. Preventive spray on ${fmtDay(window)} at 06:00.` });
+        if (app || u(p, d, 7) < 0.45) queueSpray(window, p, "preventive", "Officer advisory from the 72-hour spread forecast");
+      }
+    }
+
     for (const job of sprayQueue.get(d) ?? []) {
       const washed = weather[d].rainMm >= 5;
       const spec = SPRAYS[job.kind];
@@ -207,12 +224,12 @@ export function generateSeason(input: SeasonInput = {}): Season {
   }
 
   // Scripted hero history: the routine spray that rain washed off.
-  say(hero, HERO_SPRAY_FAIL_DAY, 15, "human", {
+  say(hero, heroSprayFailDay, 15, "human", {
     type: "spray",
     product: SPRAYS.preventive.product,
     dose: SPRAYS.preventive.dose,
     washedOff: true,
-    reason: "Routine spray, 4 hours before 14 mm of evening rain",
+    reason: `Routine spray, 4 hours before ${Math.round(weather[heroSprayFailDay].rainMm)} mm of evening rain`,
   });
 
   // ---------------- irrigation ----------------
@@ -455,6 +472,8 @@ export function generateSeason(input: SeasonInput = {}): Season {
     waterSavedByDay,
     forecastIrrigationShare,
     heroPlot: hero,
+    heroSprayFailDay,
+    recordedThrough,
   };
 }
 

@@ -67,9 +67,12 @@ export function firstSprayWindow(weather: WeatherDay[], from: number, horizon = 
   return null;
 }
 
-/** Blight favourability from weather: warm, humid, wet days drive spread. */
+/**
+ * Blight favourability from weather: warm, wet canopies drive bacterial blight. Recorded and
+ * forecast days carry leaf-wetness hours from hourly data; simulated days fall back to mean humidity.
+ */
 export function blightFavour(w: WeatherDay) {
-  const humid = Math.min(1, Math.max(0, (w.rh - 58) / 27));
+  const humid = w.wetHours !== undefined ? Math.min(1, w.wetHours / 12) : Math.min(1, Math.max(0, (w.rh - 58) / 27));
   const warm = w.tMax >= 25 && w.tMax <= 37 ? 1 : 0.5;
   const wet = w.rainMm > 2 ? 1.5 : 1;
   return humid * warm * wet;

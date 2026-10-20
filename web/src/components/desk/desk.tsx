@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Sheet } from "@/components/record/sheet";
 import { useDesk } from "@/lib/store";
@@ -13,6 +14,7 @@ import { Register } from "./register";
 import { SurveyMap } from "./survey-map";
 import { VillageLedger } from "./village-ledger";
 import { LiveWeatherLoader, WeatherSlip } from "./weather-slip";
+import { LiveWindLoader, SpreadForecast } from "./forecast";
 
 function FileCover() {
   const plots = useDesk((s) => s.season.plots.length);
@@ -38,11 +40,29 @@ function FileCover() {
   );
 }
 
+/** Under the map: on the Pest Radar, the 72-hour spread forecast (the ledger one click away); elsewhere the village ledger. */
+function MapFoot() {
+  const layer = useDesk((s) => s.layer);
+  const [ledger, setLedger] = useState(false);
+  if (layer === "pest" && !ledger) return <SpreadForecast className="h-72 border-t-2 border-ink xl:h-auto xl:min-h-[140px] xl:flex-1" onLedger={() => setLedger(true)} />;
+  return (
+    <div className="flex h-72 min-h-0 flex-col border-t-2 border-ink xl:h-auto xl:flex-1">
+      {layer === "pest" && (
+        <button type="button" onClick={() => setLedger(false)} className="self-start px-4 pt-1.5 text-[12px] text-ink-3 underline-offset-2 hover:text-ink hover:underline">
+          ← Back to the 72-hour forecast
+        </button>
+      )}
+      <VillageLedger className="min-h-0 flex-1" />
+    </div>
+  );
+}
+
 export function Desk() {
   return (
     <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
       <SeasonPlayer />
       <LiveWeatherLoader />
+      <LiveWindLoader />
       <SyncBridge />
       <FileCover />
       <main className="grid min-h-0 flex-1 grid-cols-1 content-start gap-5 px-3 pb-5 sm:px-5 xl:grid-cols-[minmax(0,1.42fr)_minmax(400px,1fr)] xl:content-normal">
@@ -62,9 +82,9 @@ export function Desk() {
                 <DemoSlip />
               </div>
             </div>
-            <VillageLedger className="h-72 border-t-2 border-ink xl:h-auto xl:flex-1" />
-            <p className="typed border-t border-ink/15 px-4 py-1 text-[11px] text-ink-3">
-              Map data © OpenStreetMap contributors (ODbL). Village areas are approximate (Voronoi from village points). Plots and events are simulated.
+            <MapFoot />
+            <p className="typed truncate border-t border-ink/15 px-4 py-1 text-[11px] text-ink-3">
+              Map © OpenStreetMap contributors (ODbL) · village areas approximate · plots and events simulated · weather and wind live
             </p>
           </Sheet>
         </div>

@@ -33,6 +33,10 @@ export type WeatherDay = {
   windFrom: number;
   et0: number;
   live?: boolean;
+  /** Leaf-wetness hours, from hourly data on recorded and forecast days. */
+  wetHours?: number;
+  /** Recorded weather from the Open-Meteo archive, not a forecast. */
+  observed?: boolean;
 };
 
 type EventBase = { id: string; plot: number; day: number; hour: number; by: Provenance };
@@ -110,6 +114,10 @@ export type Season = {
   waterSavedByDay: number[]; // litres, cumulative
   forecastIrrigationShare: number[]; // share of app users skipping on forecast, by day
   heroPlot: number;
+  /** The evening rain washed off the hero's routine spray: a recorded rainy day when the real season is loaded. */
+  heroSprayFailDay: number;
+  /** Last season day with recorded weather, or -1 when the season is fully synthetic. */
+  recordedThrough: number;
 };
 
 export type Overrides = {
@@ -123,4 +131,6 @@ export type Overrides = {
   heroMarket?: MarketId;
   /** Sale slips read on a phone; each replaces the simulated sale it matches. */
   slips?: SaleSlip[];
+  /** Preventive advisories the officer sent from the spread forecast: app users in these cells spray before the weather turns. */
+  advisories?: { day: number; hexes: number[] }[];
 };

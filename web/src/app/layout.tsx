@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Anek_Devanagari, Anek_Latin, Courier_Prime, Kalam, Tiro_Devanagari_Marathi } from "next/font/google";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
+import { MotionProvider } from "@/components/motion-provider";
 
 const anekLatin = Anek_Latin({ subsets: ["latin", "latin-ext"], axes: ["wdth"], variable: "--font-anek-latin" });
 const anekDeva = Anek_Devanagari({ subsets: ["devanagari"], axes: ["wdth"], variable: "--font-anek-deva" });
@@ -24,7 +25,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${anekLatin.variable} ${anekDeva.variable} ${courierPrime.variable} ${tiroMarathi.variable} ${kalam.variable} h-full`}
     >
       <body className="board-fibre min-h-full">
-        <TooltipProvider delayDuration={250}>{children}</TooltipProvider>
+        <MotionProvider><TooltipProvider delayDuration={250}>{children}</TooltipProvider></MotionProvider>
       </body>
     </html>
   );

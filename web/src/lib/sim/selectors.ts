@@ -79,6 +79,8 @@ export function registerFor(s: Season, day: number): RegisterLine[] {
         break;
     }
   }
+  const officer = (s.eventsByDay[day] ?? []).filter((e) => e.type === "advisory" && e.text.startsWith("Officer advisory")).length;
+  if (officer) lines.push({ key: `o${day}`, hour: 8, by: "computed", text: `Officer's preventive advisory from the spread forecast sent to ${officer} plots`, count: officer });
   const warnings = (s.eventsByDay[day] ?? []).filter((e) => e.type === "advisory" && e.text.startsWith("Blight confirmed")).length;
   if (warnings) lines.push({ key: `w${day}`, hour: 10, by: "computed", text: `Neighbour warnings sent to ${warnings} plots near confirmed blight`, count: warnings });
   if (irrigated) lines.push({ key: `i${day}`, hour: 7, by: "human", text: `Irrigation logged on ${irrigated} plots, ${(litres / 1e6).toFixed(2)} ML`, count: irrigated });
@@ -141,7 +143,7 @@ export function diffSeasons(a: Season, b: Season, day: number, label: string): R
   if (sa.join() !== sb.join() && sb.length) items.push(`${heroId} curative spray set for ${sb[0] - day === 1 ? "tomorrow" : `${fmtDay(sb[0])}`} at 06:00, first dry, calm morning`);
   const riskA = riskCounts(a, day), riskB = riskCounts(b, day);
   const warnA = riskA[2] + riskA[3], warnB = riskB[2] + riskB[3];
-  if (warnA !== warnB || riskA[1] !== riskB[1]) items.push(`Pest Radar: ${warnB} hexes on warning (was ${warnA}), ${riskB[1]} on watch (was ${riskA[1]})`);
+  if (warnA !== warnB || riskA[1] !== riskB[1]) items.push(`Pest Radar: ${warnB} ${warnB === 1 ? "hex" : "hexes"} on warning (was ${warnA}), ${riskB[1]} on watch (was ${riskA[1]})`);
   const warned = (s: Season) => s.eventsByDay[day].filter((e) => e.type === "advisory" && e.text.startsWith("Blight confirmed")).length;
   if (warned(b) > warned(a)) items.push(`${warned(b) - warned(a)} neighbouring plots warned to spray preventively`);
   const skips = (s: Season) => s.events.filter((e) => e.type === "irrigate-skip" && e.day >= day && e.day <= day + 2).length;
@@ -152,6 +154,17 @@ export function diffSeasons(a: Season, b: Season, day: number, label: string): R
   if (gradeOf(a) !== gradeOf(b)) items.push(`${heroId} expected grade ${gradeOf(a)} → ${gradeOf(b)} at harvest`);
   const runsA = a.runs.filter((r) => r.day >= day).length, runsB = b.runs.filter((r) => r.day >= day).length;
   if (runsA !== runsB) items.push(`Pooled runs re-planned: ${runsB} ahead (was ${runsA})`);
+  const advised = (s: Season) => s.eventsByDay[day].filter((e) => e.type === "advisory" && e.text.startsWith("Officer advisory"));
+  if (advised(b).length > advised(a).length) {
+    const sms = advised(b).filter((e) => e.type === "advisory" && e.text.includes("(SMS)")).length - advised(a).filter((e) => e.type === "advisory" && e.text.includes("(SMS)")).length;
+    const total = advised(b).length - advised(a).length;
+    const sprays = (s: Season) => s.events.filter((e) => e.type === "spray" && e.reason.startsWith("Officer advisory") && e.day >= day && e.day <= day + 3).length;
+    const booked = sprays(b) - sprays(a);
+    items.push(`${total} ${total === 1 ? "plot" : "plots"} told to spray before the weather turns (${total - sms} on the app, ${sms} by SMS); ${booked} preventive ${booked === 1 ? "spray" : "sprays"} booked`);
+    const end = Math.min(SEASON_DAYS - 1, day + 21);
+    const fresh = (s: Season) => s.plots.reduce((c, _, p) => c + (s.infected[day][p] === 0 && s.infected[end][p] > 0 ? 1 : 0), 0);
+    if (fresh(a) !== fresh(b)) items.push(`New infections expected in the next three weeks: ${fresh(a)} → ${fresh(b)}`);
+  }
   const slipSales = (s: Season) => s.eventsByPlot[hero].filter((e): e is Extract<PlotEvent, { type: "sale" }> => e.type === "sale" && !!e.slip);
   for (const e of slipSales(b).filter((e) => !slipSales(a).some((x) => x.day === e.day && x.gross === e.gross && x.net === e.net))) {
     items.push(`${heroId} sale slip of ${fmtDay(e.day)} checked on the phone: net ₹${Math.round(e.net).toLocaleString("en-IN")}${e.slip!.aboveCard > 0 ? `, ₹${e.slip!.aboveCard.toLocaleString("en-IN")} charged above the agreed rate card` : ", every deduction as agreed"}`);

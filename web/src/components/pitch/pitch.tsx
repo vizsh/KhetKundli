@@ -120,6 +120,7 @@ function HonestLedger() {
     { item: "Weather, evaporation and the 72-hour spray window", detail: "Open-Meteo forecast for Phaltan, refreshed hourly", live: liveStatus === "live" },
     { item: "Taluka geography and pooled-run routes", detail: "OpenStreetMap boundary, villages, roads, Nira river and canals; routes on the real road graph", live: true },
     { item: "Tomato and capsicum leaf scans", detail: "MobileNetV2 (PlantVillage) running in the browser, about 80 ms; often wrong on field photos until retrained", live: true },
+    { item: "Season weather and wind", detail: "Recorded hourly weather for Phaltan since 1 June (Open-Meteo archive) drives the blight model; 7-day forecast and a live 9-point wind grid drive the 72-hour spread forecast", live: true },
     { item: "Sale slip reading and checks", detail: "Tesseract OCR on the phone in about a second, then arithmetic and the agreed rate card; works on printed slips, not handwriting yet", live: true },
     { item: "Pomegranate scan result", detail: "Scripted until a model is trained on Phaltan photos (pipeline in ml/train.py)", live: false },
     { item: "192 farmers, their plots, sprays, harvests and sales", detail: "Synthetic season from a deterministic engine; every screen says so", live: false },

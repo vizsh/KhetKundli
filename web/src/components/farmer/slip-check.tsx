@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "motion/react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Camera, Check as Tick, ImageUp, Loader2, Send, Share2, Wifi, WifiOff, X } from "lucide-react";
 import { Stamp } from "@/components/record/stamp";
 import { StampButton } from "@/components/record/stamp-button";
@@ -42,6 +42,7 @@ function ringPath(b: Box, pad = 10) {
 }
 
 function Marks({ photo, slip, checks }: { photo: Photo; slip: Slip; checks: Check[] }) {
+  const reduce = useReducedMotion();
   const boxOf = (c: Check): Box | undefined =>
     c.charge !== undefined ? slip.charges[c.charge]?.box : c.id === "gross" || c.id === "net" || c.id === "total" ? slip.boxes[c.id as SlipNumber] : undefined;
   const marks = checks.flatMap((c) => {
@@ -60,7 +61,7 @@ function Marks({ photo, slip, checks }: { photo: Photo; slip: Slip; checks: Chec
             strokeWidth={2.4}
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
-            initial={{ pathLength: 0, opacity: 0 }}
+            initial={reduce ? false : { pathLength: 0, opacity: 0 }}
             animate={{ pathLength: 1, opacity: 0.95 }}
             transition={{ duration: 0.55, delay: 0.25 + i * 0.12, ease: "easeOut" }}
             style={{ transformBox: "fill-box", transformOrigin: "center", rotate: -2 }}
@@ -75,7 +76,7 @@ function Marks({ photo, slip, checks }: { photo: Photo; slip: Slip; checks: Chec
             strokeLinecap="round"
             strokeLinejoin="round"
             vectorEffect="non-scaling-stroke"
-            initial={{ pathLength: 0 }}
+            initial={reduce ? false : { pathLength: 0 }}
             animate={{ pathLength: 1 }}
             transition={{ duration: 0.25, delay: 0.2 + i * 0.08 }}
           />

@@ -60,4 +60,8 @@ export type LiveDaily = {
   windKmh: number;
   windFrom: number;
   et0: number;
+  /** Hours with the canopy wet (rain, or RH at or above 85%) at 18 to 35 °C. */
+  wetHours?: number;
+  /** Recorded (reanalysis archive) rather than forecast. */
+  observed?: boolean;
 };

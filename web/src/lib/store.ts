@@ -7,6 +7,7 @@ import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, type Ripple } from "@/lib/sim/selectors";
 import type { MarketId, Overrides, SaleSlip, Season } from "@/lib/sim/types";
 import type { LiveDaily, LiveHourly } from "@/lib/sim/weather";
+import type { WindGrid } from "@/lib/spread";
 
 /** 05:31, just after the pooled runs leave at 05:15. */
 const START_HOUR = 0.23;
@@ -35,6 +36,13 @@ type DeskState = {
   ripple: (Ripple & { at: number }) | null;
   /** Questions farmers handed to the extension officer, newest first. */
   inbox: Escalation[];
+  /** Live hourly forecast on a 3 × 3 grid over the taluka, for the wind field and spread forecast. */
+  wind: WindGrid | null;
+  /** Hour into the 72-hour spread forecast the desk is looking at; null follows the clock. */
+  forecastHour: number | null;
+  setWind: (wind: WindGrid | null) => void;
+  setForecastHour: (hour: number | null) => void;
+  warnCells: (hexes: number[], plots: number) => void;
   setDay: (day: number) => void;
   syncToday: () => void;
   setTime: (t: number) => void;
@@ -88,6 +96,16 @@ export const useDesk = create<DeskState>((set, get) => {
     season: initial,
     ripple: null,
     inbox: [],
+    wind: null,
+    forecastHour: null,
+    setWind: (wind) => set({ wind }),
+    setForecastHour: (forecastHour) => set({ forecastHour }),
+    warnCells: (hexes, plots) => {
+      const { overrides, t } = get();
+      const day = Math.floor(t);
+      const advisories = [...(overrides.advisories ?? []).filter((a) => a.day !== day), { day, hexes }];
+      local({ ...overrides, advisories }, `Preventive advisory for ${hexes.length} ${hexes.length === 1 ? "cell" : "cells"} downwind (${plots} ${plots === 1 ? "plot" : "plots"})`);
+    },
     setDay: (day) => set({ t: clampDay(day) + START_HOUR }),
     syncToday: () => {
       const today = realToday();

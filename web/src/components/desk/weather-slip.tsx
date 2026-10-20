@@ -31,12 +31,13 @@ export function WeatherSlip() {
   const status = useDesk((s) => s.liveStatus);
   const day = Math.floor(t);
   const days = season.weather.slice(day, day + 4);
-  const live = days[0]?.live === true;
+  const live = days[0]?.live === true && !days[0]?.observed;
+  const recorded = days[0]?.observed === true;
   return (
     <div className="flex items-center gap-3 rounded-[2px] bg-paper px-3 py-1.5 shadow-[var(--shadow-sheet)]">
       <div className="flex flex-col items-start gap-1">
         <span className="label-form text-ink-2">Phaltan weather</span>
-        <SourceStamp live={live} label={live ? "Open-Meteo forecast" : status === "loading" ? "Loading live forecast" : "Synthetic season weather"} />
+        <SourceStamp live={live} recorded={recorded} label={live ? "Open-Meteo forecast" : recorded ? "Recorded weather, Open-Meteo archive" : status === "loading" ? "Loading live forecast" : "Synthetic season weather"} />
       </div>
       <ol className="flex gap-3">
         {days.map((w, i) => {

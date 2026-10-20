@@ -46,7 +46,7 @@ try {
   await page.evaluate(() => document.querySelector("[role=dialog] form")?.requestSubmit());
   await sleep(500);
   const ask = await textOf(page, "[role=dialog]");
-  check("ask: answer cites the washed-off spray", /washed it off/.test(ask) && /27 SEP|26 SEP/.test(ask), ask.match(/On \d\d [A-Z]{3}[^.]*\./)?.[0] ?? ask.slice(0, 160));
+  check("ask: answer cites the washed-off spray", /washed it off/.test(ask) && /On \d\d (SEP|OCT)/.test(ask), ask.match(/On \d\d [A-Z]{3}[^.]*\./)?.[0] ?? ask.slice(0, 160));
   check("ask: Marathi answer present", /फवारणी/.test(ask));
 
   // Phone and desk in two tabs: a pomegranate scan saved on the phone ripples on the desk.
@@ -70,6 +70,17 @@ try {
   );
   const ripple = await textOf(desk, "[role=status]");
   check("sync: ripple lists consequences", /spray|Pest Radar|grade/.test(ripple), ripple.slice(0, 220));
+
+  // Real data: the season's weather comes from the archive, and the live wind grid has nine points.
+  const weather = await desk.evaluate(() => fetch("/api/weather").then((r) => r.json()).then((j) => ({ recordedThrough: j.recordedThrough, days: j.days?.length })));
+  check("weather: season recorded from the archive", Boolean(weather.recordedThrough) && weather.days > 100, JSON.stringify(weather));
+  const wind = await desk.evaluate(() => fetch("/api/weather/wind").then((r) => r.json()).then((j) => ({ status: j.status, points: j.points?.length, hours: j.times?.length })));
+  check("forecast: live wind grid, 9 points", wind.status === "live" && wind.points === 9 && wind.hours >= 72, JSON.stringify(wind));
+  // Spread forecast: the demo rain shows up in the 72-hour total.
+  await clickText(desk, "button", "Rain forecast in 18 h");
+  const rainTotal = () => Number(document.body.textContent?.match(/72 h · (\d+(?:\.\d)?) mm rain/)?.[1] ?? 0);
+  const stormed = await desk.waitForFunction(`(${rainTotal})() >= 18`, { timeout: 10000, polling: 200 }).then(() => true, () => false);
+  check("forecast: demo rain enters the 72-hour forecast", stormed, (await desk.evaluate(() => document.body.textContent?.match(/Next 72 hours.{0,140}/)?.[0])) ?? "");
 } catch (err) {
   check("smoke run completed", false, String(err).slice(0, 200));
 } finally {

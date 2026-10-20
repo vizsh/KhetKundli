@@ -3,6 +3,9 @@
 import { memo, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { geo } from "@/lib/geo";
+import { frameLabel, TIER } from "@/lib/spread";
+import { useForecast } from "./forecast";
+import { WindField } from "./wind-field";
 import { focusWeek, villageCrates, waterShareByVillage } from "@/lib/sim/selectors";
 import { useDesk, type Layer } from "@/lib/store";
 import {
@@ -56,6 +59,11 @@ function Patterns() {
         </filter>
         <rect width="120" height="120" filter="url(#grain-f)" />
       </pattern>
+      {[1, 2, 3].map((k) => (
+        <pattern key={k} id={`fc-${k}`} patternUnits="userSpaceOnUse" width={[0, 7, 5, 4][k]} height={[0, 7, 5, 4][k]}>
+          <circle cx={1.5} cy={1.5} r={[0, 0.9, 1.1, 1.3][k]} fill="var(--stamp)" opacity={[0, 0.55, 0.75, 0.9][k]} />
+        </pattern>
+      ))}
       <clipPath id="taluka-clip">
         <path d={boundaryPath} />
       </clipPath>
@@ -192,6 +200,40 @@ function RiskHexes({ day, onHover }: { day: number; onHover: (h: number | null) 
   );
 }
 
+/** Where the next 72 hours can carry blight, accumulated up to the scrubbed hour: violet stipple, densest where most arrives. */
+function Exposure({ onHover }: { onHover: (h: number | null) => void }) {
+  const { forecast } = useForecast();
+  const hour = useDesk((s) => s.forecastHour);
+  const season = useDesk((s) => s.season);
+  const t = useDesk((s) => s.t);
+  const risk = season.hexRisk[Math.floor(t)];
+  const upto = forecast.cumulative[hour ?? forecast.cumulative.length - 1];
+  if (!upto) return null;
+  return (
+    <g>
+      {hexes.map((h, i) => {
+        const e = upto[i];
+        const tier = e >= 4 ? 3 : e >= 1.2 ? 2 : e >= 0.35 ? 1 : 0;
+        if (!tier || risk[i] >= 2) return null;
+        return (
+          <path
+            key={i}
+            d={h.d}
+            fill={`url(#fc-${tier})`}
+            stroke="var(--stamp)"
+            strokeWidth={tier >= 2 ? 1.3 : 0.8}
+            strokeDasharray={tier >= 2 ? undefined : "3 2"}
+            strokeOpacity={0.75}
+            style={{ transition: "fill 160ms ease-out" }}
+            onPointerEnter={() => onHover(i)}
+            onPointerLeave={() => onHover(null)}
+          />
+        );
+      })}
+    </g>
+  );
+}
+
 function Runs() {
   const t = useDesk((s) => s.t);
   const season = useDesk((s) => s.season);
@@ -265,6 +307,8 @@ export function SurveyMap() {
   const season = useDesk((s) => s.season);
   const [hover, setHover] = useState<number | null>(null);
   const hovered = hover !== null ? geo.hexes[hover] : null;
+  const { frames, forecast, points } = useForecast();
+  const forecastHour = useDesk((s) => s.forecastHour);
   const hoverPlots = hover !== null ? season.plots.filter((p) => p.hex === hover).length : 0;
 
   return (
@@ -273,6 +317,7 @@ export function SurveyMap() {
         <Patterns />
         <Fields layer={layer} day={day} />
         <Linework />
+        {layer === "pest" && <Exposure onHover={setHover} />}
         {layer === "pest" && <RiskHexes day={day} onHover={setHover} />}
         {layer === "runs" && <Runs />}
         <Labels layer={layer} />
@@ -280,6 +325,7 @@ export function SurveyMap() {
         <ScaleBar />
         <rect width={MAP_W} height={MAP_H} fill="url(#paper-grain)" className="pointer-events-none" />
       </svg>
+      {layer === "pest" && <WindField frame={frames[forecastHour ?? 0]} points={points} />}
       <AnimatePresence>
         {hovered && hover !== null && (
           <motion.div
@@ -296,6 +342,11 @@ export function SurveyMap() {
               {["No blight reported", "Watch", "Warning", "Outbreak"][season.hexRisk[day][hover]]}
               {season.hexDetections[day][hover] ? `, ${season.hexDetections[day][hover]} reported in 14 days` : ""}
             </p>
+            {forecast.tier[hover] > 0 && season.hexRisk[day][hover] < 2 && (
+              <p className="font-semibold text-stamp">
+                Next 72 h: {TIER[forecast.tier[hover]].toLowerCase()} exposure{forecast.peak[hover] >= 0 ? `, peak ${frameLabel(frames[forecast.peak[hover]])}` : ""}
+              </p>
+            )}
             <p className="text-ink-3">{hoverPlots} plots on record</p>
           </motion.div>
         )}
