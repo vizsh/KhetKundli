@@ -6,6 +6,8 @@ KhetKundli gives every pomegranate plot in Phaltan taluka (Satara, Maharashtra) 
 
 Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season runs on Phaltan's **recorded 2026 weather**, hour by hour, with a live forecast and a live wind field over the taluka; the 192 farmers and their plots are synthetic and labelled so on every screen.
 
+**The project report** (problem and scale, gaps, approach, solution, technology, architecture, business model, feasibility, impact and the implementation plan) is in [docs/KhetKundli-Report.docx](docs/KhetKundli-Report.docx), with a [PDF copy](docs/KhetKundli-Report.pdf).
+
 ![The taluka desk on 20 October 2026: a demo storm in the 72-hour forecast, the live wind field drawn as rain strokes, and violet stipple where blight could travel](docs/images/desk-storm.jpg)
 
 | Sunita's phone | A sale slip, checked on the phone | Asked in Marathi, answered from her record |
@@ -30,10 +32,15 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | Farmer | **Around your plot**: a radar of the cells within 4 km, with reported blight, the next 72 hours' exposure at her plot and the wind; never a neighbour's plot | Live forecast; reports simulated |
 | Farmer | **Lot passports**: one QR per picking; the buyer's page shows origin cell, sprays, water, transport and an **export pre-harvest check** | Copper's 60-day interval from the APEDA list |
 | Farmer | **Photo check** before a scan (sharp? lit?), live on the camera; **Listen** to the officer's reply aloud | On the phone |
+| Farmer | **Works with no signal**: scans, questions and slips wait in the phone's outbox and go in order when signal returns; the header says *Synced*, *Sending* or *Offline · 2 to send* | IndexedDB outbox, hybrid logical clocks, an idempotent relay |
+| Farmer | **Marathi slips**: labels and Devanagari digits read with the Marathi model; a misread is corrected only when the line proves itself ("63 x 5" must be 315), and totals are never guessed | Tesseract English + Marathi on the phone |
+| Farmer | **Share my season**: the kundli wheel and the season so far as one image for WhatsApp | Drawn on the phone |
 | Officer | **Pest Radar** with a **live wind field** and a **72-hour spread forecast**: where reported blight can travel, hour by hour, and who to warn | 9-point live wind grid; recorded weather for any past day |
 | Officer | **Warn downwind**: one tap sends a preventive advisory to the plots in the plume, by app or SMS, and the season re-plans | Simulated outcome, shown as a ripple |
 | Officer | **How sure is it**: the same forecast run on all 51 members of the ECMWF ensemble; chance of moderate exposure by cell, and the range of rain in the hour strip | Live Open-Meteo ensemble |
 | Officer | **Storm brush**: draw a storm's path across the map and watch where it would carry blight, as a what-if | The model, with a moving rain cell and gust front |
+| Officer | **Survey sheet in relief**: 25 m contour lines from real elevation; low-lying cells hold dew two hours longer in the forecast | Copernicus DEM via Open-Meteo |
+| Everyone | **Forecast skill, measured**: a backtest over the recorded season scores the forecast against later reports, a distance-only baseline and an oracle | `npm run backtest`; results in [docs/MODELS.md](docs/MODELS.md) |
 | Officer | **Harvest Wave**, **Water Commons**, **Pooled Runs**, daily register, inbox, plot records | Simulated network |
 | Everyone | **Season time machine**: one clock for every screen; replay the season on either device | Two devices stay in step over Wi-Fi |
 
@@ -99,8 +106,10 @@ npm run dev          # http://localhost:3000 (pitch), /farmer and /desk
 ```
 
 ```bash
-npm run smoke        # 14 end-to-end checks in Chrome (dev server running)
-npm run test:slips   # reads both specimen slips in Node and checks the parser
+npm run smoke        # 21 end-to-end checks in Chrome (dev server running)
+npm run test:slips   # reads the three specimen slips (English and Marathi) in Node and checks the parser
+npm run backtest     # scores the spread forecast over the recorded season
+npm run report:figures && npm run report   # redraws the report's figures and rebuilds the Word report (Windows, needs Word for the contents and PDF)
 ```
 
 For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3000/farmer` on the same Wi-Fi. For live mandi prices, copy `web/.env.example` to `web/.env.local` and add a data.gov.in key. The full demo script is in [docs/DEMO.md](docs/DEMO.md).
@@ -119,6 +128,7 @@ For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3
 | [docs/DEMO.md](docs/DEMO.md) | The seven-minute demo, two-device setup and fallbacks |
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Bahar, telya, patti, adat, gat, H3 and the rest |
 | [PRODUCT.md](PRODUCT.md), [DESIGN.md](DESIGN.md) | Product record and design system |
+| [docs/KhetKundli-Report.docx](docs/KhetKundli-Report.docx) ([PDF](docs/KhetKundli-Report.pdf)) | The project report, 24 pages: the problem and its sourced scale, the gaps, the approach, the solution, technology and models, architecture, business model, feasibility, impact and the implementation plan, with 27 figures |
 
 ## Live, recorded, simulated
 
@@ -127,14 +137,15 @@ For a real phone, run `npm run dev -- -H 0.0.0.0` and open `http://<laptop-ip>:3
 | Phaltan weather, 1 June to yesterday (hourly, with leaf-wetness hours) | **Recorded**: Open-Meteo archive |
 | Next 7 days of weather; 72-hour hourly forecast; 9-point wind grid | **Live**: Open-Meteo forecast |
 | Taluka boundary, villages, roads, rivers, canals, rail | **Real**: OpenStreetMap |
+| Elevation: contour lines on the survey sheet, low-lying cells | **Real**: Copernicus DEM via Open-Meteo |
 | Tomato and capsicum leaf scans; sale slip reading | **Live** inference on the device |
-| 192 farmers, plots, sprays, scans, pickings, sales; mandi prices without a key; the two specimen slips | **Simulated**, labelled synthetic |
+| 192 farmers, plots, sprays, scans, pickings, sales; mandi prices without a key; the three specimen slips | **Simulated**, labelled synthetic |
 
 ## Roadmap at a glance
 
 ```mermaid
 flowchart LR
-  H0["<b>Now · demo</b><br/>Oct 2026<br/>recorded weather, live wind,<br/>ensemble forecast, storm brush,<br/>slip check, lot passports"]
+  H0["<b>Now · demo</b><br/>Oct 2026<br/>recorded weather, live wind,<br/>ensemble forecast, storm brush,<br/>offline outbox, Marathi slips,<br/>lot passports, terrain"]
   H1["<b>Pilot</b><br/>Ambia bahar 2027<br/>one FPO, three villages<br/>accounts, offline sync, IVR,<br/>pomegranate Scan Lens"]
   H2["<b>Taluka</b><br/>Mrig 2027 to 2028<br/>Sentinel-2 plot health,<br/>groundwater, glut warning,<br/>run optimiser, export record"]
   H3["<b>Platform</b><br/>2028 onward<br/>other pomegranate talukas,<br/>more crops, open data"]

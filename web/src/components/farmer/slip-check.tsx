@@ -20,7 +20,10 @@ const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;
 
 type Sample = { src: string; title: string; credit: string };
 type Photo = { url: string; w: number; h: number };
-type Read = { ms: number; confidence: number };
+type Read = { ms: number; confidence: number; marathi: boolean };
+
+/** How much of a slip a read found: the six key numbers and whether any charges came out. */
+const found = (s: Slip) => [s.gross, s.total, s.net, s.crates, s.kg, s.rate].filter((v) => v !== undefined).length + (s.charges.length ? 1 : 0);
 
 function useOnline() {
   const [online, setOnline] = useState(true);
@@ -87,7 +90,7 @@ function Marks({ photo, slip, checks }: { photo: Photo; slip: Slip; checks: Chec
 }
 
 /** A number on the slip: typed as read, ballpoint once the farmer corrects it, dotted red when the reader was unsure. */
-function NumCell({ value, conf, edited, label, onChange, className }: { value?: number; conf?: number; edited: boolean; label: string; onChange: (v: number | undefined) => void; className?: string }) {
+function NumCell({ value, conf, edited, label, onChange, className, corrected }: { value?: number; conf?: number; edited: boolean; label: string; onChange: (v: number | undefined) => void; className?: string; corrected?: string }) {
   const [draft, setDraft] = useState<string | null>(null);
   const shown = draft ?? (value === undefined ? "" : value.toLocaleString("en-IN"));
   const unsure = !edited && conf !== undefined && conf < 75;
@@ -97,7 +100,7 @@ function NumCell({ value, conf, edited, label, onChange, className }: { value?: 
       inputMode="decimal"
       value={shown}
       placeholder="type"
-      title={unsure ? "The reader was not sure of this number. Check it against the slip." : undefined}
+      title={corrected ?? (unsure ? "The reader was not sure of this number. Check it against the slip." : undefined)}
       onFocus={() => setDraft(value === undefined ? "" : String(value))}
       onBlur={() => setDraft(null)}
       onChange={(e) => {
@@ -111,6 +114,7 @@ function NumCell({ value, conf, edited, label, onChange, className }: { value?: 
         "min-h-9 w-full min-w-0 rounded-[2px] bg-transparent px-1 text-right outline-none placeholder:text-ink-3/60 focus:bg-paper-2",
         edited ? "ballpoint text-[16px]" : "typed text-[13.5px]",
         unsure && "underline decoration-alert decoration-dotted decoration-2 underline-offset-4",
+        !edited && corrected && "underline decoration-stamp decoration-dotted decoration-2 underline-offset-4",
         className,
       )}
     />
@@ -128,6 +132,7 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
   const [reader, setReader] = useState<{ state: "loading" | "ready" | "error"; progress: number; error?: string }>({ state: "loading", progress: 0 });
   const [photo, setPhoto] = useState<Photo | null>(null);
   const [reading, setReading] = useState<number | null>(null);
+  const [marathiPass, setMarathiPass] = useState(false);
   const [read, setRead] = useState<Read | null>(null);
   const [slip, setSlip] = useState<Slip | null>(null);
   const [edited, setEdited] = useState<Set<string>>(new Set());
@@ -169,13 +174,24 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
     setPhoto({ url: p.url, w: p.w, h: p.h });
     setReading(0);
     try {
+      // English first; a slip printed in Marathi reads as noise (few fields, low confidence), so read it
+      // again with the Marathi model and keep whichever read found more.
       const r = await readSlip(p.canvas);
-      setSlip(parseSlip(r.lines));
-      setRead({ ms: r.ms, confidence: r.confidence });
+      let best = { slip: parseSlip(r.lines), r, marathi: false };
+      if (found(best.slip) < 4 || r.confidence < 60) {
+        setMarathiPass(true);
+        setReading(0);
+        const r2 = await readSlip(p.canvas, ["mar", "eng"]);
+        const s2 = parseSlip(r2.lines);
+        if (found(s2) > found(best.slip)) best = { slip: s2, r: { ...r2, ms: r.ms + r2.ms }, marathi: true };
+      }
+      setSlip(best.slip);
+      setRead({ ms: best.r.ms, confidence: best.r.confidence, marathi: best.marathi });
     } catch (e) {
       setReader({ state: "error", progress: 0, error: e instanceof Error ? e.message : String(e) });
     } finally {
       setReading(null);
+      setMarathiPass(false);
     }
   };
 
@@ -199,7 +215,7 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
     setFiled(null);
   };
   const setCharge = (i: number, v: number | undefined) => {
-    setSlip((s) => (s ? { ...s, charges: s.charges.map((c, j) => (j === i ? { ...c, amount: v ?? 0 } : c)) } : s));
+    setSlip((s) => (s ? { ...s, charges: s.charges.map((c, j) => (j === i ? { ...c, amount: v ?? 0, unread: v === undefined || undefined, repaired: undefined } : c)) } : s));
     setEdited((e) => new Set(e).add(`c${i}`));
     setFiled(null);
   };
@@ -256,7 +272,7 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
               <span className="truncate">Read on this phone <span className="font-normal" style={MR}>फोनवरच वाचते</span></span>
             </span>
             <span className="typed shrink-0 whitespace-nowrap text-[11.5px] text-ink-3">
-              {reader.state === "ready" ? "ready · 3 MB" : reader.state === "loading" ? `loading ${Math.round(reader.progress * 100)}%` : "failed to load"}
+              {reader.state === "ready" ? "English ready · मराठी on demand" : reader.state === "loading" ? `loading ${Math.round(reader.progress * 100)}%` : "failed to load"}
             </span>
           </div>
 
@@ -269,7 +285,7 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
                 {reading !== null && (
                   <div className="absolute inset-x-0 bottom-0 bg-ink/80 px-3 py-2 text-[12.5px] text-paper">
                     <Loader2 className="mr-1.5 inline size-3.5 animate-spin" />
-                    {reader.state !== "ready" ? "Loading the reader…" : `Reading the slip… ${Math.round(reading * 100)}%`}
+                    {reader.state !== "ready" ? "Loading the reader…" : marathiPass ? `Reading again in Marathi… ${Math.round(reading * 100)}%` : `Reading the slip… ${Math.round(reading * 100)}%`}
                     <span className="ml-1.5" style={MR}>पट्टी वाचत आहे</span>
                     <span className="mt-1.5 block h-[3px] bg-paper/25"><span className="block h-full bg-paper transition-[width]" style={{ width: `${Math.round((reader.state === "ready" ? reading : reader.progress) * 100)}%` }} /></span>
                   </div>
@@ -307,11 +323,11 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
             {samples.length > 0 && (
               <div className="mt-3">
                 <p className="label-form text-ink-3">No slip to hand? Try a specimen <span className="normal-case tracking-normal" style={MR}>नमुना पट्टी</span></p>
-                <div className="mt-1.5 grid grid-cols-2 gap-2">
+                <div className="mt-1.5 grid grid-cols-3 gap-2">
                   {samples.map((s) => (
-                    <button key={s.src} type="button" onClick={() => loadImage(s.src)} className="flex items-center gap-2 rounded-[2px] border border-ink/30 p-1.5 text-left hover:border-ink" title={s.credit}>
+                    <button key={s.src} type="button" onClick={() => loadImage(s.src)} className="flex flex-col items-start gap-1 rounded-[2px] border border-ink/30 p-1.5 text-left hover:border-ink" title={s.credit}>
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={s.src} alt="" className="h-14 w-11 shrink-0 rounded-[1px] object-cover object-top" />
+                      <img src={s.src} alt="" className="h-14 w-full shrink-0 rounded-[1px] object-cover object-top" />
                       <span className="text-[12.5px] font-semibold leading-tight">{s.title}</span>
                     </button>
                   ))}
@@ -348,7 +364,7 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
                 </div>
               )}
               <p className="typed mt-1.5 text-[11.5px] text-ink-3">
-                read on this phone in {(read.ms / 1000).toFixed(1)} s · {read.confidence}% sure · checked against the pooled-run rate card
+                read on this phone in {(read.ms / 1000).toFixed(1)} s{read.marathi ? " · Marathi + English" : ""} · {read.confidence}% sure · checked against the pooled-run rate card
               </p>
 
               <div className="mt-3 border border-ink/30">
@@ -389,7 +405,7 @@ export function SlipCheck({ open, onClose, plot }: { open: boolean; onClose: () 
                             <span className="block">{c.label}</span>
                             <span className="block text-[12px] opacity-80" style={MR}>{KIND_MR[c.kind]}</span>
                           </td>
-                          <td className={cn("px-1", bad && "[&_input]:text-alert")}><NumCell value={c.amount} conf={c.conf} edited={edited.has(`c${i}`)} label={c.label} onChange={(v) => setCharge(i, v)} /></td>
+                          <td className={cn("px-1", bad && "[&_input]:text-alert")}><NumCell value={c.unread ? undefined : c.amount} conf={c.unread ? 0 : c.conf} edited={edited.has(`c${i}`)} label={c.label} onChange={(v) => setCharge(i, v)} corrected={c.repaired !== undefined ? `Read as ${c.repaired.toLocaleString("en-IN")}; corrected by the line's own arithmetic. Check it on the slip.` : undefined} /></td>
                           <td className="typed px-2 text-right text-[12px] text-ink-3">{k?.card === undefined ? "·" : k.card === 0 ? "none" : k.card.toLocaleString("en-IN")}</td>
                         </tr>
                       );

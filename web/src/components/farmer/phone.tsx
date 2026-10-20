@@ -21,6 +21,8 @@ import { Passbook } from "./passbook";
 import { ScanLens } from "./scan-lens";
 import { SlipCheck } from "./slip-check";
 import { SeasonWheel, WheelKey } from "./season-wheel";
+import { ShareCard } from "./share-card";
+import { SyncChip } from "./sync-chip";
 import { TodaySlip } from "./today-slip";
 
 export function Phone() {
@@ -60,7 +62,8 @@ export function Phone() {
           </div>
           <div className="mt-1 flex items-center justify-between gap-2">
             <p className="typed truncate text-[12px] text-board-ink-2">Gat {p.gat} · {village.name} · {p.acres} ac</p>
-            <div className="flex shrink-0 gap-1.5">
+            <div className="flex shrink-0 items-center gap-1.5">
+              <SyncChip />
               <SourceStamp size="sm" live={liveStatus === "live"} label={liveStatus === "live" ? "Weather is live from Open-Meteo" : "Weather is simulated"} />
               <SourceStamp size="sm" live={false} label="Plot record is synthetic" />
             </div>
@@ -84,6 +87,7 @@ export function Phone() {
               </motion.p>
             )}
           </AnimatePresence>
+          <ShareCard plot={plot} />
         </Sheet>
 
         <div className="mt-3.5">

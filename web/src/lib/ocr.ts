@@ -5,16 +5,21 @@ import type { OcrLine } from "@/lib/patti";
 
 export type OcrProgress = { status: string; progress: number };
 
-let reader: Promise<Worker> | null = null;
+const readers = new Map<string, Promise<Worker>>();
 let listener: ((p: OcrProgress) => void) | null = null;
 
-/** One Tesseract worker per page, created on first use from files served under /tesseract (no CDN). */
-export function slipReader(onProgress?: (p: OcrProgress) => void) {
+/**
+ * One Tesseract worker per language set, created on first use from files served under /tesseract
+ * (no CDN). English is loaded when the sheet opens; Marathi (2 MB more) only when a slip needs it.
+ */
+export function slipReader(onProgress?: (p: OcrProgress) => void, langs: string[] = ["eng"]) {
   if (onProgress) listener = onProgress;
+  const key = langs.join("+");
+  let reader = readers.get(key);
   if (!reader) {
     const at = (p: string) => new URL(p, window.location.origin).href;
     reader = import("tesseract.js").then(({ createWorker, OEM }) =>
-      createWorker("eng", OEM.LSTM_ONLY, {
+      createWorker(langs, OEM.LSTM_ONLY, {
         workerPath: at("/tesseract/worker.min.js"),
         corePath: at("/tesseract/core"),
         langPath: at("/tesseract/lang"),
@@ -23,16 +28,15 @@ export function slipReader(onProgress?: (p: OcrProgress) => void) {
         logger: (m) => listener?.({ status: m.status, progress: m.progress }),
       }),
     );
-    reader.catch(() => {
-      reader = null;
-    });
+    reader.catch(() => readers.delete(key));
+    readers.set(key, reader);
   }
   return reader;
 }
 
 /** Reads a slip photo into lines with word boxes and confidences. */
-export async function readSlip(image: HTMLCanvasElement, onProgress?: (p: OcrProgress) => void) {
-  const worker = await slipReader(onProgress);
+export async function readSlip(image: HTMLCanvasElement, langs: string[] = ["eng"], onProgress?: (p: OcrProgress) => void) {
+  const worker = await slipReader(onProgress, langs);
   const t0 = performance.now();
   const { data } = await worker.recognize(image, {}, { blocks: true });
   const lines: OcrLine[] = (data.blocks ?? [])
@@ -41,9 +45,14 @@ export async function readSlip(image: HTMLCanvasElement, onProgress?: (p: OcrPro
   return { lines, ms: Math.round(performance.now() - t0), confidence: Math.round(data.confidence) };
 }
 
-/** Big camera photos are scaled to about 1,600 px wide: plenty for printed slips, and much faster. */
-export function prepareImage(img: CanvasImageSource, w: number, h: number, max = 1600) {
-  const k = Math.min(1, max / Math.max(w, h));
+/**
+ * Camera photos over 2,000 px are scaled down (plenty for printed slips, and faster); small photos
+ * are scaled up to about 1,400 px, since Tesseract needs Devanagari digits a good size; anything in
+ * between is read as it is.
+ */
+export function prepareImage(img: CanvasImageSource, w: number, h: number) {
+  const long = Math.max(w, h);
+  const k = long > 2000 ? 2000 / long : long < 1000 ? Math.min(2, 1400 / long) : 1;
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(w * k);
   canvas.height = Math.round(h * k);

@@ -1,6 +1,6 @@
 // Regenerates the screenshots in docs/images from the running dev server (JPEG, DPR 1).
 // Usage: node scripts/capture-docs.mjs [baseUrl]
-import { mkdirSync } from "node:fs";
+import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import puppeteer from "puppeteer-core";
@@ -113,6 +113,26 @@ try {
   await phone.evaluate(() => [...document.querySelectorAll("[role=dialog]")].at(-1)?.scrollTo({ top: 560 }));
   await sleep(500);
   await shot(phone, "phone-slip-ledger");
+  await phone.evaluate(() => document.querySelector("[aria-label='Close slip check']")?.click());
+  await sleep(600);
+  await click(phone, "button", "Check a sale slip");
+  await sleep(600);
+  await click(phone, "[role=dialog] button", "A Marathi slip");
+  await phone.waitForFunction(() => /read on this phone in [0-9.]+ s/.test(document.body.textContent ?? ""), { timeout: 90000, polling: 300 });
+  await sleep(1500);
+  await phone.evaluate(() => [...document.querySelectorAll("[role=dialog]")].at(-1)?.scrollTo({ top: 300 }));
+  await sleep(500);
+  await shot(phone, "phone-slip-marathi");
+  await phone.evaluate(() => document.querySelector("[aria-label='Close slip check']")?.click());
+  await sleep(600);
+  await phone.evaluate(() => window.scrollTo(0, 0));
+  await click(phone, "button", "Share my season");
+  await phone.waitForSelector("[aria-label='Your season card'] img", { timeout: 15000 });
+  await sleep(400);
+  const cardBytes = await phone.evaluate(async () => Array.from(new Uint8Array(await (await fetch(document.querySelector("[aria-label='Your season card'] img").src)).arrayBuffer())));
+  writeFileSync(`${OUT}/kundli-card.png`, Buffer.from(cardBytes));
+  await phone.evaluate(() => document.querySelector("[aria-label='Your season card'] button[aria-label='Close']")?.click());
+  await sleep(400);
 
   // Pitch.
   const pitch = await browser.newPage();

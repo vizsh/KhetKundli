@@ -11,12 +11,17 @@
     "capture": "node scripts/capture.mjs",
     "build:geo": "tsx scripts/build-geo.ts",
     "smoke": "node scripts/smoke.mjs",
-    "test:slips": "tsx --tsconfig tsconfig.json scripts/slip-test.ts"
+    "test:slips": "tsx --tsconfig tsconfig.json scripts/slip-test.ts",
+    "backtest": "tsx --tsconfig tsconfig.json scripts/backtest.ts",
+    "build:terrain": "tsx --tsconfig tsconfig.json scripts/build-terrain.ts",
+    "report:figures": "node scripts/report/figures.mjs && python scripts/report/frames.py",
+    "report": "node scripts/report/make-report.mjs && powershell -ExecutionPolicy Bypass -File scripts/report/finalize.ps1"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
     "cn": "^0.5.0",
     "d3-array": "^3.2.4",
+    "d3-contour": "^4.0.2",
     "d3-delaunay": "^6.0.4",
     "d3-geo": "^3.1.1",
     "d3-polygon": "^3.0.1",
@@ -39,6 +44,7 @@
   "devDependencies": {
     "@tailwindcss/turbopack": "^4",
     "@types/d3-array": "^3.2.2",
+    "@types/d3-contour": "^3.0.6",
     "@types/d3-delaunay": "^6.0.4",
     "@types/d3-geo": "^3.1.1",
     "@types/d3-polygon": "^3.0.2",
@@ -48,6 +54,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "docx": "^9.13.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.2",
     "puppeteer-core": "^24.43.1",

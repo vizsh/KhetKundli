@@ -3,7 +3,7 @@
 import { memo, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, useReducedMotion } from "motion/react";
 import { cellLabel, geo } from "@/lib/geo";
-import { frameLabel, stormAt, TIER } from "@/lib/spread";
+import { cellElevation, frameLabel, LOW_LYING, stormAt, TIER } from "@/lib/spread";
 import type { LonLat } from "@/lib/sim/types";
 import { useForecast } from "./forecast";
 import { WindField } from "./wind-field";
@@ -13,6 +13,7 @@ import {
   apmc,
   boundaryPath,
   canals,
+  contourLines,
   fields,
   fieldTint,
   hexes,
@@ -83,6 +84,24 @@ function Patterns() {
     </defs>
   );
 }
+
+/** Contours from real elevation: thin sepia lines, index contours heavier and labelled in metres. */
+const Contours = memo(function Contours() {
+  return (
+    <g clipPath="url(#taluka-clip)" className="pointer-events-none" aria-hidden>
+      {contourLines.map((c) => (
+        <path key={c.value} d={c.d} fill="none" stroke="#7a5328" strokeWidth={c.index ? 1.1 : 0.65} strokeOpacity={c.index ? 0.7 : 0.42} />
+      ))}
+      {contourLines.map((c) =>
+        c.index && c.label ? (
+          <text key={`l${c.value}`} x={c.label[0]} y={c.label[1]} fontSize={9} fill="#6b4520" fillOpacity={0.95} stroke="var(--paper)" strokeWidth={2.5} paintOrder="stroke" textAnchor="middle" className="typed">
+            {c.value}
+          </text>
+        ) : null,
+      )}
+    </g>
+  );
+});
 
 /** Static linework: drawn once, never re-rendered by time. */
 const Linework = memo(function Linework() {
@@ -409,6 +428,7 @@ export function SurveyMap() {
       <svg viewBox={`0 0 ${MAP_W} ${MAP_H}`} className="absolute inset-0 h-full w-full" role="img" aria-label="Survey map of Phaltan taluka with the active layer">
         <Patterns />
         <Fields layer={layer} day={day} />
+        <Contours />
         <Linework />
         {layer === "pest" && <Exposure onHover={setHover} />}
         {layer === "pest" && <RiskHexes day={day} onHover={setHover} />}
@@ -442,7 +462,7 @@ export function SurveyMap() {
                 Next 72 h: {TIER[forecast.tier[hover]].toLowerCase()} exposure{forecast.peak[hover] >= 0 ? `, peak ${frameLabel(frames[forecast.peak[hover]])}` : ""}
               </p>
             )}
-            <p className="text-ink-3">{hoverPlots} plots on record</p>
+            <p className="text-ink-3">{hoverPlots} plots on record · {cellElevation(hover)} m{LOW_LYING[hover] ? ", low-lying: dew lingers" : ""}</p>
           </motion.div>
         )}
       </AnimatePresence>

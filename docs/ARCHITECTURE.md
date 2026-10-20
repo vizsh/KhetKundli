@@ -64,7 +64,9 @@ flowchart TB
 | Spread forecast | `src/lib/spread.ts`, `components/desk/forecast.tsx` | 72 hourly frames, kernel per source cell per hour (~5 ms); storm brush; ensemble of 51 runs in batches |
 | Lot passport | `src/lib/lot.ts`, `app/lot/[id]/page.tsx`, `components/lot/*`, `components/record/qr.tsx` | Buyer's page per picking, export pre-harvest check, QR drawn on the device |
 | Geography | `src/lib/geo.ts`, `src/data/phaltan.json`, `components/desk/map-geometry.ts` | Mercator fit, Voronoi village areas, label placement |
-| Store and sync | `src/lib/store.ts`, `sync.tsx`, `channel.ts`, `app/api/sync/route.ts` | |
+| Store and sync | `src/lib/store.ts`, `sync.tsx`, `channel.ts`, `outbox.ts`, `app/api/sync/route.ts` | Hybrid logical clocks, IndexedDB outbox, idempotent relay, last-writer-wins |
+| Terrain | `src/data/terrain.json`, `scripts/build-terrain.ts`, `components/desk/map-geometry.ts` | Copernicus DEM via Open-Meteo; d3-contour lines; low-lying cells |
+| Share card | `src/lib/share-card.ts`, `components/farmer/share-card.tsx` | Wheel SVG with computed styles, drawn to a canvas |
 | Phone | `components/farmer/*` | wheel, today slip, neighbour pulse, scan lens with photo check, ask (replies read aloud), harvest date, lot passports, passbook, slip check |
 | Desk | `components/desk/*` | survey map, wind field, forecast panel, figure sheet, register, inbox, plot extract, ledger |
 | Pitch | `components/pitch/*` | scroll-driven season story on the live engine |
@@ -166,7 +168,27 @@ sequenceDiagram
   Note over Re: Validates kinds and sizes, keeps the latest state in memory<br/>(one server process: next dev or next start)
 ```
 
-Messages carry a `from` id so a window ignores its own echo. The relay is a demo transport: no authentication, state in one server process. The roadmap replaces it with accounts, an event store and a hosted realtime channel.
+Messages carry a `from` id so a window ignores its own echo.
+
+**Offline first.** Durable messages (overrides, escalation, reply, reset) are stamped with a **hybrid logical clock**: wall-clock milliseconds, a counter, and the window's id, encoded so that string order is causal order. On the phone they go into an **IndexedDB outbox** and are sent in clock order when the relay can be reached; a network error stops the run (retried on the `online` event and every 8 s), a rejected message is dropped so it cannot block the queue, and a newer overrides message replaces any older one still queued. The relay is **idempotent** (a stamp it has seen is acknowledged and not delivered twice) and applies the season's overrides **last-writer-wins** by clock, so a phone that comes back online with older changes cannot overwrite newer ones; every screen applies the same rule to what it receives.
+
+```mermaid
+sequenceDiagram
+  participant Ph as Phone (no signal)
+  participant Ob as IndexedDB outbox
+  participant Re as /api/sync
+  participant De as Desk
+  Ph->>Ob: escalation, hlc 0mgk...0001
+  Note over Ph: header: Offline · 1 to send
+  Ph-->>Re: POST fails (offline), kept in the outbox
+  Note over Ph: signal returns: online event
+  Ob->>Re: POST in clock order
+  Re->>Re: stamp not seen before: accept
+  Re-->>De: escalation (server-sent event)
+  Re-->>Ph: 200 OK, removed from the outbox
+```
+
+The relay is still a demo transport: no authentication, state in one server process. The roadmap replaces it with accounts, an event store and a hosted realtime channel.
 
 ## Offline
 
@@ -180,15 +202,18 @@ The service worker (production builds) precaches the phone page, the leaf model,
 | `spreadForecast` (72 frames, up to 48 source cells) | ~5 ms |
 | Ensemble: 51 member runs, six per tick | ~250 ms in the background |
 | Scan Lens, MobileNetV2 fp32, one leaf | ~60–90 ms (plus a 7 × 7 occlusion map in batches) |
-| Slip OCR, one 900 × 800 photo, English LSTM | ~1.2 s |
+| Slip OCR, English LSTM, one 1800 px photo | ~1.6–1.9 s |
+| Slip OCR, Marathi + English, after an English pass | ~3.2–3.6 s in all |
+| Forecast backtest, 76 days × 2 forecasts | ~5 s |
 | Wind field | 460 particles at display refresh rate, canvas |
 
 ## Tests
 
 | Command | What it proves |
 | --- | --- |
-| `npm run smoke` | 18 checks in real Chrome: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
-| `npm run test:slips` | Both specimen slips read in Node; gross, net, charge count and the amount above the card |
+| `npm run backtest` | Spread-forecast skill over the recorded season: ROC AUC, precision and recall of the warn cells, against distance-only and oracle baselines |
+| `npm run smoke` | 21 checks in real Chrome, including the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
+| `npm run test:slips` | The three specimen slips (two English, one Marathi) read in Node; gross, net, charge count and the amount above the card |
 | `npx tsx --tsconfig tsconfig.json scripts/simtest.ts` | Engine statistics and causal isolation |
 | `npx tsc --noEmit`, `npx eslint src`, `npm run build` | Types, lint, production build |
 
@@ -201,6 +226,7 @@ npm run dev                      # http://localhost:3000, /farmer, /desk
 npm run dev -- -H 0.0.0.0        # for a phone on the same Wi-Fi (allowedDevOrigins covers private ranges)
 npm run build && npm start       # production, with the service worker
 node scripts/capture-docs.mjs    # regenerate docs/images
+npm run report:figures && npm run report   # redraw docs/report/figures and rebuild docs/KhetKundli-Report.docx and .pdf (Word on Windows)
 ```
 
 ## Open items

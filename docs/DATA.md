@@ -10,7 +10,8 @@
 | OpenStreetMap (Overpass extracts in `data/raw`) | Taluka boundary (relation 10354585), 23 villages, roads, rivers, canals, railway | Built into `web/src/data/phaltan.json` by `scripts/build-geo.ts` | Frozen at build | ODbL | **Real** |
 | Agmarknet via data.gov.in (resource `9ef84268-d588-465a-a308-a864a43d0070`) | Pomegranate modal and min/max prices by market and day | Needs `DATA_GOV_IN_API_KEY` | Daily | Government Open Data Licence – India | **Live** with a key; otherwise the screen says so |
 | onnx-community MobileNetV2 plant-disease (PlantVillage) | Scan Lens model, fp32 ONNX | Downloaded on `npm install` | Fixed | Listed as "other": confirm before distribution | **On device** |
-| Tesseract English LSTM (`@tesseract.js-data/eng`) | Slip OCR | Downloaded on `npm install` | Fixed | Apache-2.0 | **On device** |
+| Tesseract English and Marathi LSTM (`@tesseract.js-data/eng`, `/mar`) | Slip OCR; Marathi loaded on demand | Downloaded on `npm install` | Fixed | Apache-2.0 | **On device** |
+| Open-Meteo elevation API (Copernicus DEM, 90 m) | Elevation on a 40 × 30 grid and at every H3 cell: contours and low-lying cells | `scripts/build-terrain.ts` → `web/src/data/terrain.json` | Frozen at build | Copernicus DEM licence; CC BY 4.0 (Open-Meteo) | **Real** |
 | Sample leaf photos | Three public photos | `web/public/samples` | Fixed | CC BY-SA 4.0 and CC0, credited in `samples.json` | Sample |
 | Specimen slips | Two rendered slips with a fictitious agent | `scripts/make-slips.mjs` | Fixed | Ours | **Simulated** |
 | Plots, farmers, events | 192 plots in 23 villages, seeded engine | `src/lib/sim` | Deterministic | Ours | **Simulated** |

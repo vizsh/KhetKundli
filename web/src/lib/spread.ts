@@ -1,3 +1,4 @@
+import terrain from "@/data/terrain.json";
 import { geo } from "@/lib/geo";
 import { dateOf, SEASON_DAYS } from "@/lib/sim/calendar";
 import type { LonLat, Overrides, Season, WeatherDay } from "@/lib/sim/types";
@@ -159,6 +160,16 @@ const SOURCE_WEIGHT = [0, 0.5, 1.2, 2];
 const XY = geo.hexes.map((h) => toKm(h.center));
 
 /**
+ * Cells lying 12 m or more below the mean of their neighbours (Copernicus DEM via Open-Meteo): dew and
+ * cold air pool there at night, so a wet canopy lasts two hours longer after rain.
+ */
+export const LOW_LYING = geo.hexes.map((h, i) => {
+  const n = h.neighbors.map((j) => terrain.hexElev[j]);
+  return n.length > 0 && terrain.hexElev[i] - n.reduce((a, b) => a + b, 0) / n.length <= -12;
+});
+export const cellElevation = (i: number) => terrain.hexElev[i];
+
+/**
  * A storm the officer draws on the map ("storm brush"): a rain cell that travels along the track
  * over a few hours, with a gust front blowing the way it moves. It is a what-if, never a forecast.
  */
@@ -230,7 +241,7 @@ export function spreadForecast(season: Season, day: number, frames: Frame[], poi
       const rain = f.rain + stormRain(storm, k, geo.hexes[s].center);
       if (rain >= 0.2) { lastRain[s] = k; lastMm[s] = rain; }
       // Leaves stay wet after rain stops, longer after heavy rain (4 to 10 hours), and bacteria keep oozing onto them.
-      const linger = Math.min(10, Math.max(4, 3 + lastMm[s]));
+      const linger = Math.min(10, Math.max(4, 3 + lastMm[s])) + (LOW_LYING[s] ? 2 : 0);
       const fav = Math.max(favourOf({ ...f, rain }), k - lastRain[s] <= linger ? 0.45 * warm : 0);
       if (!fav) continue;
       anyWet = true;

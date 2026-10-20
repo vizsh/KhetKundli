@@ -21,7 +21,7 @@ Maharashtra's farm paperwork is the visual world: the manila board of a governme
 
 ![Desk on 19 September with the recorded monsoon and the officer's advisory](images/desk-monsoon.jpg)
 
-- **Survey sheet**: the real taluka from OpenStreetMap, village areas as Voronoi fields, an H3 grid, cartouche, north arrow and scale bar.
+- **Survey sheet**: the real taluka from OpenStreetMap, village areas as Voronoi fields, sepia contour lines every 25 m from real elevation (index contours every 100 m, labelled), an H3 grid, cartouche, north arrow and scale bar. Hovering a cell gives its elevation and whether it is low-lying.
 - **Four layers**: Pest Radar (red hatching by reported level, violet stipple for the 72-hour forecast, and the live wind drawn as pencil strokes), Harvest Wave (crates by village for a week), Water Commons (water kept in the ground), Pooled Runs (routes and vehicles moving at the stamped hour).
 - **Date stamp and season track**: the rolling date stamp and a season ruler set one clock for every view; play replays the season.
 - **72-hour forecast panel**: the hour strip (night bands, rain bars with the ensemble's 10–90% band behind them, hatched demo rain, red wet-canopy band, wind arrows every three hours) is a slider; drag or play it and the plume grows across the map. Villages are ranked chips with the ensemble's chance; one stamp button warns the plots downwind.
@@ -40,6 +40,9 @@ Maharashtra's farm paperwork is the visual world: the manila board of a governme
 - **Two stamp buttons** at the thumb: *Scan a leaf* and *Ask*. The camera view checks sharpness and light twice a second; the officer's reply has a *Listen* button.
 - **Around your plot**: a small radar of the cells within 4 km, with red for reported blight, violet stipple for the next 72 hours' exposure, a wind arrow on the rim, and a slow sweep.
 - **Lot passports**: one card per picking; tapping it opens a QR to show the buyer.
+- **Sync chip** in the header: *Synced* in violet, *Sending 1*, or *Offline · 2 to send* in red, so the farmer knows her record will arrive.
+- **Share my season**: under the wheel; makes a 1080 × 1350 image of the wheel and six facts of the season, with Share and Save.
+- **Marathi slips**: when the English pass reads noise, the strip says *Reading again in Marathi*; corrected numbers carry a violet dotted underline with the misread in the tooltip; unreadable ones are left blank to type.
 - **Harvest date strip and market ledger**, **record** with Marathi twin lines, **sale-slip check**.
 
 ### Pitch (`/`)

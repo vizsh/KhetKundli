@@ -101,7 +101,17 @@ Exposure tiers: low ≥ 0.35, moderate ≥ 1.2, high ≥ 4. The desk shows expos
 
 **Closing the loop.** *Warn* adds `{ day, hexes }` to `overrides.advisories`. In the engine, every plot in those cells that is not already symptomatic gets the advisory; app users book a preventive spray on the first sprayable day, and SMS recipients do so with probability 0.45. The ripple reports plots told, sprays booked, and the change in new infections over three weeks. On 19 September with the recorded weather: 62 plots told, 52 sprays booked, new infections 14 → 11.
 
-**Leaf wetness after rain.** A canopy stays wet after rain stops, longer after heavy rain: after an hour with $P$ mm, the wet-canopy term ($0.45\,w_T$) holds for $\min(10, \max(4, 3 + P))$ hours at that source.
+**Leaf wetness after rain.** A canopy stays wet after rain stops, longer after heavy rain: after an hour with $P$ mm, the wet-canopy term ($0.45\,w_T$) holds for $\min(10, \max(4, 3 + P))$ hours at that source, and two hours more in **low-lying cells**: the 28 cells at least 12 m below the mean of their neighbours (Copernicus DEM via Open-Meteo), where dew and cold air pool at night.
+
+**Does it work? The backtest.** `npm run backtest` forecasts every cell with no blight reported, every day from 11 July to 25 September on the recorded weather, and asks whether blight is reported there 8 to 24 days later (an infection carried in the next 72 hours shows symptoms after a 10 to 14 day latent period, and is then scanned; a window of days 1 to 14 mostly scores infections that were already latent).
+
+| 16,361 cell-days, 575 with new blight | ROC AUC |
+| --- | --- |
+| Spread forecast (reported cells, recorded weather) | **0.577** |
+| Distance to the nearest reported cell | 0.559 |
+| Oracle: the same forecast fed every symptomatic orchard, reported or not | 0.643 |
+
+The forecast's warn cells report blight later at 5.1% against a 3.5% base rate (1.46×) and catch 23.5% of new outbreaks; in September, the wettest month with the most reports, its AUC is 0.606 against 0.529. The oracle shows where the rest of the skill is: in reports. With every symptomatic orchard reported, the same forecast gains 0.07 AUC. The reports here are the simulation's own, so this tests the method and the harness; the pilot runs the same harness on real scans.
 
 **Uncertainty: the ensemble.** `/api/weather/ensemble` serves the 51 members (control + 50) of the ECMWF IFS 0.25° ensemble at Phaltan, hourly for four days. Each member becomes its own frames (its rain, humidity and wind, one wind for the taluka; demo rain stays in every member), the kernel runs once per member, six members per tick so the desk stays responsive, and the desk shows the share of members in which each cell reaches moderate exposure, plus the 10th to 90th percentile of rain per hour. On 20 October 2026 all 51 members kept Phaltan dry for four days.
 
@@ -151,6 +161,10 @@ flowchart LR
   U --> F["File: overrides.slips → sale event"]
   U --> D["Dispute: escalation (topic slip) → inbox"]
 ```
+
+**Languages.** English is read first; if fewer than four of the key fields come out, the photo is read again with Tesseract's Marathi and English models together (2 MB more, loaded on demand). Devanagari digits become ASCII, zero-width joiners are removed, gaps inside numbers close up, and a final separator with one or two digits is the only decimal mark (OCR reads Indian commas as points). Labels are matched in both languages (अडत, हमाली, तोलाई, मोटार भाडे, एकूण वजावट, निव्वळ देय).
+
+**Corrections, only when a line proves itself.** A number is corrected only if (a) its own line says what it must be: a multiplication on the label ("हमाली 63 x 5" must be 315), a percentage of the gross ("Adat 6%"), or weight × rate for the gross; and (b) it was read with under 90% confidence and is one digit away, or read under 50% and cannot be trusted at all. With exactly one weak line and a clearly read total, the total less the other lines gives that line, if the digits read agree. **Totals and the net are never corrected**: that is where a real overcharge would hide. A total one digit from the lines, read unclearly, is shown as *check the total*, not counted as money owed. A number with stray characters stuck to it is left blank for the farmer; nothing is guessed. Every correction is listed and underlined in violet.
 
 Checks: weight against crates × 20 kg (flag below 95%); gross = weight × rate; each charge against the rate card (commission 6% of gross, hamali ₹5 and weighment ₹1 a crate, freight the run's rate a crate); any charge not on the card; deductions add up to the total; gross less total equals net. The rate is compared with the day's modal price for the grade (information only). Numbers read with under 75% confidence are underlined for the farmer to check.
 

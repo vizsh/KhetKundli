@@ -50,6 +50,9 @@ type DeskState = {
   brushing: boolean;
   /** The 72 hours are playing across the map. */
   forecastPlaying: boolean;
+  /** The phone's outbox: messages waiting for signal, and whether the browser thinks it is online. */
+  sync: { pending: number; online: boolean };
+  setSync: (sync: { pending: number; online: boolean }) => void;
   setWind: (wind: WindGrid | null) => void;
   setEnsemble: (ensemble: Ensemble | null) => void;
   setStorm: (storm: Storm | null) => void;
@@ -117,6 +120,8 @@ export const useDesk = create<DeskState>((set, get) => {
     storm: null,
     brushing: false,
     forecastPlaying: false,
+    sync: { pending: 0, online: true },
+    setSync: (sync) => set({ sync }),
     setWind: (wind) => set({ wind }),
     setEnsemble: (ensemble) => set({ ensemble }),
     setStorm: (storm) => set({ storm, brushing: false }),

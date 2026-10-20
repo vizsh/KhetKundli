@@ -108,6 +108,12 @@ try {
   check("passport: lot page with export check and QR", passport, (await lotPage.evaluate(() => document.body.innerText.match(/(Not for export|Export PHI clear)/)?.[0])) ?? "");
   await lotPage.close();
   check("phone: neighbour pulse around the plot", /Around your plot/.test(await page.evaluate(() => document.body.textContent ?? "")));
+
+  // Share card: the kundli wheel and the season, drawn to an image on the phone.
+  await clickText(page, "button", "Share my season");
+  const card = await page.waitForSelector("[aria-label='Your season card'] img", { timeout: 15000 }).then(() => true, () => false);
+  check("phone: season share card renders", card);
+  await page.evaluate(() => document.querySelector("[aria-label='Your season card'] button[aria-label='Close']")?.click());
 } catch (err) {
   check("smoke run completed", false, String(err).slice(0, 200));
 } finally {
@@ -167,6 +173,32 @@ if (!results.every((r) => r.ok)) process.exitCode = 1;
     relay.push({ name: "slip: filing ripples to the desk over the relay", ok: rippled });
     const inboxed = await desk.waitForFunction(() => [...document.querySelectorAll("li")].some((li) => li.textContent?.includes("Sale slip") && li.textContent?.includes("Please refund ₹1,863")), { timeout: 10000, polling: 200 }).then(() => true, () => false);
     relay.push({ name: "slip: dispute lands in the desk inbox with slip replies", ok: inboxed });
+
+    // A Marathi slip: English reads noise, so the phone reads again with the Marathi model.
+    await phone.evaluate(() => document.querySelector("[aria-label='Close slip check']")?.click());
+    await sleep(600);
+    await clickText(phone, "button", "Check a sale slip");
+    await sleep(600);
+    await clickText(phone, "[role=dialog] button", "A Marathi slip");
+    const marathi = await phone.waitForFunction(() => /Marathi \+ English/.test(document.body.textContent ?? "") && /₹100/.test(document.body.textContent ?? ""), { timeout: 90000, polling: 300 }).then(() => true, () => false);
+    relay.push({ name: "slip: Marathi slip read and ₹100 short net found", ok: marathi, detail: (await phone.evaluate(() => document.body.textContent?.match(/read on this phone in [0-9.]+ s[^·]*· Marathi \+ English/)?.[0])) ?? "" });
+    await phone.evaluate(() => document.querySelector("[aria-label='Close slip check']")?.click());
+    await sleep(500);
+
+    // Offline first: a question asked with no signal waits in the outbox, then reaches the desk.
+    await phone.setOfflineMode(true);
+    await sleep(300);
+    await clickText(phone, "nav button", "Ask");
+    await sleep(500);
+    const offlineQ = `Asked with no signal in the orchard (${Date.now().toString(36)})`;
+    await phone.type("[role=dialog] input", offlineQ);
+    await phone.evaluate(() => [...document.querySelectorAll("[role=dialog] form")].at(-1)?.requestSubmit());
+    const queued = await phone.waitForFunction(() => /Offline · 1 to send/.test(document.body.textContent ?? ""), { timeout: 5000, polling: 200 }).then(() => true, () => false);
+    await sleep(1200);
+    const leaked = await desk.evaluate((q) => document.body.textContent?.includes(q), offlineQ);
+    await phone.setOfflineMode(false);
+    const delivered = await desk.waitForFunction((q) => document.body.textContent?.includes(q), { timeout: 15000, polling: 200 }, offlineQ).then(() => true, () => false);
+    relay.push({ name: "sync: offline question waits in the outbox, then reaches the desk", ok: queued && !leaked && delivered, detail: `queued ${queued}, held while offline ${!leaked}, delivered ${delivered}` });
   } catch (err) {
     relay.push({ name: "relay run completed", ok: false, detail: String(err).slice(0, 200) });
   } finally {

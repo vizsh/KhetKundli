@@ -1,4 +1,6 @@
+import { contours } from "d3-contour";
 import { Delaunay } from "d3-delaunay";
+import terrain from "@/data/terrain.json";
 import { geoArea, geoMercator, geoPath } from "d3-geo";
 import type { Feature, Polygon } from "geojson";
 import { geo } from "@/lib/geo";
@@ -135,3 +137,27 @@ export const labelPlacement: Placement[] = (() => {
   }
   return out;
 })();
+
+/*
+ * Contour lines from real elevation (Open-Meteo, Copernicus DEM): 25 m apart, with an index contour
+ * every 100 m, as on a survey sheet. Built once at module load from a 40 × 30 grid over the taluka.
+ */
+const t = terrain.grid;
+const toLonLat = (x: number, y: number): LonLat => [t.west + (x - 0.5) * t.dlon, t.north - (y - 0.5) * t.dlat];
+const zMin = Math.min(...t.z), zMax = Math.max(...t.z);
+const levels: number[] = [];
+for (let v = Math.ceil(zMin / 25) * 25; v <= zMax; v += 25) levels.push(v);
+export const contourLines = contours().size([t.nx, t.ny]).smooth(true).thresholds(levels)(t.z).map((c) => {
+  let longest: [number, number][] = [];
+  const d = c.coordinates
+    .flatMap((poly) => poly)
+    .map((ring) => {
+      const pts = ring.map(([x, y]) => project(toLonLat(x, y)));
+      if (pts.length > longest.length) longest = pts;
+      return `M${pts.map((p) => p.join(",")).join("L")}`;
+    })
+    .join("");
+  // A label partway along the longest ring, for index contours.
+  const at = longest[Math.floor(longest.length * 0.35)] ?? null;
+  return { value: c.value, d, index: c.value % 100 === 0, label: at };
+});

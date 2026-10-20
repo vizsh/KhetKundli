@@ -1,6 +1,6 @@
 // Downloads model weights into public/ on install, so they are not stored in git.
 // Scan Lens: onnx-community/mobilenet_v2_1.0_224-plant-disease-identification-ONNX (licence listed as "other").
-// Sale-slip reader: Tesseract's English LSTM model (Apache-2.0), via the @tesseract.js-data package.
+// Sale-slip reader: Tesseract's English and Marathi LSTM models (Apache-2.0), via @tesseract.js-data.
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -16,6 +16,11 @@ const MODELS = [
     name: "slip reader language model",
     out: "public/tesseract/lang/eng.traineddata.gz",
     url: "https://cdn.jsdelivr.net/npm/@tesseract.js-data/eng@1.0.0/4.0.0_best_int/eng.traineddata.gz",
+  },
+  {
+    name: "slip reader Marathi model",
+    out: "public/tesseract/lang/mar.traineddata.gz",
+    url: "https://cdn.jsdelivr.net/npm/@tesseract.js-data/mar@1.0.0/4.0.0_best_int/mar.traineddata.gz",
   },
 ];
 

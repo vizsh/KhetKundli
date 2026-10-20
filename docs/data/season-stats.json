@@ -1,0 +1,59 @@
+{
+ "recordedThrough": "2026-10-19",
+ "plots": 192,
+ "villages": 23,
+ "appUsers": 131,
+ "weather": [
+  {
+   "month": "2026-06",
+   "rainMm": 131,
+   "wetHoursMean": 4.7,
+   "blightDays": 4,
+   "days": 30
+  },
+  {
+   "month": "2026-07",
+   "rainMm": 269,
+   "wetHoursMean": 10.7,
+   "blightDays": 11,
+   "days": 31
+  },
+  {
+   "month": "2026-08",
+   "rainMm": 86,
+   "wetHoursMean": 10.6,
+   "blightDays": 12,
+   "days": 31
+  },
+  {
+   "month": "2026-09",
+   "rainMm": 91,
+   "wetHoursMean": 10.9,
+   "blightDays": 14,
+   "days": 30
+  },
+  {
+   "month": "2026-10",
+   "rainMm": 2,
+   "wetHoursMean": 0.4,
+   "blightDays": 0,
+   "days": 19
+  }
+ ],
+ "infectedByOct20": {
+  "recorded": 65,
+  "synthetic": 91
+ },
+ "blightScans": 73,
+ "warningEndSep": {
+  "recorded": 12,
+  "synthetic": 16
+ },
+ "waterKeptMl": 20.4,
+ "forecastIrrigationShare": 87,
+ "runs": 992,
+ "meanFillPct": 78,
+ "cratesMoved": 58028,
+ "sales": 768,
+ "deductionsPct": 9.8
+}
