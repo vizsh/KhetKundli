@@ -1,54 +1,53 @@
 import { connection } from "next/server";
-import type { FarmMessage } from "@/lib/channel";
-import { seasonFor } from "@/lib/agent/season-server";
-import { clampDay } from "@/lib/sim/calendar";
-import { broadcast, recentMessages, saveMessage, saveReceipt } from "@/lib/server/relay";
+import { actorOf, refuse } from "@/lib/server/auth";
+import { can } from "@/lib/server/authz";
+import { identity } from "@/lib/server/seed";
+import { broadcast, messagesFor, saveReceipt, sendBatch } from "@/lib/server/relay";
 
 /**
- * Send approved advisories. Each becomes a message in the local database and goes out to every
- * connected screen at once; Sunita's phone (the demo handset) sends its own delivered and read
- * receipts. For the other farmers there is no handset in the room, so a gateway simulator marks
- * delivery after a few seconds (and, for app users, a read later), labelled as simulated.
+ * Advisory messages.
+ *
+ * GET  → the messages this person may see (every plot's for staff, her own for a farmer).
+ * POST { batchId, exclude? } → send a batch prepared by /api/agent/advisories, once, by the officer.
+ *      The text sent is the text stored with the batch; a client cannot change it.
+ *
+ * Plots whose farmer has an account receive on their phone and send their own receipts. For the other
+ * (simulated) farmers there is no handset, so a gateway simulator marks delivery after a few seconds
+ * (and, for app users, a read later), labelled as simulated. Phase 2 replaces it with a real SMS gateway.
  */
-type Item = { plot: number; plotId: string; farmer: string; village: string; channel: "app" | "sms"; sms: string; smsMr: string };
-
-export async function GET() {
+export async function GET(req: Request) {
   await connection();
-  return Response.json({ messages: recentMessages() });
+  const actor = await actorOf(req);
+  if (!actor) return refuse("Sign in first.");
+  return Response.json({ messages: await messagesFor(actor) });
 }
 
 export async function POST(req: Request) {
-  const body = (await req.json().catch(() => ({}))) as { items?: Item[]; day?: number };
-  const items = (body.items ?? []).filter((x) => Number.isInteger(x.plot) && typeof x.sms === "string").slice(0, 300);
-  if (!items.length) return Response.json({ error: "nothing to send" }, { status: 400 });
-  const season = await seasonFor(new URL(req.url).origin, {});
-  const day = clampDay(Number(body.day ?? 140));
-  const batch = `B${Date.now().toString(36)}`;
-  const sentAt = new Date().toISOString();
-  const sent: FarmMessage[] = items.map((x, i) => ({
-    id: `${batch}-${i}`, batch, plot: x.plot, plotId: x.plotId, farmer: x.farmer, village: x.village, channel: x.channel, kind: "advisory",
-    day, text: x.sms.slice(0, 160), textMr: String(x.smsMr ?? "").slice(0, 160), sentAt,
-  }));
-  for (const m of sent) {
-    saveMessage(m);
-    broadcast({ kind: "message", from: "relay", item: m });
-  }
-  // Gateway simulator for farmers with no phone in the room.
-  for (const m of sent) {
-    if (m.plot === season.heroPlot) continue;
+  const actor = await actorOf(req);
+  const denied = can(actor, "send-advisories");
+  if (denied) return refuse(denied);
+  const body = (await req.json().catch(() => ({}))) as { batchId?: unknown; exclude?: unknown };
+  if (typeof body.batchId !== "string" || body.batchId.length > 64) return Response.json({ error: "send { batchId }" }, { status: 400 });
+  const exclude = Array.isArray(body.exclude) ? body.exclude.filter((x): x is number => Number.isInteger(x)).slice(0, 1000) : [];
+  const r = await sendBatch(body.batchId, exclude, actor!.person.id);
+  if (!r.ok) return Response.json({ error: r.reason }, { status: r.status });
+
+  for (const m of r.messages) broadcast({ kind: "message", from: "relay", item: m });
+  // Gateway simulator for farmers with no account (and so no phone in the room).
+  const owners = await (await identity()).plotOwners();
+  for (const m of r.messages) {
+    if (owners.has(m.plot)) continue;
     const deliverIn = m.channel === "sms" ? 2500 + Math.random() * 7000 : 1200 + Math.random() * 3500;
     setTimeout(() => {
       const at = new Date().toISOString();
-      saveReceipt(m.id, "delivered", at, true);
-      broadcast({ kind: "receipt", from: "gateway", id: m.id, status: "delivered", at, simulated: true });
+      void saveReceipt(m.id, "delivered", at, true).then(() => broadcast({ kind: "receipt", from: "gateway", id: m.id, status: "delivered", at, simulated: true, plot: m.plot }));
     }, deliverIn);
     if (m.channel === "app" && Math.random() < 0.7) {
       setTimeout(() => {
         const at = new Date().toISOString();
-        saveReceipt(m.id, "read", at, true);
-        broadcast({ kind: "receipt", from: "gateway", id: m.id, status: "read", at, simulated: true });
+        void saveReceipt(m.id, "read", at, true).then(() => broadcast({ kind: "receipt", from: "gateway", id: m.id, status: "read", at, simulated: true, plot: m.plot }));
       }, deliverIn + 8000 + Math.random() * 40000);
     }
   }
-  return Response.json({ batch, sent: sent.length, demoPhone: sent.some((m) => m.plot === season.heroPlot) });
+  return Response.json({ batch: body.batchId, sent: r.messages.length, toPhones: r.messages.filter((m) => owners.has(m.plot)).length });
 }

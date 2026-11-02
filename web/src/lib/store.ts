@@ -26,6 +26,8 @@ type DeskState = {
   playing: boolean;
   layer: Layer;
   selectedPlot: number;
+  /** The plot this screen acts for: the signed-in farmer's on her phone; Sunita's on the desk's demo controls. */
+  myPlot: number | null;
   selectedHex: number | null;
   /** Week pinned from the Harvest Wave chart; null follows the stamped day. */
   waveWeek: number | null;
@@ -130,6 +132,7 @@ export const useDesk = create<DeskState>((set, get) => {
     playing: false,
     layer: "pest",
     selectedPlot: initial.heroPlot,
+    myPlot: null,
     selectedHex: null,
     waveWeek: null,
     events: [],
@@ -157,14 +160,14 @@ export const useDesk = create<DeskState>((set, get) => {
     setForecastPlaying: (forecastPlaying) => set({ forecastPlaying }),
     setForecastHour: (forecastHour) => set({ forecastHour }),
     warnCells: (hexes, plots) => {
-      const { overrides, t } = get();
+      const { t } = get();
       const day = Math.floor(t);
       get().record([{ kind: "advisory", day, hexes }], `Preventive advisory for ${hexes.length} ${hexes.length === 1 ? "cell" : "cells"} downwind (${plots} ${plots === 1 ? "plot" : "plots"})`);
       // The warning is not only modelled: the messages go out to the phones in the room, with receipts.
       void import("@/lib/deliver")
-        .then(async ({ prepareAdvisories, sendAdvisories }) => {
-          const batch = await prepareAdvisories(day, { by: "hexes", hexes }, overrides);
-          if (batch.advisories.length) await sendAdvisories(day, batch.advisories);
+        .then(async ({ prepareAdvisories, sendBatch }) => {
+          const batch = await prepareAdvisories(day, { by: "hexes", hexes });
+          if (batch.batchId) await sendBatch(batch.batchId);
         })
         .catch(() => { /* the server is unreachable: the modelled advisory still stands */ });
     },
@@ -195,9 +198,11 @@ export const useDesk = create<DeskState>((set, get) => {
     heroScan: (opts) => {
       const { overrides, season, t } = get();
       const day = Math.floor(t);
-      if (overrides.scans?.some((s) => s.plot === season.heroPlot && s.day === day)) return;
-      get().record([{ kind: "scan", plot: season.heroPlot, day, confidence: opts?.confidence ?? 0.87, offline: opts?.offline ?? true }], "Leaf scan synced from Sunita's phone");
-      set({ selectedPlot: season.heroPlot, layer: "pest" });
+      const plot = get().myPlot ?? season.heroPlot;
+      if (overrides.scans?.some((s) => s.plot === plot && s.day === day)) return;
+      const who = season.plots[plot].farmer;
+      get().record([{ kind: "scan", plot, day, confidence: opts?.confidence ?? 0.87, offline: opts?.offline ?? true }], `Leaf scan synced from ${who.name.split(" ")[0]}'s phone`);
+      set({ selectedPlot: plot, layer: "pest" });
     },
     rainTwist: () => {
       const day = Math.min(SEASON_DAYS - 1, Math.floor(get().t) + 1);
@@ -234,7 +239,7 @@ export const useDesk = create<DeskState>((set, get) => {
     },
     escalate: (question, extra) => {
       const { season, t } = get();
-      const plot = season.heroPlot;
+      const plot = get().myPlot ?? season.heroPlot;
       const p = season.plots[plot];
       const day = Math.floor(t);
       const context = extra?.context ?? season.eventsByPlot[plot]

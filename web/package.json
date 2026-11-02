@@ -10,6 +10,7 @@
     "lint": "eslint",
     "test": "tsx --tsconfig tsconfig.json --test \"src/**/*.test.ts\"",
     "test:crash": "tsx scripts/crash-test.mts",
+    "restore:drill": "tsx --tsconfig tsconfig.json scripts/restore-drill.mts",
     "check": "tsc --noEmit && eslint src && npm run -s test && npm run -s test:slips && npm run -s test:router",
     "postinstall": "node scripts/copy-ort.mjs && node scripts/copy-ocr.mjs && node scripts/fetch-model.mjs",
     "capture": "node scripts/capture.mjs",

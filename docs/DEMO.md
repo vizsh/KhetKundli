@@ -10,6 +10,8 @@ Seven minutes. The thread is Sunita's plot, but every step shows something only 
 | **One laptop, two windows** | Open `/desk`, then *Open Sunita's phone* in the desk's demo slip (a narrow popup) | Wi-Fi isolates devices |
 | **Offline** | Run `npm run demo` once with the network (it saves the forecast); at the venue run `npm run demo -- --offline` | No internet at all: the saved forecast is served and the desk says *saved forecast · offline*; the agent runs on the laptop; Chrome's voice input needs the internet, so type questions |
 
+**Sign in first** (since 3 November 2026). The desk: choose *Extension officer, Phaltan* on the sign-in sheet; the phone: choose *Sunita Jadhav*. The code is shown on screen until SMS is connected; each number gets at most three codes in ten minutes, so sign in before the session, not on stage. Phone and desk keep separate sessions, so the popup phone and the desk can share one browser. A second phone can sign in as Shankar Chavan (Adarki) to show two farmers on one map; he cannot write Sunita's record.
+
 Before going on stage: open `/status` (models warm, database, saved forecast, screens connected), press **Reset** on the desk (clears every screen, the relay and the messages), check the weather slip says **Live** (or *saved forecast* offline), and check the Pest Radar's leaf-wet strip says *recorded to* yesterday.
 
 ## Script

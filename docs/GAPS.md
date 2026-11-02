@@ -2,7 +2,7 @@
 
 An honest register of what is missing, wrong or only simulated, written on 3 November 2026 (commit `cd40d62`) when the goal changed from "an excellent local prototype" to "an actual product with a real demonstration". Each gap has an id, its severity for a real product, the evidence in the code, and the phase of [PRODUCT-PLAN.md](PRODUCT-PLAN.md) that closes it.
 
-**Progress.** Phase 1 slice 1 (3 November 2026) closed G-B1, G-B8, G-B12, G-T1 and G-T2, and narrowed G-B2, G-B3, G-B7, G-B9, G-T3 and G-T4; each row says what remains.
+**Progress.** Phase 1 slice 1 (3 November 2026) closed G-B1, G-B8, G-B12, G-T1 and G-T2. Slice 2 (the same day) closed G-B3 and G-B4, and narrowed G-B5, G-B7, G-B9, G-B10 and G-P1. Each row says what remains; the ordered list of remaining work is [REMAINING.md](REMAINING.md).
 
 Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · **S2** blocks a credible pilot · **S3** weakens the product or the demo.
 
@@ -14,14 +14,14 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 | --- | --- | --- | --- | --- |
 | G-B1 | ~~**Lost updates between devices.**~~ **Closed 3 Nov 2026.** Changes are immutable season events merged by id; overrides are a projection (`foldEvents`). Property tests over 10,000 random histories, and `scripts/lost-update-check.mts` against the running server | S1 | `src/lib/events.ts`, `events.test.ts` | 1 ✓ |
 | G-B2 | **The client is the source of truth.** *Narrowed:* the server now holds every season event in an append-only store and serves them to screens on connect; what remains is a server-side plot registry (real plots, not the 192 generated ones) and server-computed projections | S1 | `event-store.ts`; `store.ts` still generates the plots | 1 |
-| G-B3 | **The server trusts client input.** *Narrowed:* the agent and the advisory pipeline now read the server's own events, never the request. Remaining: `/api/messages` still sends the text a client posts (to be sent by stored batch id) | S1 | `api/messages` takes `items[].sms` | 1 |
-| G-B4 | **No identity, no authentication, no authorisation.** Anyone on the network can read the stream, post messages, reset the database. | S1 | No auth in any route handler; `reset` clears everything | 1 |
-| G-B5 | **No consent model.** Nothing records who agreed to share what, for which purpose (needed under the DPDP Act 2023 and the DPDP Rules 2025). | S1 | No consent table or check | 1 (model), 2 (flows) |
+| G-B3 | ~~**The server trusts client input.**~~ **Closed 3 Nov 2026.** The agent and the advisory pipeline read the server's own events; `/api/messages` sends a batch stored by `/api/agent/advisories`, by its id, once (a second send is 409), so the text sent is the text prepared on the server; a farmer's question is about her own plot whatever the request says | S1 | `relay.ts` `saveBatch`, `sendBatch`; `scripts/api-check.mts` | 1 ✓ |
+| G-B4 | ~~**No identity, no authentication, no authorisation.**~~ **Closed 3 Nov 2026.** People, plots, devices and sessions in Postgres; sign-in with a one-time code (hashed, 5 minutes, 5 tries, 3 per number in 10 minutes); http-only sessions per surface (phone, desk); a policy checked on every route and on every season event (a farmer writes only her own plots), tested as a matrix. Remaining: codes go by SMS (Phase 2) | S1 | `identity.ts`, `authz.ts`, `auth.ts`, `authz.test.ts`, `identity.test.ts` | 1 ✓ |
+| G-B5 | **No consent model.** Nothing records who agreed to share what, for which purpose (needed under the DPDP Act 2023 and the DPDP Rules 2025). *Narrowed:* who wrote each event is now recorded and covered by the hash chain. Remaining: consent events and filters (REMAINING 1.3.1) | S1 | — | 1 (model), 2 (flows) |
 | G-B6 | **Single process, in-memory fan-out.** The relay's subscribers live in `globalThis`; scaling past one process or restarting drops live connections. | S2 | `relay.ts` | 2 |
-| G-B7 | **No migrations, backups or restore drill.** *Narrowed:* the season record has versioned migrations (`schema_migrations`). Remaining: the SQLite tables, backups, a restore drill | S2 | `sql.ts` `migrate`; `db.ts` | 1 |
+| G-B7 | **No migrations, backups or restore drill.** *Narrowed:* one versioned migration list for Postgres (`schema.ts`); backups of every table with a manifest of hashes, and a restore drill that restores into a throwaway database and checks every table, the chain head and the folded season (`/status`, `npm run restore:drill`). Remaining: the agent log and saved forecasts still in SQLite; scheduled backups (Phase 2 job runner) | S2 | `backup.ts`, `backup.test.ts` | 1 |
 | G-B8 | ~~**Corrections are overwrites.**~~ **Closed 3 Nov 2026.** Undo is a `retract` event and a correction is a later event in the same slot; the record keeps both, with the device that made them | S2 | `events.ts` | 1 ✓ |
-| G-B9 | **Validation is partial.** *Narrowed:* every season event is validated against one zod contract shared by phone and server, with a reason per rejected event. Remaining: escalations, replies, receipts and messages | S2 | `events.ts`, `api/sync/route.ts` | 1 |
-| G-B10 | **No rate limits, no request size limits beyond a few fields, no abuse controls.** | S2 | All route handlers | 1 |
+| G-B9 | **Validation is partial.** *Narrowed:* season events against one zod contract; escalations, replies, receipts and the clock checked on the relay; sign-in inputs normalised. Remaining: response contracts (REMAINING 1.3.9) | S2 | `events.ts`, `api/sync/route.ts` | 1 |
+| G-B10 | **No rate limits.** *Narrowed:* limits per address on sign-in, per person on sync, events and Ask; per number on codes (in Postgres). Remaining: the per-route limits live in one process's memory (REMAINING 1.3.10) | S2 | `auth.ts` `limited` | 1 |
 | G-B11 | **Timers in request handlers.** The gateway simulator uses `setTimeout` inside `/api/messages`; receipts are lost on restart. There is no job runner. | S2 | `api/messages/route.ts` | 2 |
 | G-B12 | ~~**No audit trail an outsider can trust.**~~ **Closed 3 Nov 2026** for the season record: triggers refuse UPDATE, DELETE and TRUNCATE, and a sha256 hash chain names the first edited, removed or forged row (`GET /api/v1/integrity`). Remaining: a signed daily digest of the head hash | S2 | `event-store.ts`, `event-store.test.ts` | 1 ✓ |
 | G-B13 | **No observability.** No structured logs, metrics, traces or error tracking; `/status` is a page, not monitoring. | S2 | — | 1 |
@@ -68,7 +68,7 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 
 | Id | Gap | Sev | Evidence | Phase |
 | --- | --- | --- | --- | --- |
-| G-P1 | **One farmer per installation.** The phone is fixed to Sunita; there is no "this phone belongs to…", no shared-phone household support. | S1 | `phone.tsx` uses `season.heroPlot` | 1 |
+| G-P1 | **One farmer per installation.** *Narrowed:* the phone shows the signed-in farmer's own plot; a second demo farmer (Shankar Chavan, Adarki) signs in on another phone. Remaining: several people on one shared phone with one-tap switching (REMAINING 1.3.7) | S1 | `phone.tsx`, `sign-in.tsx` | 1 |
 | G-P2 | **No enrolment**: registering a farmer, a plot (gat, GPS walk), a bahar date. | S1 | — | 1–2 |
 | G-P3 | **No voice logging** of work ("I sprayed today"). | S3 | `log-work.tsx` is taps only | 2 |
 | G-P4 | **No feedback loop**: farmers cannot rate answers; the officer has no review screen, although `agent_log` has `rating` and `correction` columns. | S2 | `db.ts` | 2 |
@@ -97,8 +97,8 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 
 ## 8. The five gaps that matter most
 
-1. **G-B2 + G-B3**: finish making the server the source of truth (G-B1, per-event sync, is done).
-2. **G-B4 + G-B5 + G-P1**: real people with accounts, roles and consent; one phone, any farmer.
+1. **G-B2 + G-B5**: server-side projections with consent, so a farmer no longer receives other farmers' raw events.
+2. **G-P1**: several people on one shared phone (accounts and roles are done).
 3. **G-C1**: a real SMS that arrives on a real farmer's phone, DLT-registered.
 4. **G-P5**: an impact ledger that derives every claimed litre and rupee from real events.
 5. **G-O1 + G-O2**: an agronomist and a partner FPO. No code closes these.

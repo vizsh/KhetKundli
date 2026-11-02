@@ -99,6 +99,18 @@ season_events (seq bigserial, id text unique, hlc, kind, actor, doc text /* cano
 
 API: `GET /api/v1/events?after=<seq>` (pull by cursor), `POST /api/v1/events` (a batch of up to 200; one verdict per event), `GET /api/v1/integrity` (walks the hash chain).
 
+### People, sessions and the inbox (Postgres, since Phase 1 slice 2)
+
+| Table | Holds | Notes |
+| --- | --- | --- |
+| `people`, `person_plots` | Name (English and Marathi), phone, role (`farmer`, `officer`, `fpo_admin`, `buyer`), plots | The demo's four are synthetic, on test numbers |
+| `devices`, `sessions` | One device per sign-in; a session per device with the sha256 of its token, expiry, revocation | Tokens are never stored |
+| `otp_codes`, `auth_log` | Keyed hashes of one-time codes with expiry and attempts; every sign-in event with only the number's last four digits | Codes are not backed up |
+| `escalations` | Questions handed to the officer, the reply, who answered | A farmer sees only her own plot's |
+| `advisory_batches`, `messages` | Batches as prepared, when and by whom sent; each message with delivered and read times, and whether a receipt was simulated | Sent by batch id, once |
+| `sync_messages` | Clock stamps of durable messages already handled | A retry is a no-op |
+| `season_events.person_id` | Who recorded each event | Covered by the row's hash |
+
 ### Overrides (what the engine reads; a projection of the events)
 
 ```ts

@@ -54,7 +54,9 @@ KhetKundli/
 | `GET /api/agent/health` | `app/api/agent/health/route.ts` | Ollama and models |
 | `GET /api/status` | `app/api/status/route.ts` | Feeds `/status`, including the season record and its hash chain |
 | `GET, POST /api/v1/events` | `app/api/v1/events/route.ts` | Pull season events by cursor; post a batch (a verdict per event) |
-| `GET /api/v1/integrity` | `app/api/v1/integrity/route.ts` | Walk the hash chain |
+| `GET /api/v1/integrity` | `app/api/v1/integrity/route.ts` | Walk the hash chain (signed in) |
+| `POST /api/v1/auth/otp`, `/verify`, `/logout`; `GET /api/v1/auth/me` | `app/api/v1/auth/*` | Sign in with a one-time code; who is signed in on this surface |
+| `GET, POST /api/v1/admin/backup` | `app/api/v1/admin/backup/route.ts` | List backups; back up now and run the restore drill (staff) |
 
 ## 3. The library, file by file
 
@@ -76,6 +78,8 @@ KhetKundli/
 | File | Responsibility |
 | --- | --- |
 | `events.ts` | **The contract.** Season event schemas (zod), `foldEvents` (events → overrides), `mergeEvents` (union by id), `uuidv7`, `canonical` JSON. Shared by phone, desk and server |
+| `api.ts` | `api()` for calls to this app's API with the surface header; `streamUrl()` for the event stream |
+| `session.ts` | The signed-in person on this surface (`useSession`): load, request a code, verify, sign out |
 | `store.ts` | The zustand store: clock `t`, `events` and the `overrides` folded from them, season, ripple, inbox, messages, wind, ensemble; every action that changes the season (`heroScan`, `logEntry`, `removeEntry`, `fileSlip`, `warnCells`, …) calls `record(drafts, label)`; events from elsewhere arrive through `receiveEvents` |
 | `sync.tsx` | `SyncBridge`: applies messages from other windows and devices to the store |
 | `channel.ts` | The sync message types (`SyncMsg`, `Escalation`, `FarmMessage`) and `post()` over BroadcastChannel + the outbox |
@@ -111,7 +115,14 @@ KhetKundli/
 | `sql.ts` | The Postgres connection: `pg` when `DATABASE_URL` is set, embedded PGlite (`web/data/pg`, or `memory://`) otherwise; `tx`, `exec`, versioned `migrate` |
 | `event-store.ts` | The season record: append-only `season_events` with triggers and a sha256 hash chain; `append` (a verdict per event), `since(cursor)`, `current()`, `verifyChain()` |
 | `db.ts` | SQLite via `node:sqlite` for what has not moved yet: `kv` (inbox), `events` (non-season durable messages), `messages`, `agent_log`, `snapshots` |
-| `relay.ts` | `acceptEvents` (store, then fan out what was accepted), `accept(msg)` for the other kinds, `broadcast`, `snapshot` (every event since the last reset), `serverOverrides` (the record the agent reads) |
+| `relay.ts` | `accept(msg, actor)`: the policy per message kind, a clock stamp recorded once, escalations, replies, receipts and resets in Postgres; `acceptEvents` (store with the author and a per-event check, then fan out what was accepted); `visible` (what each screen may see); `saveBatch`, `sendBatch`, `messagesFor`, `inboxFor`, `snapshot`, `serverOverrides` |
+| `schema.ts` | The ordered Postgres migrations (never edit a shipped one) |
+| `pg.ts` | The process's one database handle (embedded Postgres must never be opened twice) |
+| `identity.ts` | People, plots, devices, sessions, one-time codes, the auth log |
+| `seed.ts` | The demo people (synthetic) and `heroPlot()` |
+| `authz.ts` | The policy: `can(actor, action, plot)` and `canRecord(actor, event)` |
+| `auth.ts` | Route helpers: session from the cookie for the request's surface, `refuse` (401/403), rate limits |
+| `backup.ts` | `writeBackup`, `restoreInto`, `restoreDrill` |
 | `agent-log.ts` | Writes every agent answer |
 | `snapshot.ts` | Saves and serves weather snapshots for offline mode |
 
@@ -200,7 +211,8 @@ Start from `.impeccable/surfaces/*.md` for the surface's design contract, compos
 | `npm run eval:agent` | 14 agent questions end to end on the local model |
 | `npm test` | Unit and property tests (`src/**/*.test.ts`, Node's test runner via tsx): event convergence over 10,000 random histories, merge laws, no lost update, season determinism; the event store on embedded Postgres: idempotency, rejections, append-only triggers, tamper detection |
 | `npm run test:crash` | A writer killed mid-transaction again and again while appending 1,000 events: each stored exactly once, chain verifies |
-| `npx tsx scripts/lost-update-check.mts` | Three devices post at once to the running server: every change survives, retries are duplicates, chain verifies |
+| `npx tsx scripts/api-check.mts` | 16 checks over HTTP with real sign-ins: three people write at once and nothing is lost, retries are duplicates, a farmer is refused another plot, undoing others' entries, reset, advisories, status, backups and asking about another plot; a batch is sent once and as prepared; a farmer sees only her messages; the chain verifies; backup and drill; a public lot page sees only its plot |
+| `npm run restore:drill` | The newest backup in `web/data/backups` restores into a throwaway database as the same record |
 | `npm run check` | Types, lint, tests, slips, router parity in one go |
 
 CI (`.github/workflows/ci.yml`) runs all of these except the smoke test and the lost-update check, which need a running server and Chrome.

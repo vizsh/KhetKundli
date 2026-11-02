@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "motion/react";
 import { Check, CheckCheck, Clock3, MessageSquareText, RadioTower, Send } from "lucide-react";
 import { Stamp } from "@/components/record/stamp";
 import type { Selection } from "@/lib/agent/pipelines";
-import { prepareAdvisories, sendAdvisories, type AdvisoryBatch } from "@/lib/deliver";
+import { prepareAdvisories, sendBatch, type AdvisoryBatch } from "@/lib/deliver";
 import { geo } from "@/lib/geo";
 import { useDesk } from "@/lib/store";
 import { cn } from "@/lib/utils";
@@ -20,7 +20,6 @@ const hm = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString("en-IN", { 
 export function Advisories() {
   const season = useDesk((s) => s.season);
   const t = useDesk((s) => s.t);
-  const overrides = useDesk((s) => s.overrides);
   const messages = useDesk((s) => s.messages);
   const day = Math.floor(t);
   const heroVillage = season.plots[season.heroPlot].village;
@@ -40,7 +39,7 @@ export function Advisories() {
     setSentBatch(null);
     try {
       const sel: Selection = source === "radar" ? { by: "radar" } : { by: "village", village };
-      setBatch(await prepareAdvisories(day, sel, overrides));
+      setBatch(await prepareAdvisories(day, sel));
       setSkip(new Set());
       setState("idle");
     } catch {
@@ -48,10 +47,10 @@ export function Advisories() {
     }
   };
   const send = async () => {
-    if (!chosen.length) return;
+    if (!chosen.length || !batch?.batchId) return;
     setState("sending");
     try {
-      const r = await sendAdvisories(day, chosen);
+      const r = await sendBatch(batch.batchId, [...skip]);
       setSentBatch(r.batch);
       setState("idle");
     } catch {

@@ -32,7 +32,7 @@ export function LotPassport() {
   return (
     <div className="min-h-dvh px-3 pb-10 pt-4">
       <LiveWeatherLoader />
-      <SyncBridge listenOnly />
+      <SyncBridge listenOnly lot={decodeURIComponent(id)} />
       <div className="mx-auto max-w-[560px]">
         <p className="mb-2 flex items-baseline justify-between px-1">
           <Link href="/" className="text-[20px] font-bold text-board-ink [font-stretch:80%]">KhetKundli <span className="font-marathi text-[16px] font-normal text-board-ink-2">खेतकुंडली</span></Link>

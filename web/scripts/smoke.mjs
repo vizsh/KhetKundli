@@ -1,6 +1,7 @@
 // End-to-end smoke test of the demo flows with the local Chrome (run with the dev server up).
 // Usage: node scripts/smoke.mjs [baseUrl]
 import puppeteer from "puppeteer-core";
+import { authHeaders, PHONES, signInPage } from "./sessions.mjs";
 
 const BASE = process.argv[2] ?? "http://localhost:3000";
 const CHROME = process.env.CHROME_PATH ?? "C:/Program Files/Google/Chrome/Application/chrome.exe";
@@ -18,19 +19,39 @@ const browser = await puppeteer.launch({ executablePath: CHROME, headless: true 
 const results = [];
 const check = (name, ok, detail = "") => results.push({ name, ok, detail });
 try {
+  // Access: nothing is served to someone who has not signed in.
+  const anon = await Promise.all(["/api/v1/events", "/api/sync", "/api/status", "/api/messages"].map((u) => fetch(`${BASE}${u}`).then((r) => r.status)));
+  check("access: signed-out requests are refused", anon.every((s) => s === 401), anon.join(" "));
+
+  // The sign-in sheet itself, with the second demo farmer (the on-screen code stands in for SMS).
+  const signin = await browser.newPage();
+  await signin.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
+  await signin.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
+  await signin.waitForSelector("#kk-phone", { timeout: 15000 });
+  await signin.type("#kk-phone", PHONES.second.slice(-10));
+  await clickText(signin, "button", "Send code");
+  await signin.waitForFunction(() => document.querySelector("#kk-code")?.value?.length === 6, { timeout: 10000 }).catch(() => {});
+  await clickText(signin, "button", "Sign in");
+  const signedIn = await signin.waitForFunction(() => /What I did/.test(document.body.textContent ?? ""), { timeout: 15000 }).then(() => true, () => false);
+  check("sign-in: a farmer signs in with a code and sees her own plot", signedIn, (await signin.evaluate(() => document.querySelector("[role=alert]")?.textContent ?? document.querySelector("header")?.textContent?.slice(0, 80))) ?? "");
+  await signin.close();
+
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   page.on("pageerror", (e) => check("no page errors", false, String(e)));
+  await signInPage(page, BASE, PHONES.sunita, "phone");
   // Start from a reset, as a demo does: the season record persists between runs (a reset is an event; nothing is deleted).
   const setup = await browser.newPage();
+  await signInPage(setup, BASE, PHONES.officer, "desk");
   await setup.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
+  await setup.waitForFunction(() => [...document.querySelectorAll("button")].some((b) => b.textContent?.trim() === "Reset"), { timeout: 20000 }).catch(() => {});
   const reset = await setup.evaluate(() => {
     const button = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset");
     button?.click();
     return Boolean(button);
   });
   await sleep(1500);
-  check("setup: desk reset recorded", reset && (await setup.evaluate(() => fetch("/api/v1/events?after=0&limit=5000").then((r) => r.json()).then((j) => j.events.at(-1)?.kind === "reset"))));
+  check("setup: desk reset recorded", reset && (await setup.evaluate(() => fetch("/api/v1/events?after=0&limit=5000", { headers: { "X-KK-Surface": "desk" } }).then((r) => r.json()).then((j) => j.events.at(-1)?.kind === "reset"))));
   await setup.close();
   await page.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
 
@@ -63,6 +84,7 @@ try {
   // Phone and desk in two tabs: a pomegranate scan saved on the phone ripples on the desk.
   const desk = await browser.newPage();
   await desk.setViewport({ width: 1440, height: 900 });
+  await signInPage(desk, BASE, PHONES.officer, "desk");
   await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
   await page.evaluate(() => document.querySelector("[aria-label='Close']")?.click());
   await sleep(500);
@@ -157,6 +179,8 @@ if (!results.every((r) => r.ok)) process.exitCode = 1;
     await phone.setViewport({ width: 390, height: 844, isMobile: true, hasTouch: true });
     const desk = await deskCtx.newPage();
     await desk.setViewport({ width: 1440, height: 900 });
+    await signInPage(phone, BASE, PHONES.sunita, "phone");
+    await signInPage(desk, BASE, PHONES.officer, "desk");
     await desk.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
     await phone.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
     await clickText(phone, "nav button", "Ask");
@@ -227,7 +251,7 @@ if (!results.every((r) => r.ok)) process.exitCode = 1;
   } finally {
     await browser2.close();
     // Leave the relay clean for the next run or the live demo.
-    await fetch(`${BASE}/api/sync`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "reset", from: "smoke" }) }).catch(() => {});
+    await fetch(`${BASE}/api/sync`, { method: "POST", headers: await authHeaders(BASE, PHONES.officer, "desk"), body: JSON.stringify({ kind: "reset", from: "smoke" }) }).catch(() => {});
   }
   for (const r of relay) console.log(`${r.ok ? "PASS" : "FAIL"}  ${r.name}${r.detail ? `  ·  ${r.detail}` : ""}`);
   if (relay.some((r) => !r.ok)) process.exitCode = 1;

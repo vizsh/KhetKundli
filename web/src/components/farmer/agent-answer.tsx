@@ -6,6 +6,7 @@ import { Check, Cpu, ShieldCheck, TriangleAlert } from "lucide-react";
 import type { AgentAnswer, AgentStep } from "@/lib/agent/agent";
 import { useDesk } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
 
 const STAGE: Record<AgentStep["stage"], string> = { route: "Router", evidence: "Evidence", plan: "Plan", compose: "Compose", guard: "Guard", repair: "Repair", fallback: "Fallback", translate: "Marathi" };
 
@@ -21,7 +22,7 @@ function useAgent(question: string | null, plot: number, day: number) {
     queueMicrotask(() => { setSteps([]); setAnswer(null); setError(null); });
     (async () => {
       try {
-        const res = await fetch("/api/agent/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, plot, day, overrides }), signal: ctrl.signal });
+        const res = await api("/api/agent/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, plot, day, overrides }), signal: ctrl.signal });
         if (!res.ok || !res.body) throw new Error(`agent responded ${res.status}`);
         const reader = res.body.getReader();
         const dec = new TextDecoder();

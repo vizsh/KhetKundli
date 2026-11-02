@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { api, streamUrl } from "@/lib/api";
 import { addTransport, DURABLE, isStale, noteApplied, observe, post, SELF, type SyncMsg } from "@/lib/channel";
 import { enqueue, pending, remove } from "@/lib/outbox";
 import { useDesk } from "@/lib/store";
@@ -55,9 +56,10 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
  * Links every KhetKundli window and device: BroadcastChannel between windows on this device, and the
  * /api/sync relay (server-sent events) between devices on the same network. Durable messages go
  * through the outbox, so they survive having no signal; the clock position is not queued.
- * `listenOnly` (a lot passport opened by a buyer) receives the record but never sends, and keeps its own clock.
+ * `listenOnly` (a lot passport opened by a buyer) receives the record but never sends, and keeps its own
+ * clock; with `lot` it needs no account and receives only that lot's plot record.
  */
-export function SyncBridge({ listenOnly = false }: { listenOnly?: boolean }) {
+export function SyncBridge({ listenOnly = false, lot }: { listenOnly?: boolean; lot?: string }) {
   useEffect(() => {
     let following = false;
     const follow = (fn: () => void) => { following = true; fn(); following = false; };
@@ -73,7 +75,7 @@ export function SyncBridge({ listenOnly = false }: { listenOnly?: boolean }) {
     }
 
     if (typeof EventSource !== "undefined") {
-      const es = new EventSource("/api/sync");
+      const es = new EventSource(lot ? `/api/sync?lot=${encodeURIComponent(lot)}` : streamUrl("/api/sync"));
       es.onmessage = (e) => {
         try { receive(JSON.parse(e.data) as SyncMsg, () => {}, follow, listenOnly); } catch { /* ignore malformed */ }
       };
@@ -89,8 +91,9 @@ export function SyncBridge({ listenOnly = false }: { listenOnly?: boolean }) {
           flushing = true;
           try {
             for (const m of await pending()) {
-              const res = await fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(m) }).catch(() => null);
-              if (!res || res.status >= 500) break;
+              const res = await api("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(m) }).catch(() => null);
+              // No network, server trouble, signed out or too many: keep it and try again later.
+              if (!res || res.status >= 500 || res.status === 401 || res.status === 429) break;
               await remove(m.hlc);
             }
           } finally {
@@ -106,7 +109,7 @@ export function SyncBridge({ listenOnly = false }: { listenOnly?: boolean }) {
             const now = performance.now();
             if (now - lastTime < 250 || !navigator.onLine) return;
             lastTime = now;
-            fetch("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg), keepalive: true }).catch(() => {});
+            api("/api/sync", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(msg), keepalive: true }).catch(() => {});
             return;
           }
           if (DURABLE.has(msg.kind) && msg.hlc) void enqueue({ ...msg, hlc: msg.hlc }).then(status).then(flush);
@@ -134,6 +137,6 @@ export function SyncBridge({ listenOnly = false }: { listenOnly?: boolean }) {
     });
     cleanups.push(offTime);
     return () => cleanups.forEach((fn) => fn());
-  }, [listenOnly]);
+  }, [listenOnly, lot]);
   return null;
 }

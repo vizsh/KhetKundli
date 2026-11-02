@@ -110,12 +110,16 @@ npm install          # also fetches the leaf model, the OCR model, and the ONNX 
 npm run demo         # checks the local models, database and saved forecast, warms everything, starts the app for this laptop and the Wi-Fi, prints a QR code for the phone
 ```
 
+**Sign in.** The phone and the desk ask for a mobile number and a one-time code. Until an SMS sender is registered the code is shown on screen, and the sign-in sheet lists the demo's synthetic people: Sunita Jadhav and Shankar Chavan (farmers), the extension officer and the FPO coordinator. `/status` says in red that codes are on screen.
+
 `npm run demo -- --https` gives phones on the Wi-Fi a secure origin (camera, microphone) with a self-signed certificate for this laptop's addresses; nothing is installed into Windows' trust store, and the phone accepts a one-time warning. `npm run demo -- --offline` runs with no internet: weather, wind and the ensemble come from the forecast saved on the last online run, and the desk says *saved forecast · offline*. `/status` shows the models, the database, the saved forecast and the screens connected. `npm run dev` still works for development.
 
 ```bash
 npm test             # unit and property tests: event convergence, the append-only hash-chained record, tamper detection
 npm run test:crash   # kill the writer mid-transaction again and again: every event stored exactly once
-npm run smoke        # 25 end-to-end checks in Chrome (dev server running)
+npm run restore:drill   # the newest backup restores into a throwaway database as the same record
+npx tsx scripts/api-check.mts   # 16 checks over HTTP with real sign-ins: no lost writes, every refusal, batches sent once
+npm run smoke        # 27 end-to-end checks in Chrome, signed in (dev server running)
 npm run test:slips   # reads the three specimen slips (English and Marathi) in Node and checks the parser
 npm run backtest     # scores the spread forecast over the recorded season
 npm run eval:agent   # the reasoning agent end to end on the local model (Ollama with llama3.1:8b and nomic-embed-text)
@@ -131,6 +135,7 @@ For a real phone, scan the QR code `npm run demo` prints (same Wi-Fi). For live 
 | --- | --- |
 | [docs/CONTEXT.md](docs/CONTEXT.md) | **Start here.** The handover: what it is, the words you need, decisions and why, what is real, history, how to run it, gotchas, open questions |
 | [docs/PRODUCT-PLAN.md](docs/PRODUCT-PLAN.md) | From prototype to a real product, backend first: features that show real impact, the target architecture, three phases with acceptance tests, what people must unblock |
+| [docs/REMAINING.md](docs/REMAINING.md) | **The living list of what is left**, in order, with what *done* means for each item, what waits on people, and the limitations chosen for now. Updated with every commit |
 | [docs/GAPS.md](docs/GAPS.md) | Every gap between the prototype and a product, with severity, evidence in the code and the phase that closes it |
 | [docs/CODEBASE.md](docs/CODEBASE.md) | A guided tour of the code: routes, every library file, how a change travels, conventions, recipes for extending it |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Phaltan, pomegranate and the problems; the six problem statements and how one record answers them |

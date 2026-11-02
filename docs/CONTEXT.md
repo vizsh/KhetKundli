@@ -146,6 +146,7 @@ All work so far happened between 19 October and 3 November 2026.
 | `cd40d62` | 3 Nov | The farmer logs her own work (*What I did*); smoke test at 24 checks (25 from Phase 1 slice 1) |
 | `4ac8611` | 3 Nov | CONTEXT, CODEBASE, GAPS and the backend-first PRODUCT-PLAN |
 | Phase 1, slice 1 | 3 Nov | Season events with a zod contract; the append-only, hash-chained Postgres record; per-event sync (no lost updates); the agent reads the server's record; property, tamper and crash tests; CI |
+| Phase 1, slice 2 | 3 Nov | Accounts and sign-in, roles, authorisation on every route and event, Postgres inbox and messages, advisories by stored batch, backups and a restore drill; `docs/REMAINING.md`
 
 ## 9. Run it
 
@@ -157,7 +158,7 @@ npm run demo         # checks everything, starts the app for the laptop and Wi-F
 
 `npm run demo -- --https` gives phones a secure origin (camera, microphone). `npm run demo -- --offline` uses saved forecasts. `/status` shows models, database, snapshot and connected screens. The agent needs Ollama with `llama3.1:8b` and `nomic-embed-text`; without it, answers fall back to the rules builder.
 
-Checks: `npm test` (unit and property tests on embedded Postgres), `npm run test:crash` (kill -9 mid-write, exactly once), `npm run check` (types, lint, tests, slips, router), `npm run smoke` (24 checks in Chrome, dev server running), `npm run test:slips`, `npm run test:router`, `npm run backtest`, `npm run eval:agent`, `npx tsx --tsconfig tsconfig.json scripts/simtest.ts`.
+Checks: `npm test` (29 unit and property tests on embedded Postgres), `npm run test:crash` (kill -9 mid-write, exactly once), `npm run restore:drill` (the newest backup restores as the same record), `npx tsx scripts/api-check.mts` (16 HTTP checks with real sign-ins), `npm run check` (types, lint, tests, slips, router), `npm run smoke` (27 in Chrome)
 
 ## 10. Gotchas worth knowing before you touch anything
 
@@ -168,7 +169,8 @@ Checks: `npm test` (unit and property tests on embedded Postgres), `npm run test
 - **HTTPS for phones** uses a self-signed certificate on purpose; do not run `mkcert -install` (it changes the Windows trust store).
 - **The project report** (`docs/KhetKundli-Report.docx/.pdf`) is laid out page by page; any content change reflows it. Rebuild with `npm run report:figures && npm run report` and check every page.
 - **Season changes are events, not state** (since 3 Nov 2026). To change the season, add an event kind in `web/src/lib/events.ts` and handle it in `foldEvents`; never set `overrides` directly. The season record is an append-only, hash-chained Postgres table: embedded (PGlite, `web/data/pg`) unless `DATABASE_URL` is set. Rows cannot be deleted to "clean up" (the triggers refuse it); Desk → Reset adds a reset event instead.
-- **Not yet authenticated.** Anyone on the network can post events or messages, and `/api/messages` still sends the text a client posts. Accounts and roles are the next slice of Phase 1.
+- **Everyone signs in** (since slice 2). The phone (`/farmer`) is for farmers, the desk and `/status` for the officer and the FPO admin. Until SMS exists the code is shown on screen and the demo people are listed on the sign-in sheet: Sunita Jadhav (+91 90000 00001), Shankar Chavan (…0002), the extension officer (…10001), the FPO coordinator (…10002), all synthetic. Phone and desk keep separate sessions, so both can be open in one browser. Codes are limited to three per number in ten minutes: test scripts reuse sessions from `web/data/test-sessions.json`.
+- **One server process per folder.** Embedded Postgres must never be opened by two processes: if a `next dev` is left running from an earlier session, stop it before starting another (Next refuses a second one in the same folder, which protects the data).
 
 ## 11. Open questions that need a person, not code
 
@@ -186,6 +188,7 @@ Checks: `npm test` (unit and property tests on embedded Postgres), `npm run test
 | --- | --- |
 | The gaps, honestly | [GAPS.md](GAPS.md) |
 | The plan to make it a real product (backend first, three phases) | [PRODUCT-PLAN.md](PRODUCT-PLAN.md) |
+| What is left, in order, and what *done* means | [REMAINING.md](REMAINING.md) |
 | A guided tour of the code and how to extend it | [CODEBASE.md](CODEBASE.md) |
 | The system design and the sync protocol | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | The models and their equations | [MODELS.md](MODELS.md) |

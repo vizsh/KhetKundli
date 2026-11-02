@@ -4,11 +4,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Sheet } from "@/components/record/sheet";
 import { cn } from "@/lib/utils";
+import { api } from "@/lib/api";
+import { SignInGate } from "@/components/record/sign-in";
 
 type Status = {
   mode: { offline: boolean; node: string };
   models: { server: string; agent: string; agentReady: boolean; embed: string; embedReady: boolean; routerAccuracy: number; knowledgePassages: number };
   record: { database: string; events: number; chainOk: boolean; head: string | null; brokenAt: number | null };
+  access: { otpSink: "screen" | "sms"; people: number; sessions: number };
   database: { file: string; events: number; messages: number; delivered: number; read: number; agentAnswers: number; inbox: number };
   snapshots: { name: string; fetchedAt: string; bytes: number }[];
   screens: number;
@@ -28,12 +31,54 @@ function Row({ label, value, ok }: { label: string; value: React.ReactNode; ok?:
 }
 
 /** What the demo depends on, refreshed every five seconds: the page to check before anyone arrives. */
+type Drill = { ok: boolean; dir: string; checks: { name: string; ok: boolean; detail: string }[] };
+
+/** Back up the record now and prove the backup restores: the drill runs on a throwaway database. */
+function BackupSheet() {
+  const [state, setState] = useState<"idle" | "working" | "done" | "error">("idle");
+  const [drill, setDrill] = useState<Drill | null>(null);
+  const [error, setError] = useState("");
+  const run = async () => {
+    setState("working");
+    const res = await api("/api/v1/admin/backup", { method: "POST" }).catch(() => null);
+    const j = res ? ((await res.json().catch(() => ({}))) as { drill?: Drill; error?: string }) : { error: "The server is not answering." };
+    if (j.drill) { setDrill(j.drill); setState("done"); } else { setError(j.error ?? "Backup failed."); setState("error"); }
+  };
+  return (
+    <Sheet className="px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b-2 border-ink pb-1.5">
+        <h2 className="text-[17px] font-semibold">Backup and restore drill</h2>
+        <button type="button" onClick={run} disabled={state === "working"} className="rounded-[3px] border-2 border-ink px-3 py-1 text-[13px] font-semibold hover:bg-ink hover:text-paper disabled:opacity-50">
+          {state === "working" ? "Backing up…" : "Back up now and drill"}
+        </button>
+      </div>
+      {state === "idle" && <p className="py-2 text-[13px] text-ink-2">Writes every table to web/data/backups, then restores it into a throwaway database and checks that it comes back the same.</p>}
+      {state === "error" && <p className="py-2 text-[13px] text-alert">{error}</p>}
+      {drill && (
+        <ul>
+          {drill.checks.map((c) => <Row key={c.name} label={c.name} value={c.detail} ok={c.ok} />)}
+          <Row label="Saved in" value={drill.dir} ok={drill.ok} />
+        </ul>
+      )}
+    </Sheet>
+  );
+}
+
+/** The status page is for the officer and the FPO: it shows recent questions and the state of the record. */
 export function StatusBoard() {
+  return (
+    <SignInGate roles={["officer", "fpo_admin"]} title="Status sign in" mr="स्थिती लॉग इन">
+      {() => <Board />}
+    </SignInGate>
+  );
+}
+
+function Board() {
   const [s, setS] = useState<Status | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
     let live = true;
-    const load = () => fetch("/api/status").then((r) => r.json()).then((j) => { if (live) { setS(j); setError(false); } }).catch(() => live && setError(true));
+    const load = () => api("/api/status").then((r) => r.json()).then((j) => { if (live) { setS(j); setError(false); } }).catch(() => live && setError(true));
     load();
     const id = setInterval(load, 5000);
     return () => { live = false; clearInterval(id); };
@@ -64,8 +109,9 @@ export function StatusBoard() {
               <Row label="Mode" value={s.mode.offline ? "offline: saved forecast" : "online"} ok />
               <Row label="Season record" value={`${s.record.events} events · ${s.record.database === "pglite" ? "embedded Postgres" : s.record.database}`} ok={s.record.database !== "unavailable"} />
               <Row label="Hash chain" value={s.record.chainOk ? `verifies · head ${s.record.head}` : s.record.brokenAt ? `broken at row ${s.record.brokenAt}` : "not checked"} ok={s.record.chainOk} />
-              <Row label="Local database" value={s.database.file} ok />
-              <Row label="Synced messages" value={s.database.events} />
+              <Row label="Sign-in codes" value={s.access.otpSink === "sms" ? "sent by SMS" : "shown on screen (development only)"} ok={s.access.otpSink === "sms"} />
+              <Row label="People · sessions" value={`${s.access.people} registered · ${s.access.sessions} signed in`} />
+              <Row label="Local file (agent log, forecasts)" value={s.database.file} ok />
               <Row label="Messages sent" value={`${s.database.messages} · delivered ${s.database.delivered} · read ${s.database.read}`} />
               <Row label="Agent answers logged" value={s.database.agentAnswers} />
               <Row label="Questions in the inbox" value={s.database.inbox} />
@@ -74,6 +120,7 @@ export function StatusBoard() {
               {!s.snapshots.length && <Row label="Saved forecast" value="none yet: load the desk once with the network" ok={false} />}
             </ul>
           </Sheet>
+          <BackupSheet />
           {s.recentAnswers.length > 0 && (
             <Sheet className="px-5 py-4">
               <h2 className="border-b-2 border-ink pb-1.5 text-[17px] font-semibold">Latest agent answers</h2>

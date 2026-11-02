@@ -50,13 +50,38 @@ flowchart TB
 
 ## The local backend
 
+### Access (since Phase 1 slice 2)
+
+```mermaid
+sequenceDiagram
+  participant B as Browser (phone or desk)
+  participant A as /api/v1/auth
+  participant DB as Postgres
+  B->>A: POST otp {phone}
+  A->>DB: code hash (5 min, 5 tries, 3 per 10 min)
+  A-->>B: sent (the code on screen until SMS exists)
+  B->>A: POST verify {phone, code}
+  A->>DB: device + session (token hash, 30 days)
+  A-->>B: Set-Cookie kk_phone or kk_desk (http-only)
+  B->>DB: every request: session → person → policy (authz.ts)
+```
+
+| Piece | What it does | Code |
+| --- | --- | --- |
+| **People and sessions** | `people`, `person_plots`, `devices`, `sessions`, `otp_codes`, `auth_log` in Postgres; codes and tokens stored only as hashes; the demo people seeded once | `src/lib/server/identity.ts`, `seed.ts` |
+| **Sessions per surface** | `kk_phone` for `/farmer`, `kk_desk` for `/desk` and `/status`; requests say which with `X-KK-Surface` (the event stream with `?surface=`), so the desk and Sunita's phone can be open in one browser | `src/lib/server/auth.ts`, `src/lib/api.ts` |
+| **Policy** | Pure functions: who may read, ask, escalate, reply, send, reset, back up, and record which season event; a farmer writes only her own plots | `src/lib/server/authz.ts` |
+| **Advisories by batch** | `/api/agent/advisories` stores the batch it prepares; `/api/messages` sends it by id, once, minus unticked plots | `relay.ts` `saveBatch`, `sendBatch` |
+| **Backups** | Every table to JSON lines with a manifest of hashes; the restore drill restores into a throwaway database and checks tables, chain head and season | `src/lib/server/backup.ts`, `app/api/v1/admin/backup` |
+
+
 The prototype runs on one laptop, so its backend is local and restart-proof rather than hosted:
 
 | Piece | What it does | Code |
 | --- | --- | --- |
 | **Season record (Postgres)** | The season's facts: an append-only, hash-chained `season_events` table. Triggers refuse UPDATE, DELETE and TRUNCATE; each row's hash covers the previous row's hash, so an edit made around the triggers is found by `verifyChain` (`GET /api/v1/integrity`). Embedded Postgres (PGlite) in `web/data/pg` by default; a real server when `DATABASE_URL` is set; versioned migrations | `src/lib/server/event-store.ts`, `sql.ts` |
 | **SQLite database** | One file, `web/data/khetkundli.db`, through Node's built-in `node:sqlite`, for what has not moved to Postgres yet. Tables: `events` (durable non-season messages, keyed by clock stamp), `kv` (the inbox), `messages` (advisories with sent, delivered and read times), `agent_log` (every answer with its route, engine, guard result and timing), `snapshots` (the last good weather, wind and ensemble answers) | `src/lib/server/db.ts` |
-| **Relay** | Accepts messages from devices; season events go to the event store, which answers per event (accepted, duplicate, rejected), and only accepted ones are fanned out over server-sent events; the inbox and messages go to SQLite | `src/lib/server/relay.ts`, `app/api/sync` |
+| **Relay** | Accepts messages from signed-in devices and checks each against the policy; season events go to the event store, which answers per event (accepted, duplicate, rejected with a reason such as *not your plot*); escalations, advisory batches, messages and receipts are Postgres tables; each connected screen receives only what its person may see (a public lot page: only its plot) | `src/lib/server/relay.ts`, `app/api/sync` |
 | **Messages** | `POST /api/messages` sends an approved batch; the demo phone sends its own receipts; a gateway simulator marks the others after a few seconds and says so | `app/api/messages` |
 | **Offline mode** | `KHETKUNDLI_OFFLINE=1` serves the saved weather, wind and ensemble; any network failure falls back to them too | `src/lib/server/snapshot.ts` |
 | **Start-up** | `instrumentation.ts` warms the local models; `npm run demo` checks everything, starts the app on the Wi-Fi (optionally HTTPS with a self-signed certificate) and prints a QR code; `/status` shows it all | `src/instrumentation.ts`, `scripts/demo.mjs`, `scripts/cert.mjs`, `app/status` |
@@ -217,7 +242,7 @@ sequenceDiagram
   Re-->>Ph: 200 OK, removed from the outbox
 ```
 
-Still to do in Phase 1 ([PRODUCT-PLAN.md](PRODUCT-PLAN.md)): authentication and roles (anyone on the network can still post events), consent, moving the inbox and messages to Postgres, and fan-out across processes.
+Still to do in Phase 1 ([REMAINING.md](REMAINING.md)): consent, server-side projections (so a farmer no longer receives other plots' raw events), the agent log and forecasts in Postgres, and fan-out across processes.
 
 ## Offline
 

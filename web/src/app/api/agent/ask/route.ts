@@ -1,6 +1,8 @@
 import { runAgent, type AgentStep, type Audience } from "@/lib/agent/agent";
 import { seasonFor } from "@/lib/agent/season-server";
 import { logAnswer } from "@/lib/server/agent-log";
+import { actorOf, limited, refuse, tooMany } from "@/lib/server/auth";
+import { can } from "@/lib/server/authz";
 import { serverOverrides } from "@/lib/server/relay";
 import { clampDay } from "@/lib/sim/calendar";
 
@@ -13,15 +15,23 @@ import { clampDay } from "@/lib/sim/calendar";
 type Body = { question?: string; plot?: number; day?: number; audience?: Audience; useLlm?: boolean };
 
 export async function POST(req: Request) {
+  const actor = await actorOf(req);
+  if (!actor) return refuse("Sign in first.");
+  const wait = limited(`ask:${actor.person.id}`, 20, 60_000);
+  if (wait) return tooMany(wait);
   const body = (await req.json().catch(() => ({}))) as Body;
   const question = String(body.question ?? "").trim().slice(0, 500);
   if (!question) return Response.json({ error: "question required" }, { status: 400 });
   const origin = new URL(req.url).origin;
   // The record comes from the server's own events, never from the request.
   const season = await seasonFor(origin, await serverOverrides());
-  const plot = Number.isInteger(body.plot) && body.plot! >= 0 && body.plot! < season.plots.length ? body.plot! : season.heroPlot;
+  // A farmer asks about her own plot; the officer may ask about any (drafting a reply).
+  const asked = Number.isInteger(body.plot) && body.plot! >= 0 && body.plot! < season.plots.length ? body.plot! : actor.person.plots[0] ?? season.heroPlot;
+  const denied = can(actor, "ask", asked);
+  if (denied) return refuse(denied);
+  const plot = asked;
   const day = clampDay(Number(body.day ?? 140));
-  const audience = body.audience === "officer" ? "officer" : "farmer";
+  const audience = body.audience === "officer" && actor.person.role !== "farmer" ? "officer" : "farmer";
 
   const enc = new TextEncoder();
   const stream = new ReadableStream({

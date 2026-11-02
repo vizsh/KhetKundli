@@ -49,10 +49,11 @@ export type SyncMsg = (
   | { kind: "events"; from: string; events: SeasonEvent[]; label: string }
   | { kind: "time"; from: string; t: number }
   | { kind: "escalation"; from: string; item: Escalation }
-  | { kind: "reply"; from: string; id: string; reply: NonNullable<Escalation["reply"]> }
+  /** `plot` is filled in by the relay, so it can pass the reply only to that plot's farmer. */
+  | { kind: "reply"; from: string; id: string; reply: NonNullable<Escalation["reply"]>; plot?: number }
   | { kind: "reset"; from: string }
   | { kind: "message"; from: string; item: FarmMessage }
-  | { kind: "receipt"; from: string; id: string; status: "delivered" | "read"; at: string; simulated?: boolean }
+  | { kind: "receipt"; from: string; id: string; status: "delivered" | "read"; at: string; simulated?: boolean; plot?: number }
 ) & { hlc?: string };
 
 /** Messages that must arrive even if the device is offline when they are made: queued in the outbox. */

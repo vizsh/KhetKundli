@@ -15,8 +15,10 @@ import { SurveyMap } from "./survey-map";
 import { VillageLedger } from "./village-ledger";
 import { LiveWeatherLoader, WeatherSlip } from "./weather-slip";
 import { EnsembleRunner, LiveWindLoader, SpreadForecast } from "./forecast";
+import { SignedInAs, SignInGate } from "@/components/record/sign-in";
+import type { Person } from "@/lib/session";
 
-function FileCover() {
+function FileCover({ person }: { person: Person }) {
   const plots = useDesk((s) => s.season.plots.length);
   return (
     <header className="flex flex-wrap items-center gap-x-6 gap-y-2 px-3 pb-2 pt-3 sm:px-5">
@@ -35,6 +37,7 @@ function FileCover() {
         </div>
         <DateStamp />
         <WeatherSlip />
+        <SignedInAs person={person} className="text-board-ink-2" />
       </div>
     </header>
   );
@@ -57,7 +60,16 @@ function MapFoot() {
   );
 }
 
+/** The taluka desk: for the extension officer and the FPO. */
 export function Desk() {
+  return (
+    <SignInGate roles={["officer", "fpo_admin"]} title="Taluka desk sign in" mr="तालुका डेस्क लॉग इन">
+      {(person) => <DeskScreen person={person} />}
+    </SignInGate>
+  );
+}
+
+function DeskScreen({ person }: { person: Person }) {
   return (
     <div className="flex min-h-dvh flex-col xl:h-dvh xl:overflow-hidden">
       <SeasonPlayer />
@@ -65,7 +77,7 @@ export function Desk() {
       <LiveWindLoader />
       <EnsembleRunner />
       <SyncBridge />
-      <FileCover />
+      <FileCover person={person} />
       <main className="grid min-h-0 flex-1 grid-cols-1 content-start gap-5 px-3 pb-5 sm:px-5 xl:grid-cols-[minmax(0,1.42fr)_minmax(400px,1fr)] xl:content-normal">
         <div className="flex min-h-0 min-w-0 flex-col">
           <LayerTabs />

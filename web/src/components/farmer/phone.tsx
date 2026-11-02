@@ -11,6 +11,8 @@ import { Sheet } from "@/components/record/sheet";
 import { DatedImpression, SourceStamp } from "@/components/record/stamp";
 import { StampButton } from "@/components/record/stamp-button";
 import { geo } from "@/lib/geo";
+import { SignedInAs, SignInGate } from "@/components/record/sign-in";
+import type { Person } from "@/lib/session";
 import { useDesk } from "@/lib/store";
 import { SyncBridge } from "@/lib/sync";
 import { AskSheet } from "./ask-sheet";
@@ -27,12 +29,23 @@ import { Messages } from "./messages";
 import { SyncChip } from "./sync-chip";
 import { TodaySlip } from "./today-slip";
 
+/** The farmer's phone: for a signed-in farmer, showing her own plot. */
 export function Phone() {
+  return (
+    <SignInGate roles={["farmer"]} title="Farmer sign in" mr="शेतकरी लॉग इन">
+      {(person) => <PhoneScreen person={person} />}
+    </SignInGate>
+  );
+}
+
+function PhoneScreen({ person }: { person: Person }) {
   const season = useDesk((s) => s.season);
   const t = useDesk((s) => s.t);
   const playing = useDesk((s) => s.playing);
   const liveStatus = useDesk((s) => s.liveStatus);
-  const plot = season.heroPlot;
+  const plot = person.plots[0] ?? season.heroPlot;
+  // Everything this phone records is about her plot.
+  useEffect(() => { useDesk.setState({ myPlot: plot, selectedPlot: plot }); }, [plot]);
   const p = season.plots[plot];
   const village = geo.villages[p.village];
   const [scan, setScan] = useState(false);
@@ -61,6 +74,7 @@ export function Phone() {
               <span className="whitespace-nowrap font-marathi text-[18px] text-board-ink-2">{p.farmer.mr}</span>
             </p>
             <div className="flex shrink-0 items-center gap-2">
+              <SignedInAs person={person} className="hidden sm:inline-flex" />
               <Messages plot={plot} />
               <DatedImpression day={Math.floor(t)} playing={playing} size="sm" />
             </div>

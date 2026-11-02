@@ -8,6 +8,7 @@ import type { Escalation } from "@/lib/channel";
 import { fmtDay } from "@/lib/sim/calendar";
 import { SPRAYS } from "@/lib/sim/rules";
 import { useDesk } from "@/lib/store";
+import { api } from "@/lib/api";
 
 // Quick replies the officer can send in one tap; doses come from the same fixed rules table as the app.
 const QUICK = [
@@ -24,7 +25,7 @@ const QUICK_SLIP = [
 
 /** Ask the agent for a draft reply (audience: officer); the officer reads and edits it before sending. */
 async function draftReply(q: Escalation, overrides: unknown) {
-  const res = await fetch("/api/agent/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q.question, plot: q.plot, day: q.day, overrides, audience: "officer" }) });
+  const res = await api("/api/agent/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question: q.question, plot: q.plot, day: q.day, overrides, audience: "officer" }) });
   const body = await res.text();
   const data = body.split(String.fromCharCode(10, 10)).find((b) => b.startsWith("event: answer"))?.split("data: ")[1];
   if (!data) throw new Error("no draft");
