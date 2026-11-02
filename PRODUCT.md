@@ -41,7 +41,8 @@ Personal field memory plus collective sight. The plot record is the integration 
 - Pesticide doses come from a fixed rules table; language models only explain, never invent doses.
 - Community maps aggregate to H3 hexagons; individual farms never shown on shared views.
 - Out of scope: any named lender or finance partner (Satin Finserv and SANKALP are removed), carbon-credit claims, multi-state coverage, real payments.
-- Timeline: 1-2 weeks to the demo.
+- Timeline: 1-2 weeks to the hackathon demo (late October 2026).
+- Direction from 3 November 2026: an actual product with a real demonstration (real consented farmers, real SMS and WhatsApp, impact measured from events). Plan: docs/PRODUCT-PLAN.md; gaps: docs/GAPS.md; handover: docs/CONTEXT.md.
 
 ## Brand Commitments
 

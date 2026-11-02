@@ -126,6 +126,10 @@ For a real phone, scan the QR code `npm run demo` prints (same Wi-Fi). For live 
 
 | Document | What it covers |
 | --- | --- |
+| [docs/CONTEXT.md](docs/CONTEXT.md) | **Start here.** The handover: what it is, the words you need, decisions and why, what is real, history, how to run it, gotchas, open questions |
+| [docs/PRODUCT-PLAN.md](docs/PRODUCT-PLAN.md) | From prototype to a real product, backend first: features that show real impact, the target architecture, three phases with acceptance tests, what people must unblock |
+| [docs/GAPS.md](docs/GAPS.md) | Every gap between the prototype and a product, with severity, evidence in the code and the phase that closes it |
+| [docs/CODEBASE.md](docs/CODEBASE.md) | A guided tour of the code: routes, every library file, how a change travels, conventions, recipes for extending it |
 | [docs/PROBLEM.md](docs/PROBLEM.md) | Phaltan, pomegranate and the problems; the six problem statements and how one record answers them |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System design, data model, the sync protocol, offline, performance and tests, with diagrams |
 | [docs/MODELS.md](docs/MODELS.md) | The engine's models: blight, spread forecast, water, harvest, markets, runs, Scan Lens, slip check, voice |
@@ -150,6 +154,18 @@ For a real phone, scan the QR code `npm run demo` prints (same Wi-Fi). For live 
 | Elevation: contour lines on the survey sheet, low-lying cells | **Real**: Copernicus DEM via Open-Meteo |
 | Tomato and capsicum leaf scans; sale slip reading | **Live** inference on the device |
 | 192 farmers, plots, sprays, scans, pickings, sales; mandi prices without a key; the three specimen slips | **Simulated**, labelled synthetic |
+
+## Where it is going
+
+On 3 November 2026 the aim became an actual product with a real demonstration: real, consented farmers in Phaltan, messages that arrive by SMS and WhatsApp, and impact measured from events rather than from the simulation. The plan puts the backend first, so a farmer's record cannot be lost, duplicated or quietly edited, and every claim can be checked:
+
+| Phase | Goal | Proven by |
+| --- | --- | --- |
+| 1 · A record you can trust | Server-side append-only event store, per-event sync, accounts, roles, consent model, hash-chained audit, CI | Convergence property tests, crash-and-retry exactly-once, tamper detection, an authorisation matrix, a restore drill |
+| 2 · Real channels, real data | Job runner, DLT SMS and WhatsApp with provider receipts, live ingest with provenance, enrolment, consent flows, staging | A real Marathi SMS delivered and receipted; provider outage with no double sends; load at 10× the pilot |
+| 3 · A pilot that proves impact | Impact ledger with lineage and baseline, field data, fitted models, security review, operations | The live demonstration on real data; numbers recomputable from an export |
+
+Details in [docs/PRODUCT-PLAN.md](docs/PRODUCT-PLAN.md) and [docs/GAPS.md](docs/GAPS.md).
 
 ## Roadmap at a glance
 

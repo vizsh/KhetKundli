@@ -1,5 +1,7 @@
 # Next steps: an excellent local prototype
 
+> **Superseded in direction on 3 November 2026.** The goal is now an actual product with a real demonstration; the plan for that, backend first in three phases, is [PRODUCT-PLAN.md](PRODUCT-PLAN.md), and the gaps it closes are in [GAPS.md](GAPS.md). This file stays as the record of the local-prototype work and its remaining polish items.
+
 Status on 20 October 2026, after commit `e9fa3bd`. KhetKundli will not be registered or deployed. The goal is a prototype that runs on one laptop (with a phone on the same Wi-Fi), where **every button does something real, nothing is lost on a restart, it works with no internet in the room, and nothing breaks in front of judges**. This plan is ordered by that goal. Effort is in working days for one developer and is an estimate. [ROADMAP.md](ROADMAP.md) keeps the long view, if the project ever goes live.
 
 ## 0. Done on 20 October: the top five

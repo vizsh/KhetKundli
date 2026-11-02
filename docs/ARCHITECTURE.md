@@ -1,6 +1,6 @@
 # Architecture
 
-Status: 20 October 2026, third push. One Next.js 16 app; the season engine runs in every browser; a small server provides weather, wind, prices and a sync relay.
+Status: 3 November 2026 (commit `cd40d62`). One Next.js 16 app; the season engine runs in every browser; a small server provides weather, wind, prices, a sync relay, the agent and message delivery, backed by SQLite. This describes the prototype as built; the product architecture it moves to (server-side event store, per-event sync, accounts and consent, a delivery worker) is in [PRODUCT-PLAN.md](PRODUCT-PLAN.md) §4.
 
 ## System
 
@@ -249,6 +249,7 @@ npm run report:figures && npm run report   # redraw docs/report/figures and rebu
 
 ## Open items
 
+- **Overrides are one object, last writer wins.** Two devices that change the season before seeing each other's change can lose one of the changes; the relay and the agent also trust the overrides a client sends. Fine on one laptop, not for a product: [GAPS.md](GAPS.md) G-B1 to G-B3, closed by Phase 1 of [PRODUCT-PLAN.md](PRODUCT-PLAN.md).
 - **Spray table.** Streptocycline has been removed; curative sprays are copper hydroxide 77% WP at 2 g per litre and preventive sprays 1% Bordeaux, from ICAR-NRCP advisories (sources and open questions in [AGRONOMY.md](AGRONOMY.md)). An agronomist still has to review the table, the final gazette status of the antibiotic ban has to be confirmed, and pre-harvest intervals are not yet checked.
 - 22 Marathi village names are best-effort transliterations (`mrVerified: false`).
 - The leaf model's licence on Hugging Face is listed as "other"; confirm before distributing beyond the demo.
