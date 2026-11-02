@@ -43,12 +43,8 @@ export async function remove(hlc: string) {
   await run("readwrite", (s) => s.delete(hlc));
 }
 
-/**
- * Queue a message. Overrides are the whole season state, so a newer one replaces any older queued
- * overrides: the outbox stays small however long the phone is offline.
- */
+/** Queue a message. Each carries its own facts, so nothing queued is ever replaced or merged away. */
 export async function enqueue(msg: Stamped) {
-  if (msg.kind === "overrides") for (const old of await pending()) if (old.kind === "overrides") await remove(old.hlc);
   memory.set(msg.hlc, msg);
   await run("readwrite", (s) => s.put(msg));
 }

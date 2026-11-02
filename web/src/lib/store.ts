@@ -1,7 +1,8 @@
 "use client";
 
 import { create } from "zustand";
-import { post, SELF, type Escalation, type FarmMessage } from "@/lib/channel";
+import { post, SELF, tick, type Escalation, type FarmMessage } from "@/lib/channel";
+import { foldEvents, mergeEvents, SCHEMA_VERSION, uuidv7, type EventDraft, type SeasonEvent } from "@/lib/events";
 import { clampDay, fmtDay, realToday, SEASON_DAYS, TODAY } from "@/lib/sim/calendar";
 import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, type Ripple } from "@/lib/sim/selectors";
@@ -28,6 +29,9 @@ type DeskState = {
   selectedHex: number | null;
   /** Week pinned from the Harvest Wave chart; null follows the stamped day. */
   waveWeek: number | null;
+  /** The season's facts on this screen: every event seen, merged by id. */
+  events: SeasonEvent[];
+  /** Projected from `events` (foldEvents); what the engine and the views read. */
   overrides: Overrides;
   live: LiveDaily[];
   hourly: LiveHourly[];
@@ -71,7 +75,10 @@ type DeskState = {
   selectHex: (hex: number | null) => void;
   setWaveWeek: (week: number | null) => void;
   setLive: (days: LiveDaily[], hours: LiveHourly[], status: LiveStatus) => void;
-  applyOverrides: (overrides: Overrides, label: string, origin: Origin) => void;
+  /** Make facts on this screen: merged, the season regenerated, and sent to every other screen. */
+  record: (drafts: EventDraft[], label: string) => SeasonEvent[];
+  /** Facts from another screen or the server: merged by id; nothing new, nothing happens. */
+  receiveEvents: (events: SeasonEvent[], label: string) => void;
   heroScan: (opts?: { confidence?: number; offline?: boolean }) => void;
   rainTwist: () => void;
   heroHarvest: (shift: number, market: MarketId) => void;
@@ -107,7 +114,15 @@ export const useDesk = create<DeskState>((set, get) => {
     });
   };
 
-  const local = (overrides: Overrides, label: string) => get().applyOverrides(overrides, label, "local");
+  /** Merge events and, if any are new, regenerate the season from the folded overrides. */
+  const merge = (incoming: SeasonEvent[], label?: string) => {
+    const before = get().events;
+    const events = mergeEvents(before, incoming);
+    if (events.length === before.length) return false;
+    set({ events });
+    regenerate(foldEvents(events), label);
+    return true;
+  };
 
   return {
     t: TODAY + START_HOUR,
@@ -117,6 +132,7 @@ export const useDesk = create<DeskState>((set, get) => {
     selectedPlot: initial.heroPlot,
     selectedHex: null,
     waveWeek: null,
+    events: [],
     overrides: {},
     live: [],
     hourly: [],
@@ -143,8 +159,7 @@ export const useDesk = create<DeskState>((set, get) => {
     warnCells: (hexes, plots) => {
       const { overrides, t } = get();
       const day = Math.floor(t);
-      const advisories = [...(overrides.advisories ?? []).filter((a) => a.day !== day), { day, hexes }];
-      local({ ...overrides, advisories }, `Preventive advisory for ${hexes.length} ${hexes.length === 1 ? "cell" : "cells"} downwind (${plots} ${plots === 1 ? "plot" : "plots"})`);
+      get().record([{ kind: "advisory", day, hexes }], `Preventive advisory for ${hexes.length} ${hexes.length === 1 ? "cell" : "cells"} downwind (${plots} ${plots === 1 ? "plot" : "plots"})`);
       // The warning is not only modelled: the messages go out to the phones in the room, with receipts.
       void import("@/lib/deliver")
         .then(async ({ prepareAdvisories, sendAdvisories }) => {
@@ -170,54 +185,52 @@ export const useDesk = create<DeskState>((set, get) => {
       set({ live: days, hourly: hours, liveStatus: status });
       if (days.length) regenerate(get().overrides, undefined, days);
     },
-    applyOverrides: (overrides, label, origin) => {
-      regenerate(overrides, label);
-      if (origin === "local") post({ kind: "overrides", from: SELF, overrides, label });
+    record: (drafts, label) => {
+      const events = drafts.map((d) => ({ ...d, id: uuidv7(), hlc: tick(), by: SELF, v: SCHEMA_VERSION, label }) as SeasonEvent);
+      merge(events, label);
+      post({ kind: "events", from: SELF, events, label });
+      return events;
     },
+    receiveEvents: (events, label) => { merge(events, label); },
     heroScan: (opts) => {
       const { overrides, season, t } = get();
       const day = Math.floor(t);
       if (overrides.scans?.some((s) => s.plot === season.heroPlot && s.day === day)) return;
-      const scans = [...(overrides.scans ?? []), { plot: season.heroPlot, day, confidence: opts?.confidence ?? 0.87, offline: opts?.offline ?? true }];
-      local({ ...overrides, scans }, "Leaf scan synced from Sunita's phone");
+      get().record([{ kind: "scan", plot: season.heroPlot, day, confidence: opts?.confidence ?? 0.87, offline: opts?.offline ?? true }], "Leaf scan synced from Sunita's phone");
       set({ selectedPlot: season.heroPlot, layer: "pest" });
     },
     rainTwist: () => {
-      const { overrides, t } = get();
-      const day = Math.min(SEASON_DAYS - 1, Math.floor(t) + 1);
-      local({ ...overrides, rain: { day, mm: 18 } }, "Forecast: 18 mm rain within 18 hours");
+      const day = Math.min(SEASON_DAYS - 1, Math.floor(get().t) + 1);
+      get().record([{ kind: "rain", day, mm: 18 }], "Forecast: 18 mm rain within 18 hours");
     },
     heroHarvest: (shift, market) => {
-      const { overrides } = get();
-      local({ ...overrides, heroPickShift: shift, heroMarket: market }, `Sunita set her first picking ${shift === 0 ? "as planned" : `${Math.abs(shift)} days ${shift < 0 ? "earlier" : "later"}`}, selling at ${market === "phaltan" ? "Phaltan APMC" : market === "pune" ? "Pune" : "Vashi"}`);
+      get().record([{ kind: "harvest", shift, market }], `Sunita set her first picking ${shift === 0 ? "as planned" : `${Math.abs(shift)} days ${shift < 0 ? "earlier" : "later"}`}, selling at ${market === "phaltan" ? "Phaltan APMC" : market === "pune" ? "Pune" : "Vashi"}`);
     },
     resetDemo: () => {
-      get().applyOverrides({}, "Demo reset", "remote");
+      // The season's reset is a fact like any other (nothing is deleted); the reset message clears the inbox.
+      get().record([{ kind: "reset" }], "Demo reset");
       set({ ripple: null, inbox: [], messages: [] });
       post({ kind: "reset", from: SELF });
     },
     fileSlip: (slip) => {
-      const { overrides } = get();
-      const slips = [...(overrides.slips ?? []).filter((s) => s.id !== slip.id && !(s.plot === slip.plot && s.day === slip.day)), slip];
-      local({ ...overrides, slips }, `Sale slip of ${fmtDay(slip.day)} read and checked on Sunita's phone`);
+      get().record([{ kind: "slip", slip }], `Sale slip of ${fmtDay(slip.day)} read and checked on Sunita's phone`);
     },
     logEntry: (draft) => {
-      const { overrides, season } = get();
-      const entry = { ...draft, id: `L${Date.now().toString(36)}` } as FarmerEntry;
-      // One entry of a kind per plot and day: logging again corrects the first one.
-      const entries = [...(overrides.entries ?? []).filter((e) => !(e.plot === entry.plot && e.day === entry.day && e.kind === entry.kind)), entry];
-      const f = season.plots[entry.plot].farmer;
+      const { season } = get();
+      const f = season.plots[draft.plot].farmer;
       const who = f.name.split(" ")[0];
-      const what = entry.kind === "spray" ? `a ${entry.spray} spray` : entry.kind === "pick" ? `a picking of ${entry.crates} crates` : entry.skipped ? "a watering skipped" : "a watering";
-      local({ ...overrides, entries }, `${who} logged ${what} on ${fmtDay(entry.day)} from ${f.woman ? "her" : "his"} phone`);
-      return entry;
+      const what = draft.kind === "spray" ? `a ${draft.spray} spray` : draft.kind === "pick" ? `a picking of ${draft.crates} crates` : draft.skipped ? "a watering skipped" : "a watering";
+      // Logging the same kind of work for the same plot and day again corrects it: the later fact wins.
+      const [event] = get().record([{ kind: "entry", entry: draft }], `${who} logged ${what} on ${fmtDay(draft.day)} from ${f.woman ? "her" : "his"} phone`);
+      return { ...draft, id: event.id } as FarmerEntry;
     },
     removeEntry: (id) => {
       const { overrides, season } = get();
       const entry = overrides.entries?.find((e) => e.id === id);
       if (!entry) return;
       const who = season.plots[entry.plot].farmer.name.split(" ")[0];
-      local({ ...overrides, entries: overrides.entries!.filter((e) => e.id !== id) }, `${who} removed an entry from ${fmtDay(entry.day)}`);
+      // Undo is a fact too: the entry stops counting but stays in the record.
+      get().record([{ kind: "retract", target: id }], `${who} removed an entry from ${fmtDay(entry.day)}`);
     },
     escalate: (question, extra) => {
       const { season, t } = get();

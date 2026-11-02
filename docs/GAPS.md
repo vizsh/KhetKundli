@@ -2,6 +2,8 @@
 
 An honest register of what is missing, wrong or only simulated, written on 3 November 2026 (commit `cd40d62`) when the goal changed from "an excellent local prototype" to "an actual product with a real demonstration". Each gap has an id, its severity for a real product, the evidence in the code, and the phase of [PRODUCT-PLAN.md](PRODUCT-PLAN.md) that closes it.
 
+**Progress.** Phase 1 slice 1 (3 November 2026) closed G-B1, G-B8, G-B12, G-T1 and G-T2, and narrowed G-B2, G-B3, G-B7, G-B9, G-T3 and G-T4; each row says what remains.
+
 Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · **S2** blocks a credible pilot · **S3** weakens the product or the demo.
 
 ---
@@ -10,18 +12,18 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 
 | Id | Gap | Sev | Evidence | Phase |
 | --- | --- | --- | --- | --- |
-| G-B1 | **Lost updates between devices.** The whole `Overrides` object travels as one message and the newest clock wins. If two phones (or a phone and the desk) change the season before seeing each other's change, one change is silently lost. | S1 | `relay.ts` `accept()` keeps `r.overrides = msg.overrides` when its clock is newer; `sync.tsx` replaces the local overrides with what arrives | 1 |
-| G-B2 | **The client is the source of truth.** Every browser generates all 192 plots and holds the overrides; the server stores what clients send. There is no server-side record of a plot. | S1 | `store.ts` regenerates locally; the relay keeps a blob in `kv` | 1 |
-| G-B3 | **The server trusts client input.** The agent and the advisory pipeline regenerate the season from overrides sent in the request body; `/api/messages` sends whatever text the client posts. A tampered client could make the agent answer from a fake record or send any SMS. | S1 | `api/agent/ask` and `api/agent/advisories` read `body.overrides`; `api/messages` takes `items[].sms` | 1 |
+| G-B1 | ~~**Lost updates between devices.**~~ **Closed 3 Nov 2026.** Changes are immutable season events merged by id; overrides are a projection (`foldEvents`). Property tests over 10,000 random histories, and `scripts/lost-update-check.mts` against the running server | S1 | `src/lib/events.ts`, `events.test.ts` | 1 ✓ |
+| G-B2 | **The client is the source of truth.** *Narrowed:* the server now holds every season event in an append-only store and serves them to screens on connect; what remains is a server-side plot registry (real plots, not the 192 generated ones) and server-computed projections | S1 | `event-store.ts`; `store.ts` still generates the plots | 1 |
+| G-B3 | **The server trusts client input.** *Narrowed:* the agent and the advisory pipeline now read the server's own events, never the request. Remaining: `/api/messages` still sends the text a client posts (to be sent by stored batch id) | S1 | `api/messages` takes `items[].sms` | 1 |
 | G-B4 | **No identity, no authentication, no authorisation.** Anyone on the network can read the stream, post messages, reset the database. | S1 | No auth in any route handler; `reset` clears everything | 1 |
 | G-B5 | **No consent model.** Nothing records who agreed to share what, for which purpose (needed under the DPDP Act 2023 and the DPDP Rules 2025). | S1 | No consent table or check | 1 (model), 2 (flows) |
 | G-B6 | **Single process, in-memory fan-out.** The relay's subscribers live in `globalThis`; scaling past one process or restarting drops live connections. | S2 | `relay.ts` | 2 |
-| G-B7 | **No migrations, backups or restore drill.** The schema is `create table if not exists`; one SQLite file. | S2 | `db.ts` | 1 |
-| G-B8 | **Corrections are overwrites.** Undo deletes an entry from the overrides; there is no history of what was changed and by whom. | S2 | `store.ts` `removeEntry` | 1 |
-| G-B9 | **Validation is partial.** `/api/sync` checks entries, escalations and replies; scans, slips, advisories and the rest of overrides are accepted as sent. No shared schema between client and server. | S2 | `api/sync/route.ts` | 1 |
+| G-B7 | **No migrations, backups or restore drill.** *Narrowed:* the season record has versioned migrations (`schema_migrations`). Remaining: the SQLite tables, backups, a restore drill | S2 | `sql.ts` `migrate`; `db.ts` | 1 |
+| G-B8 | ~~**Corrections are overwrites.**~~ **Closed 3 Nov 2026.** Undo is a `retract` event and a correction is a later event in the same slot; the record keeps both, with the device that made them | S2 | `events.ts` | 1 ✓ |
+| G-B9 | **Validation is partial.** *Narrowed:* every season event is validated against one zod contract shared by phone and server, with a reason per rejected event. Remaining: escalations, replies, receipts and messages | S2 | `events.ts`, `api/sync/route.ts` | 1 |
 | G-B10 | **No rate limits, no request size limits beyond a few fields, no abuse controls.** | S2 | All route handlers | 1 |
 | G-B11 | **Timers in request handlers.** The gateway simulator uses `setTimeout` inside `/api/messages`; receipts are lost on restart. There is no job runner. | S2 | `api/messages/route.ts` | 2 |
-| G-B12 | **No audit trail an outsider can trust.** The `events` table is append-only by convention, but rows can be edited and nothing proves they were not. | S2 | `db.ts` | 1 |
+| G-B12 | ~~**No audit trail an outsider can trust.**~~ **Closed 3 Nov 2026** for the season record: triggers refuse UPDATE, DELETE and TRUNCATE, and a sha256 hash chain names the first edited, removed or forged row (`GET /api/v1/integrity`). Remaining: a signed daily digest of the head hash | S2 | `event-store.ts`, `event-store.test.ts` | 1 ✓ |
 | G-B13 | **No observability.** No structured logs, metrics, traces or error tracking; `/status` is a page, not monitoring. | S2 | — | 1 |
 | G-B14 | **No API versioning or contract.** Clients and server change together; an old phone in the field would break. | S2 | — | 1 |
 | G-B15 | **One global demo clock** (`t`) is shared by every screen. A product needs real time per user, with replay as a separate mode. | S2 | `store.ts`, `relay.ts` (`time` messages) | 1 |
@@ -30,10 +32,10 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 
 | Id | Gap | Sev | Evidence | Phase |
 | --- | --- | --- | --- | --- |
-| G-T1 | **No unit-test framework.** The engine, parser and guard are tested only through scripts and the browser smoke test. | S2 | `package.json` scripts | 1 |
-| G-T2 | **No property tests of the sync invariants** (idempotency, convergence, order independence). | S1 | — | 1 |
-| G-T3 | **No integration tests against the database**, no contract tests for the API. | S2 | — | 1 |
-| G-T4 | **No continuous integration.** Nothing runs on a push. | S2 | No `.github/workflows` | 1 |
+| G-T1 | ~~**No unit-test framework.**~~ **Closed:** `npm test` runs Node's test runner through tsx (vitest would not install on this machine's npm) | S2 | `*.test.ts` | 1 ✓ |
+| G-T2 | ~~**No property tests of the sync invariants.**~~ **Closed:** convergence (10,000 runs), commutativity, associativity, idempotency, no lost update, season determinism; a crash test kills a writer mid-transaction and checks exactly-once | S1 | `events.test.ts`, `scripts/crash-test.mts` | 1 ✓ |
+| G-T3 | **No integration tests against the database**, no contract tests for the API. *Narrowed:* the store is tested against embedded Postgres. Remaining: API contract tests, the same suite against a Postgres server | S2 | `event-store.test.ts` | 1 |
+| G-T4 | **No continuous integration.** *Narrowed:* `.github/workflows/ci.yml` runs types, lint, tests, the crash test, slips, router parity and the engine check on every push. Remaining: confirm the first run on GitHub (not pushed yet); a browser job for the smoke test | S2 | `.github/workflows/ci.yml` | 1 |
 | G-T5 | **No load, soak or failure tests** (kill the server mid-sync, partition a phone for a week). | S2 | — | 3 |
 | G-T6 | **No staging environment or deployment.** Everything runs on one laptop. | S2 | — | 2 |
 
@@ -95,7 +97,7 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 
 ## 8. The five gaps that matter most
 
-1. **G-B1 + G-B2 + G-B3**: make the server the source of truth, with per-event sync that cannot lose an update and never trusts client-sent state.
+1. **G-B2 + G-B3**: finish making the server the source of truth (G-B1, per-event sync, is done).
 2. **G-B4 + G-B5 + G-P1**: real people with accounts, roles and consent; one phone, any farmer.
 3. **G-C1**: a real SMS that arrives on a real farmer's phone, DLT-registered.
 4. **G-P5**: an impact ledger that derives every claimed litre and rupee from real events.

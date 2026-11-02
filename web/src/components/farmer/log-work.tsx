@@ -107,10 +107,12 @@ export function LogWork({ plot }: { plot: number }) {
 
   const save = () => {
     if (!kind) return;
+    // Read the time first: the ripple this entry causes is stamped while it is logged.
+    const at = Date.now();
     if (kind === "spray") logEntry({ plot, day, hour, kind, spray });
     else if (kind === "irrigate") logEntry({ plot, day, hour, kind, skipped });
     else logEntry({ plot, day, hour, kind, crates: crateCount, grade });
-    setSavedAt(Date.now());
+    setSavedAt(at);
     setKind(null);
     setCrates(null);
   };

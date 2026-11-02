@@ -45,6 +45,7 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | Officer | **Harvest Wave**, **Water Commons**, **Pooled Runs**, daily register, inbox, plot records | Simulated network |
 | Farmer, officer | **Reasoning agent, on this laptop**: a router trained here (Marathi and English), 12 tools over the plot record, weather and rules, Llama 3.1 8B planning and writing under a JSON schema, retrieval over our agronomy notes, and guards that block any dose, product, date or number not in the evidence; the officer drafts replies with it; an evening advisory pipeline batches warnings by village | Ollama on the laptop GPU; 14/14 routed, every answer guard-checked ([docs/AGENTS.md](docs/AGENTS.md)) |
 | Officer, farmer | **Advisories that arrive**: the desk prepares a batch (radar warnings, or one village), shows the English and Marathi SMS, and sends on approval; the phone gets a banner and a message list and sends back *delivered* and *read*; *Warn downwind* sends real messages too | Local database and relay; receipts from farmers with no phone in the room come from a gateway simulator, marked *sim* |
+| Everyone | **A season record you can trust**: every change is an immutable event, merged by id on every screen so no device can overwrite another; the server keeps them in an append-only, hash-chained Postgres table that refuses edits and names any row tampered with around it; the agent answers only from the server's record | `npm test`, `npm run test:crash`, `/api/v1/integrity` |
 | Everyone | **Restart-proof and offline**: one SQLite file keeps the relay, an append-only event log, messages, agent answers and saved forecasts; `npm run demo -- --offline` runs the venue with no internet | `web/data/khetkundli.db` |
 | Everyone | **Season time machine**: one clock for every screen; replay the season on either device | Two devices stay in step over Wi-Fi |
 
@@ -112,7 +113,9 @@ npm run demo         # checks the local models, database and saved forecast, war
 `npm run demo -- --https` gives phones on the Wi-Fi a secure origin (camera, microphone) with a self-signed certificate for this laptop's addresses; nothing is installed into Windows' trust store, and the phone accepts a one-time warning. `npm run demo -- --offline` runs with no internet: weather, wind and the ensemble come from the forecast saved on the last online run, and the desk says *saved forecast · offline*. `/status` shows the models, the database, the saved forecast and the screens connected. `npm run dev` still works for development.
 
 ```bash
-npm run smoke        # 24 end-to-end checks in Chrome (dev server running)
+npm test             # unit and property tests: event convergence, the append-only hash-chained record, tamper detection
+npm run test:crash   # kill the writer mid-transaction again and again: every event stored exactly once
+npm run smoke        # 25 end-to-end checks in Chrome (dev server running)
 npm run test:slips   # reads the three specimen slips (English and Marathi) in Node and checks the parser
 npm run backtest     # scores the spread forecast over the recorded season
 npm run eval:agent   # the reasoning agent end to end on the local model (Ollama with llama3.1:8b and nomic-embed-text)

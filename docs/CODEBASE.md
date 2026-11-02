@@ -1,6 +1,6 @@
 # Codebase guide
 
-A guided tour of the repository for someone about to change it: where each thing lives, how a request flows through, the conventions to keep, and step-by-step recipes for the changes people make most. Status: 3 November 2026, commit `cd40d62`. For the system design itself see [ARCHITECTURE.md](ARCHITECTURE.md); for the background see [CONTEXT.md](CONTEXT.md).
+A guided tour of the repository for someone about to change it: where each thing lives, how a request flows through, the conventions to keep, and step-by-step recipes for the changes people make most. Status: 3 November 2026, Phase 1 slice 1 (season events). For the system design itself see [ARCHITECTURE.md](ARCHITECTURE.md); for the background see [CONTEXT.md](CONTEXT.md).
 
 ---
 
@@ -52,7 +52,9 @@ KhetKundli/
 | `POST /api/agent/ask` | `app/api/agent/ask/route.ts` | The Ask pipeline, streamed as server-sent events |
 | `POST /api/agent/advisories` | `app/api/agent/advisories/route.ts` | Prepare an advisory batch (sends nothing) |
 | `GET /api/agent/health` | `app/api/agent/health/route.ts` | Ollama and models |
-| `GET /api/status` | `app/api/status/route.ts` | Feeds `/status` |
+| `GET /api/status` | `app/api/status/route.ts` | Feeds `/status`, including the season record and its hash chain |
+| `GET, POST /api/v1/events` | `app/api/v1/events/route.ts` | Pull season events by cursor; post a batch (a verdict per event) |
+| `GET /api/v1/integrity` | `app/api/v1/integrity/route.ts` | Walk the hash chain |
 
 ## 3. The library, file by file
 
@@ -73,7 +75,8 @@ KhetKundli/
 
 | File | Responsibility |
 | --- | --- |
-| `store.ts` | The zustand store: clock `t`, overrides, season, ripple, inbox, messages, wind, ensemble; every action that changes the season (`heroScan`, `logEntry`, `fileSlip`, `warnCells`, …) goes through `applyOverrides` |
+| `events.ts` | **The contract.** Season event schemas (zod), `foldEvents` (events → overrides), `mergeEvents` (union by id), `uuidv7`, `canonical` JSON. Shared by phone, desk and server |
+| `store.ts` | The zustand store: clock `t`, `events` and the `overrides` folded from them, season, ripple, inbox, messages, wind, ensemble; every action that changes the season (`heroScan`, `logEntry`, `removeEntry`, `fileSlip`, `warnCells`, …) calls `record(drafts, label)`; events from elsewhere arrive through `receiveEvents` |
 | `sync.tsx` | `SyncBridge`: applies messages from other windows and devices to the store |
 | `channel.ts` | The sync message types (`SyncMsg`, `Escalation`, `FarmMessage`) and `post()` over BroadcastChannel + the outbox |
 | `outbox.ts` | IndexedDB outbox, hybrid logical clocks, retry on `online` and every 8 s |
@@ -105,8 +108,10 @@ KhetKundli/
 
 | File | Responsibility |
 | --- | --- |
-| `db.ts` | SQLite via `node:sqlite`: `kv`, `events`, `messages`, `agent_log`, `snapshots` |
-| `relay.ts` | `accept(msg)`: dedupe by clock, keep latest overrides, inbox, receipts, reset; `broadcast`; `snapshot` |
+| `sql.ts` | The Postgres connection: `pg` when `DATABASE_URL` is set, embedded PGlite (`web/data/pg`, or `memory://`) otherwise; `tx`, `exec`, versioned `migrate` |
+| `event-store.ts` | The season record: append-only `season_events` with triggers and a sha256 hash chain; `append` (a verdict per event), `since(cursor)`, `current()`, `verifyChain()` |
+| `db.ts` | SQLite via `node:sqlite` for what has not moved yet: `kv` (inbox), `events` (non-season durable messages), `messages`, `agent_log`, `snapshots` |
+| `relay.ts` | `acceptEvents` (store, then fan out what was accepted), `accept(msg)` for the other kinds, `broadcast`, `snapshot` (every event since the last reset), `serverOverrides` (the record the agent reads) |
 | `agent-log.ts` | Writes every agent answer |
 | `snapshot.ts` | Saves and serves weather snapshots for offline mode |
 
@@ -147,15 +152,16 @@ sequenceDiagram
 
 ## 6. Recipes
 
-### Add a new kind of override (what the farmer or officer can change)
+### Add a new kind of change (what the farmer or officer can do to the season)
 
-The farmer-entries change (`cd40d62`) is the worked example.
+Since Phase 1 slice 1 a change is a **season event**. The farmer-entries change (`cd40d62`) shows the engine side; the event side is in `lib/events.ts`.
 
+0. **Event**: add a variant to `SeasonEvent` in `lib/events.ts` with bounded fields, and project it in `foldEvents`. Decide what happens when two events compete for one slot (the later clock wins) and add a property to `events.test.ts` if the rule is new. Old events must stay valid: add, never repurpose, and bump `SCHEMA_VERSION` with a migration path if a payload must change.
 1. **Type**: add the field to `Overrides` in `lib/sim/types.ts` (and an event type to `PlotEvent` if it writes a new kind of entry).
 2. **Engine**: apply it in `generateSeason` at the right stage of the day loop. Keep it causal: it may change only what it causes. Replace the simulated event it stands for rather than adding a duplicate.
 3. **Ripple**: teach `diffSeasons` (`lib/sim/selectors.ts`) to describe what changed in a sentence a farmer or officer understands.
-4. **Store**: add an action in `lib/store.ts` that builds the new overrides and calls `local(…, label)`; the label is what other screens show.
-5. **Relay**: validate the shape in `app/api/sync/route.ts` (`valid`), with sizes bounded.
+4. **Store**: add an action in `lib/store.ts` that calls `record([{ kind: …, … }], label)`; the label is what other screens show.
+5. **Server**: nothing to add: the store validates every event against the contract and rejects what does not fit, with a reason.
 6. **Agent**: if the agent should cite it, extend `describeEvent` / the relevant tool in `lib/agent/tools.ts`.
 7. **UI**: a component under `components/farmer` or `components/desk` using the `record/` primitives, English and Marathi.
 8. **Tests**: a smoke check in `scripts/smoke.mjs`; run `simtest.ts` to confirm isolation.
@@ -187,13 +193,17 @@ Start from `.impeccable/surfaces/*.md` for the surface's design contract, compos
 | --- | --- |
 | `npx tsc --noEmit`, `npx eslint src` | Types and lint |
 | `npx tsx --tsconfig tsconfig.json scripts/simtest.ts` | Engine statistics; a scan far from the hero leaves other plots unchanged |
-| `npm run smoke` | 24 end-to-end checks in Chrome across phone and desk (dev server on :3000) |
+| `npm run smoke` | 25 end-to-end checks in Chrome across phone and desk (dev server on :3000) |
 | `npm run test:slips` | The three specimen slips parse and check correctly |
 | `npm run test:router` | TypeScript router matches the Python model |
 | `npm run backtest` | Spread-forecast skill against baselines |
 | `npm run eval:agent` | 14 agent questions end to end on the local model |
+| `npm test` | Unit and property tests (`src/**/*.test.ts`, Node's test runner via tsx): event convergence over 10,000 random histories, merge laws, no lost update, season determinism; the event store on embedded Postgres: idempotency, rejections, append-only triggers, tamper detection |
+| `npm run test:crash` | A writer killed mid-transaction again and again while appending 1,000 events: each stored exactly once, chain verifies |
+| `npx tsx scripts/lost-update-check.mts` | Three devices post at once to the running server: every change survives, retries are duplicates, chain verifies |
+| `npm run check` | Types, lint, tests, slips, router parity in one go |
 
-There are **no unit-test framework, no CI and no integration tests against the database** yet; the product plan adds them first ([PRODUCT-PLAN.md](PRODUCT-PLAN.md), Phase 1).
+CI (`.github/workflows/ci.yml`) runs all of these except the smoke test and the lost-update check, which need a running server and Chrome.
 
 ## 8. Scripts
 

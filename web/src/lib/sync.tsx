@@ -1,12 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { addTransport, appliedHlc, DURABLE, isStale, noteApplied, observe, post, SELF, type SyncMsg } from "@/lib/channel";
+import { addTransport, DURABLE, isStale, noteApplied, observe, post, SELF, type SyncMsg } from "@/lib/channel";
 import { enqueue, pending, remove } from "@/lib/outbox";
-import type { Overrides } from "@/lib/sim/types";
 import { useDesk } from "@/lib/store";
-
-const same = (a: Overrides, b: Overrides) => JSON.stringify(a) === JSON.stringify(b);
 
 /** Apply a message from another window or device to this window's state. */
 function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => void) => void, listenOnly = false) {
@@ -16,14 +13,11 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
   const s = useDesk.getState();
   switch (m.kind) {
     case "hello":
-      reply({ kind: "state", from: SELF, overrides: s.overrides, inbox: s.inbox, messages: s.messages, t: s.t, hlc: appliedHlc() });
+      reply({ kind: "state", from: SELF, events: s.events, inbox: s.inbox, messages: s.messages, t: s.t });
       break;
     case "state":
-      // Last writer wins: a snapshot older than what this screen already shows is ignored.
-      if (!isStale(m.hlc) && !same(m.overrides, s.overrides) && Object.keys(m.overrides).length) {
-        noteApplied(m.hlc);
-        s.applyOverrides(m.overrides, "Synced from another screen", "remote");
-      }
+      // Facts merge by id: a screen can only learn events from a snapshot, never lose them.
+      if (m.events?.length) s.receiveEvents(m.events, "Synced from another screen");
       if (m.inbox.length) s.mergeInbox(m.inbox);
       if (m.messages?.length) s.mergeMessages(m.messages);
       break;
@@ -33,10 +27,8 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
     case "receipt":
       s.receiveReceipt(m.id, m.status, m.at, m.simulated);
       break;
-    case "overrides":
-      if (isStale(m.hlc)) break;
-      noteApplied(m.hlc);
-      if (!same(m.overrides, s.overrides)) s.applyOverrides(m.overrides, m.label, "remote");
+    case "events":
+      s.receiveEvents(m.events, m.label);
       break;
     case "time":
       follow(() => {
@@ -53,7 +45,7 @@ function receive(m: SyncMsg, reply: (msg: SyncMsg) => void, follow: (fn: () => v
     case "reset":
       if (isStale(m.hlc)) break;
       noteApplied(m.hlc);
-      s.applyOverrides({}, "Demo reset on another screen", "remote");
+      // The season's reset arrives as a `reset` event; this clears the inbox and messages.
       useDesk.setState({ ripple: null, inbox: [], messages: [] });
       break;
   }

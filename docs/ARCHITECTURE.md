@@ -54,8 +54,9 @@ The prototype runs on one laptop, so its backend is local and restart-proof rath
 
 | Piece | What it does | Code |
 | --- | --- | --- |
-| **SQLite database** | One file, `web/data/khetkundli.db`, through Node's built-in `node:sqlite`. Tables: `events` (every durable synced message, keyed by its clock stamp, so a retry is recognised), `kv` (the relay's current overrides and inbox), `messages` (advisories with sent, delivered and read times), `agent_log` (every answer with its route, engine, guard result and timing), `snapshots` (the last good weather, wind and ensemble answers) | `src/lib/server/db.ts` |
-| **Relay** | Accepts messages from devices, writes them to the database, fans them out over server-sent events; on start it reloads its state from the database | `src/lib/server/relay.ts`, `app/api/sync` |
+| **Season record (Postgres)** | The season's facts: an append-only, hash-chained `season_events` table. Triggers refuse UPDATE, DELETE and TRUNCATE; each row's hash covers the previous row's hash, so an edit made around the triggers is found by `verifyChain` (`GET /api/v1/integrity`). Embedded Postgres (PGlite) in `web/data/pg` by default; a real server when `DATABASE_URL` is set; versioned migrations | `src/lib/server/event-store.ts`, `sql.ts` |
+| **SQLite database** | One file, `web/data/khetkundli.db`, through Node's built-in `node:sqlite`, for what has not moved to Postgres yet. Tables: `events` (durable non-season messages, keyed by clock stamp), `kv` (the inbox), `messages` (advisories with sent, delivered and read times), `agent_log` (every answer with its route, engine, guard result and timing), `snapshots` (the last good weather, wind and ensemble answers) | `src/lib/server/db.ts` |
+| **Relay** | Accepts messages from devices; season events go to the event store, which answers per event (accepted, duplicate, rejected), and only accepted ones are fanned out over server-sent events; the inbox and messages go to SQLite | `src/lib/server/relay.ts`, `app/api/sync` |
 | **Messages** | `POST /api/messages` sends an approved batch; the demo phone sends its own receipts; a gateway simulator marks the others after a few seconds and says so | `app/api/messages` |
 | **Offline mode** | `KHETKUNDLI_OFFLINE=1` serves the saved weather, wind and ensemble; any network failure falls back to them too | `src/lib/server/snapshot.ts` |
 | **Start-up** | `instrumentation.ts` warms the local models; `npm run demo` checks everything, starts the app on the Wi-Fi (optionally HTTPS with a self-signed certificate) and prints a QR code; `/status` shows it all | `src/instrumentation.ts`, `scripts/demo.mjs`, `scripts/cert.mjs`, `app/status` |
@@ -161,12 +162,12 @@ Two transports carry one message stream: `BroadcastChannel("khetkundli")` betwee
 
 | Message | Sent when | Effect |
 | --- | --- | --- |
-| `hello` / `state` | A window opens | Peers (or the relay) answer with overrides, inbox and clock |
-| `overrides` | Any local override | Receivers regenerate the season and show the ripple with the sender's label |
+| `hello` / `state` | A window opens | Peers (or the relay) answer with their season events (the relay: every event since the last reset), the inbox and the clock |
+| `events` | A scan, a logged entry, an undo, a slip, an advisory, a harvest choice, demo rain or a reset | Receivers merge the events by id, fold them into overrides, regenerate the season and show the ripple with the sender's label |
 | `time` | The clock moves (throttled to 250 ms on the network) | Receivers follow the clock |
 | `escalation` | A question the record cannot answer, or a slip dispute | Lands in the desk inbox |
 | `reply` | The officer answers | Lands in the farmer's Ask sheet |
-| `reset` | Reset on the desk | Clears overrides, inbox and messages everywhere, including the relay and its database |
+| `reset` | Reset on the desk (sent with a `reset` season event) | Clears the inbox and messages everywhere; the season's reset is the event, and nothing in the record is deleted |
 | `message` | The officer approves an advisory batch (or warns downwind) | The server sends it to every screen; the farmer's phone shows a banner and adds it to Messages |
 | `receipt` | A phone receives or opens a message; or the gateway simulator, for farmers with no phone in the room (`simulated: true`) | The desk's advisory console shows *delivered* and *read* |
 
@@ -176,19 +177,29 @@ sequenceDiagram
   participant Re as /api/sync
   participant De as Desk (profile B)
   De->>Re: GET (EventSource)
-  Re-->>De: state {overrides, inbox, t}
+  Re-->>De: state {events, inbox, t}
   Ph->>Re: GET (EventSource)
   Re-->>Ph: state
   Ph->>Re: POST escalation {question, context}
   Re-->>De: escalation
   De->>Re: POST reply {id, text}
   Re-->>Ph: reply
-  Note over Re: Validates kinds and sizes, keeps the latest state in memory<br/>(one server process: next dev or next start)
+  Note over Re: Validates kinds and sizes; season events go to the<br/>append-only store, the rest to SQLite
 ```
 
 Messages carry a `from` id so a window ignores its own echo.
 
-**Offline first.** Durable messages (overrides, escalation, reply, reset) are stamped with a **hybrid logical clock**: wall-clock milliseconds, a counter, and the window's id, encoded so that string order is causal order. On the phone they go into an **IndexedDB outbox** and are sent in clock order when the relay can be reached; a network error stops the run (retried on the `online` event and every 8 s), a rejected message is dropped so it cannot block the queue, and a newer overrides message replaces any older one still queued. The relay is **idempotent** (a stamp it has seen is acknowledged and not delivered twice) and applies the season's overrides **last-writer-wins** by clock, so a phone that comes back online with older changes cannot overwrite newer ones; every screen applies the same rule to what it receives.
+**Season events, not state.** Since 3 November 2026 a change to the season is an immutable event (`src/lib/events.ts`): a UUIDv7 id made on the device, a hybrid-logical-clock stamp, the device, and a payload validated against a zod contract. The overrides the engine reads are a projection, `foldEvents(events)`: sort by clock, drop what precedes the last reset and what was retracted, and where two facts compete for one slot (the same plot, day and kind of entry; the day's advisory; the harvest choice) the later stamp wins. Screens merge events by id (set union), so the same events in any order and with any duplicates give the same season everywhere, and a change from one device can never overwrite another device's change. Property tests check this over 10,000 random histories (`src/lib/events.test.ts`).
+
+```mermaid
+flowchart LR
+  A[Phone: logs a spray] -->|event e1| R[(season_events<br/>append-only, hash chain)]
+  B[Desk: sends an advisory] -->|event e2| R
+  R -->|accepted: e1, e2| S1[Every screen:<br/>merge by id, foldEvents, generateSeason]
+  S1 --> V[Same season everywhere]
+```
+
+**Offline first.** Durable messages (events, escalation, reply, reset, receipt) are stamped with a **hybrid logical clock**: wall-clock milliseconds, a counter, and the window's id, encoded so that string order is causal order. On the phone they go into an **IndexedDB outbox** and are sent in clock order when the relay can be reached; a network error stops the run (retried on the `online` event and every 8 s), a rejected message is dropped so it cannot block the queue, and nothing queued is ever replaced. The store is **idempotent per event** (an id it has stored is answered *duplicate*; an id reused with different content is *rejected*), so a phone that comes back online after a week resends everything safely. A crash test kills a writer mid-transaction again and again while it appends 1,000 events, and checks that each is stored exactly once and the chain verifies (`npm run test:crash`).
 
 ```mermaid
 sequenceDiagram
@@ -206,7 +217,7 @@ sequenceDiagram
   Re-->>Ph: 200 OK, removed from the outbox
 ```
 
-The relay is still a demo transport: no authentication, state in one server process. The roadmap replaces it with accounts, an event store and a hosted realtime channel.
+Still to do in Phase 1 ([PRODUCT-PLAN.md](PRODUCT-PLAN.md)): authentication and roles (anyone on the network can still post events), consent, moving the inbox and messages to Postgres, and fan-out across processes.
 
 ## Offline
 
@@ -230,7 +241,7 @@ The service worker (production builds) precaches the phone page, the leaf model,
 | Command | What it proves |
 | --- | --- |
 | `npm run backtest` | Spread-forecast skill over the recorded season: ROC AUC, precision and recall of the warn cells, against distance-only and oracle baselines |
-| `npm run smoke` | 24 checks in real Chrome, including the pomegranate model finding blight on a held-out photo, a farmer's logged watering reaching her record and the desk, the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
+| `npm run smoke` | 25 checks in real Chrome, starting from a desk reset (an event), including the pomegranate model finding blight on a held-out photo, a farmer's logged watering reaching her record and the desk, the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
 | `npm run test:slips` | The three specimen slips (two English, one Marathi) read in Node; gross, net, charge count and the amount above the card |
 | `npx tsx --tsconfig tsconfig.json scripts/simtest.ts` | Engine statistics and causal isolation |
 | `npx tsc --noEmit`, `npx eslint src`, `npm run build` | Types, lint, production build |
@@ -249,7 +260,7 @@ npm run report:figures && npm run report   # redraw docs/report/figures and rebu
 
 ## Open items
 
-- **Overrides are one object, last writer wins.** Two devices that change the season before seeing each other's change can lose one of the changes; the relay and the agent also trust the overrides a client sends. Fine on one laptop, not for a product: [GAPS.md](GAPS.md) G-B1 to G-B3, closed by Phase 1 of [PRODUCT-PLAN.md](PRODUCT-PLAN.md).
+- **No accounts yet.** Season changes are now per-event facts in an append-only store and the agent reads the server's own record, but anyone on the network can still post events, and `/api/messages` sends the text a client posts: [GAPS.md](GAPS.md) G-B3, G-B4, next in Phase 1.
 - **Spray table.** Streptocycline has been removed; curative sprays are copper hydroxide 77% WP at 2 g per litre and preventive sprays 1% Bordeaux, from ICAR-NRCP advisories (sources and open questions in [AGRONOMY.md](AGRONOMY.md)). An agronomist still has to review the table, the final gazette status of the antibiotic ban has to be confirmed, and pre-harvest intervals are not yet checked.
 - 22 Marathi village names are best-effort transliterations (`mrVerified: false`).
 - The leaf model's licence on Hugging Face is listed as "other"; confirm before distributing beyond the demo.

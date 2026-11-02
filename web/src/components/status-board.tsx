@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 type Status = {
   mode: { offline: boolean; node: string };
   models: { server: string; agent: string; agentReady: boolean; embed: string; embedReady: boolean; routerAccuracy: number; knowledgePassages: number };
+  record: { database: string; events: number; chainOk: boolean; head: string | null; brokenAt: number | null };
   database: { file: string; events: number; messages: number; delivered: number; read: number; agentAnswers: number; inbox: number };
   snapshots: { name: string; fetchedAt: string; bytes: number }[];
   screens: number;
@@ -61,8 +62,10 @@ export function StatusBoard() {
             <h2 className="border-b-2 border-ink pb-1.5 text-[17px] font-semibold">Data</h2>
             <ul>
               <Row label="Mode" value={s.mode.offline ? "offline: saved forecast" : "online"} ok />
-              <Row label="Database" value={s.database.file} ok />
-              <Row label="Synced events" value={s.database.events} />
+              <Row label="Season record" value={`${s.record.events} events · ${s.record.database === "pglite" ? "embedded Postgres" : s.record.database}`} ok={s.record.database !== "unavailable"} />
+              <Row label="Hash chain" value={s.record.chainOk ? `verifies · head ${s.record.head}` : s.record.brokenAt ? `broken at row ${s.record.brokenAt}` : "not checked"} ok={s.record.chainOk} />
+              <Row label="Local database" value={s.database.file} ok />
+              <Row label="Synced messages" value={s.database.events} />
               <Row label="Messages sent" value={`${s.database.messages} · delivered ${s.database.delivered} · read ${s.database.read}`} />
               <Row label="Agent answers logged" value={s.database.agentAnswers} />
               <Row label="Questions in the inbox" value={s.database.inbox} />

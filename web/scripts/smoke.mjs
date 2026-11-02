@@ -21,6 +21,17 @@ try {
   const page = await browser.newPage();
   await page.setViewport({ width: 390, height: 844, deviceScaleFactor: 1, isMobile: true, hasTouch: true });
   page.on("pageerror", (e) => check("no page errors", false, String(e)));
+  // Start from a reset, as a demo does: the season record persists between runs (a reset is an event; nothing is deleted).
+  const setup = await browser.newPage();
+  await setup.goto(`${BASE}/desk`, { waitUntil: "networkidle2" });
+  const reset = await setup.evaluate(() => {
+    const button = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Reset");
+    button?.click();
+    return Boolean(button);
+  });
+  await sleep(1500);
+  check("setup: desk reset recorded", reset && (await setup.evaluate(() => fetch("/api/v1/events?after=0&limit=5000").then((r) => r.json()).then((j) => j.events.at(-1)?.kind === "reset"))));
+  await setup.close();
   await page.goto(`${BASE}/farmer`, { waitUntil: "networkidle2" });
 
   // Scan Lens on two sample leaves, crop-conditioned.

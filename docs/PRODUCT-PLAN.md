@@ -4,6 +4,17 @@ Written 3 November 2026. On this date the goal changed: KhetKundli is no longer 
 
 Effort figures are estimates for one to two developers. Nothing below has been agreed with a partner yet; every partner, provider and price is a requirement, not a fact.
 
+## Progress
+
+| Date | Slice | Done | Proven by |
+| --- | --- | --- | --- |
+| 3 Nov 2026 | **Phase 1 · slice 1: the season record as events** | Season events with a zod contract shared by phone and server; overrides are a projection (`foldEvents`); per-event sync merged by id; an append-only, hash-chained `season_events` table in Postgres (embedded PGlite by default, a server with `DATABASE_URL`), versioned migrations; `/api/v1/events` and `/api/v1/integrity`; the agent and the advisory pipeline read the server's record; undo and reset are events; `/status` shows the record and its chain; CI workflow | `npm test` (13 tests: convergence over 10,000 random histories, merge laws, no lost update, season determinism, idempotent appends, rejections with reasons, refused UPDATE, DELETE and TRUNCATE, tamper detection for an edit, a removal and a forged row); `npm run test:crash` (13 kills mid-write, 1,000 events stored exactly once, chain verifies); `scripts/lost-update-check.mts` against the running server; restart with nothing lost; the smoke test |
+
+Deviations from the plan, and why: the code stays in `web/` for now (moved to packages when the worker arrives in Phase 2, so the split happens once); tests use Node's test runner, because vitest would not install with this machine's npm; embedded Postgres stands in for a server until a `DATABASE_URL` is configured (the Postgres 17 service on the laptop needs a role and database the user creates).
+
+**Next slice:** accounts and roles (OTP with a development code sink, officer login, devices, "this phone is…"), authorisation on every route, `/api/messages` sending by stored batch id, the inbox and messages moved to Postgres, backups and a restore drill.
+
+
 ---
 
 ## 1. What changes when it is real

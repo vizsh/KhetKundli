@@ -1,22 +1,24 @@
 import { runAgent, type AgentStep, type Audience } from "@/lib/agent/agent";
 import { seasonFor } from "@/lib/agent/season-server";
 import { logAnswer } from "@/lib/server/agent-log";
+import { serverOverrides } from "@/lib/server/relay";
 import { clampDay } from "@/lib/sim/calendar";
-import type { Overrides } from "@/lib/sim/types";
 
 /**
  * Ask the agent about one plot. Streams the pipeline as server-sent events: one `step` per stage
- * (route, evidence, plan, compose, guard), then the `answer`. The body carries the phone's view of
- * the season (its day and overrides), so the answer matches what the farmer sees.
+ * (route, evidence, plan, compose, guard), then the `answer`. The body names the plot and the day; the
+ * record is the server's own (season events in the event store), so a client cannot make the agent
+ * answer from a record that does not exist.
  */
-type Body = { question?: string; plot?: number; day?: number; overrides?: Overrides; audience?: Audience; useLlm?: boolean };
+type Body = { question?: string; plot?: number; day?: number; audience?: Audience; useLlm?: boolean };
 
 export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as Body;
   const question = String(body.question ?? "").trim().slice(0, 500);
   if (!question) return Response.json({ error: "question required" }, { status: 400 });
   const origin = new URL(req.url).origin;
-  const season = await seasonFor(origin, body.overrides ?? {});
+  // The record comes from the server's own events, never from the request.
+  const season = await seasonFor(origin, await serverOverrides());
   const plot = Number.isInteger(body.plot) && body.plot! >= 0 && body.plot! < season.plots.length ? body.plot! : season.heroPlot;
   const day = clampDay(Number(body.day ?? 140));
   const audience = body.audience === "officer" ? "officer" : "farmer";

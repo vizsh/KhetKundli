@@ -74,7 +74,32 @@ type PlotEvent = { id; plot; day; hour; by: "computed" | "human" | "verified"; l
 );
 ```
 
-### Overrides (what devices exchange)
+### Season events (what devices exchange, and what the server stores)
+
+Since 3 November 2026 devices exchange **events**, not overrides. Each is validated against the contract in `web/src/lib/events.ts` (zod) and stored once in the append-only, hash-chained `season_events` table.
+
+```ts
+type SeasonEvent = { id: UUIDv7; hlc: string; by: string /* device */; v: 1; label: string } & (
+  | { kind: "entry"; entry: FarmerEntry without id }   // the event id is the entry's id
+  | { kind: "scan"; plot; day; confidence; offline }
+  | { kind: "slip"; slip: SaleSlip }
+  | { kind: "advisory"; day; hexes: number[] }
+  | { kind: "rain"; day; mm }                           // demo forecast rain
+  | { kind: "harvest"; shift; market }                  // the hero's picking date and market
+  | { kind: "retract"; target: UUIDv7 }                 // undo: the target stops counting, stays in the record
+  | { kind: "reset" }                                   // demo reset: earlier events stop counting, nothing deleted
+);
+```
+
+```sql
+season_events (seq bigserial, id text unique, hlc, kind, actor, doc text /* canonical JSON */,
+               recorded_at, prev_hash, hash /* sha256(prev_hash, recorded_at, doc) */)
+-- triggers refuse UPDATE, DELETE and TRUNCATE
+```
+
+API: `GET /api/v1/events?after=<seq>` (pull by cursor), `POST /api/v1/events` (a batch of up to 200; one verdict per event), `GET /api/v1/integrity` (walks the hash chain).
+
+### Overrides (what the engine reads; a projection of the events)
 
 ```ts
 type Overrides = {

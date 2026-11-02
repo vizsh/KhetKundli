@@ -1,4 +1,4 @@
-import type { Overrides } from "@/lib/sim/types";
+import type { SeasonEvent } from "@/lib/events";
 
 /** A farmer question handed to the extension officer, with the context it was asked in. */
 export type Escalation = {
@@ -38,11 +38,15 @@ export type FarmMessage = {
   simulated?: boolean;
 };
 
-/** `hlc` stamps the durable messages (overrides, escalation, reply, reset, receipt) with a hybrid logical clock. */
+/**
+ * `hlc` stamps the durable messages (events, escalation, reply, reset, receipt) with a hybrid logical clock.
+ * Changes to the season travel as `events`: immutable facts that every screen merges by id, so no
+ * device's change can overwrite another's (src/lib/events.ts).
+ */
 export type SyncMsg = (
   | { kind: "hello"; from: string }
-  | { kind: "state"; from: string; overrides: Overrides; inbox: Escalation[]; t?: number; messages?: FarmMessage[] }
-  | { kind: "overrides"; from: string; overrides: Overrides; label: string }
+  | { kind: "state"; from: string; events: SeasonEvent[]; inbox: Escalation[]; t?: number; messages?: FarmMessage[] }
+  | { kind: "events"; from: string; events: SeasonEvent[]; label: string }
   | { kind: "time"; from: string; t: number }
   | { kind: "escalation"; from: string; item: Escalation }
   | { kind: "reply"; from: string; id: string; reply: NonNullable<Escalation["reply"]> }
@@ -52,7 +56,7 @@ export type SyncMsg = (
 ) & { hlc?: string };
 
 /** Messages that must arrive even if the device is offline when they are made: queued in the outbox. */
-export const DURABLE = new Set<SyncMsg["kind"]>(["overrides", "escalation", "reply", "reset", "receipt"]);
+export const DURABLE = new Set<SyncMsg["kind"]>(["events", "escalation", "reply", "reset", "receipt"]);
 
 /** This window's id, so a window ignores its own messages coming back from a relay. */
 export const SELF = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID().slice(0, 8) : Math.random().toString(36).slice(2, 10);
@@ -60,7 +64,7 @@ export const SELF = typeof crypto !== "undefined" && "randomUUID" in crypto ? cr
 /*
  * Hybrid logical clock: wall-clock milliseconds, a counter for events in the same millisecond (or when
  * a remote clock is ahead), and the window's id. Encoded so that plain string comparison is causal
- * order, which is what the relay and every screen use for last-writer-wins on the season's overrides.
+ * order: season events are sorted by it, and where two facts compete for one slot the later stamp wins.
  */
 let clock = { ms: 0, c: 0 };
 const pad = (n: number, w: number) => n.toString(36).padStart(w, "0");
@@ -85,7 +89,7 @@ export function observe(hlc: string | undefined) {
   clock = { ms, c };
 }
 
-/** The newest overrides this window has applied: anything older that arrives late is ignored. */
+/** The newest reset this window has applied: an older one that arrives late is ignored. */
 let applied = "";
 export const isStale = (hlc: string | undefined) => Boolean(hlc) && hlc! <= applied;
 export const noteApplied = (hlc: string | undefined) => {
@@ -104,6 +108,6 @@ export function addTransport(t: Transport) {
 /** Send to every other window and device this one is linked to. Durable messages get a clock stamp. */
 export function post(msg: SyncMsg) {
   const stamped = DURABLE.has(msg.kind) && !msg.hlc ? { ...msg, hlc: tick() } : msg;
-  if (stamped.kind === "overrides" || stamped.kind === "reset") noteApplied(stamped.hlc);
+  if (stamped.kind === "reset") noteApplied(stamped.hlc);
   for (const t of transports) t(stamped);
 }

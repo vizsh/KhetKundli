@@ -1,16 +1,15 @@
 import type { Escalation, FarmMessage, SyncMsg } from "@/lib/channel";
-import type { Overrides } from "@/lib/sim/types";
+import type { AppendResult } from "./event-store";
+import { eventStore } from "./event-store";
 import { appendEvent, db, getKv, setKv } from "./db";
 
 /**
- * The relay between the phones and the desk, backed by the local database. Every durable message is
- * appended to the event log by its clock stamp (a retry is recognised and dropped); the current
- * overrides, the inbox and the messages are kept so a restarted server picks up where it was.
- * Live delivery is over server-sent events to every connected screen.
+ * The relay between the phones and the desk. Season events go to the append-only, hash-chained
+ * event store (Postgres), which decides what is new; only accepted events are passed on. The inbox,
+ * messages and receipts still live in the local SQLite database (they move to Postgres in a later
+ * step of Phase 1). Live delivery is over server-sent events to every connected screen.
  */
 type Relay = {
-  overrides: Overrides;
-  overridesHlc: string;
   inbox: Escalation[];
   t?: number;
   subscribers: Set<(msg: SyncMsg) => void>;
@@ -22,8 +21,6 @@ const g = globalThis as unknown as { __khetkundliRelay2?: Relay };
 export function relay(): Relay {
   if (!g.__khetkundliRelay2) {
     g.__khetkundliRelay2 = {
-      overrides: getKv<Overrides>("overrides", {}),
-      overridesHlc: getKv<string>("overridesHlc", ""),
       inbox: getKv<Escalation[]>("inbox", []),
       subscribers: new Set(),
     };
@@ -63,17 +60,24 @@ export function saveReceipt(id: string, status: "delivered" | "read", at: string
   else db().prepare("update messages set read_at = coalesce(read_at, ?), delivered_at = coalesce(delivered_at, ?) where id = ?").run(at, at, id);
 }
 
+/**
+ * Store season events and pass on the ones that are new. Each event gets its own verdict, so a phone
+ * can drop what was accepted or is a duplicate from its outbox and keep only what was rejected.
+ */
+export async function acceptEvents(events: unknown[], from: string, label: string): Promise<AppendResult[]> {
+  const store = await eventStore();
+  const results = await store.append(events);
+  const fresh = new Set(results.filter((x) => x.status === "accepted").map((x) => x.id));
+  const accepted = (events as { id?: string }[]).filter((e) => typeof e?.id === "string" && fresh.has(e.id));
+  if (accepted.length) broadcast({ kind: "events", from, events: accepted as never, label });
+  return results;
+}
+
 /** Apply a message from a device; returns how it was handled. */
-export function accept(msg: SyncMsg): { ok: true; duplicate?: boolean; stale?: boolean } {
+export async function accept(msg: SyncMsg): Promise<{ ok: true; duplicate?: boolean; results?: AppendResult[] }> {
   const r = relay();
+  if (msg.kind === "events") return { ok: true, results: await acceptEvents(msg.events, msg.from, msg.label) };
   if (msg.hlc && msg.kind !== "time" && !appendEvent(msg.hlc, msg.kind, msg.from, msg)) return { ok: true, duplicate: true };
-  if (msg.kind === "overrides" && msg.hlc && msg.hlc <= r.overridesHlc) return { ok: true, stale: true };
-  if (msg.kind === "overrides") {
-    r.overrides = msg.overrides;
-    r.overridesHlc = msg.hlc ?? r.overridesHlc;
-    setKv("overrides", r.overrides);
-    setKv("overridesHlc", r.overridesHlc);
-  }
   if (msg.kind === "time") r.t = msg.t;
   if (msg.kind === "escalation" && !r.inbox.some((q) => q.id === msg.item.id)) {
     r.inbox = [msg.item, ...r.inbox].slice(0, MAX_INBOX);
@@ -84,12 +88,9 @@ export function accept(msg: SyncMsg): { ok: true; duplicate?: boolean; stale?: b
     setKv("inbox", r.inbox);
   }
   if (msg.kind === "receipt") saveReceipt(msg.id, msg.status, msg.at, msg.simulated);
+  // The season's reset is a `reset` event in the store; this message clears the inbox and messages.
   if (msg.kind === "reset") {
-    r.overrides = {};
     r.inbox = [];
-    r.overridesHlc = msg.hlc ?? "";
-    setKv("overrides", {});
-    setKv("overridesHlc", r.overridesHlc);
     setKv("inbox", []);
     db().exec("delete from messages");
   }
@@ -97,7 +98,14 @@ export function accept(msg: SyncMsg): { ok: true; duplicate?: boolean; stale?: b
   return { ok: true };
 }
 
-export function snapshot(): SyncMsg {
+export async function snapshot(): Promise<SyncMsg> {
   const r = relay();
-  return { kind: "state", from: "relay", overrides: r.overrides, inbox: r.inbox, messages: recentMessages(), t: r.t, hlc: r.overridesHlc || undefined };
+  const events = await (await eventStore()).current();
+  return { kind: "state", from: "relay", events, inbox: r.inbox, messages: recentMessages(), t: r.t };
+}
+
+/** The season as the server knows it: the overrides folded from its own events, never from a request. */
+export async function serverOverrides() {
+  const { foldEvents } = await import("@/lib/events");
+  return foldEvents(await (await eventStore()).current());
 }

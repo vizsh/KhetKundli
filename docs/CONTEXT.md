@@ -2,7 +2,7 @@
 
 This is the handover document. Anyone (a new teammate, a reviewer, or an AI agent) who reads only this page should know what KhetKundli is, why it is shaped the way it is, what is real, what is not, what was decided and why, and where to go next. It links to the detailed documents rather than repeating them.
 
-Status: 3 November 2026, commit `cd40d62` on `main` at [github.com/vizsh/KhetKundli](https://github.com/vizsh/KhetKundli).
+Status: 3 November 2026, on `main`; Phase 1 of [PRODUCT-PLAN.md](PRODUCT-PLAN.md) has started (the season record as events) at [github.com/vizsh/KhetKundli](https://github.com/vizsh/KhetKundli).
 
 ---
 
@@ -143,7 +143,9 @@ All work so far happened between 19 October and 3 November 2026.
 | `74ac692` | 20 Oct | The reasoning agent backend (router, tools, Llama 3.1 via Ollama, guards) |
 | `e9fa3bd`, `8583d86` | 20 Oct | NEXT-STEPS, then rewritten for a local-only prototype |
 | `6fda547` | 20 Oct | SQLite, advisories that arrive, `npm run demo`, offline mode, a pomegranate model trained locally |
-| `cd40d62` | 3 Nov | The farmer logs her own work (*What I did*); smoke test at 24 checks |
+| `cd40d62` | 3 Nov | The farmer logs her own work (*What I did*); smoke test at 24 checks (25 from Phase 1 slice 1) |
+| `4ac8611` | 3 Nov | CONTEXT, CODEBASE, GAPS and the backend-first PRODUCT-PLAN |
+| Phase 1, slice 1 | 3 Nov | Season events with a zod contract; the append-only, hash-chained Postgres record; per-event sync (no lost updates); the agent reads the server's record; property, tamper and crash tests; CI |
 
 ## 9. Run it
 
@@ -155,7 +157,7 @@ npm run demo         # checks everything, starts the app for the laptop and Wi-F
 
 `npm run demo -- --https` gives phones a secure origin (camera, microphone). `npm run demo -- --offline` uses saved forecasts. `/status` shows models, database, snapshot and connected screens. The agent needs Ollama with `llama3.1:8b` and `nomic-embed-text`; without it, answers fall back to the rules builder.
 
-Checks: `npx tsc --noEmit`, `npx eslint src`, `npm run smoke` (24 checks in Chrome, dev server running), `npm run test:slips`, `npm run test:router`, `npm run backtest`, `npm run eval:agent`, `npx tsx --tsconfig tsconfig.json scripts/simtest.ts`.
+Checks: `npm test` (unit and property tests on embedded Postgres), `npm run test:crash` (kill -9 mid-write, exactly once), `npm run check` (types, lint, tests, slips, router), `npm run smoke` (24 checks in Chrome, dev server running), `npm run test:slips`, `npm run test:router`, `npm run backtest`, `npm run eval:agent`, `npx tsx --tsconfig tsconfig.json scripts/simtest.ts`.
 
 ## 10. Gotchas worth knowing before you touch anything
 
@@ -165,8 +167,8 @@ Checks: `npx tsc --noEmit`, `npx eslint src`, `npm run smoke` (24 checks in Chro
 - **The GPU is 8 GB (RTX 4060 laptop).** Unload Ollama's model (`keep_alive: 0`) before training on the GPU. On Windows keep DataLoader `num_workers` low.
 - **HTTPS for phones** uses a self-signed certificate on purpose; do not run `mkcert -install` (it changes the Windows trust store).
 - **The project report** (`docs/KhetKundli-Report.docx/.pdf`) is laid out page by page; any content change reflows it. Rebuild with `npm run report:figures && npm run report` and check every page.
-- **Overrides travel as one object, last writer wins.** Two devices editing at once can lose one device's change. This is the first thing Phase 1 fixes ([GAPS.md](GAPS.md), G-B1).
-- **The server trusts what clients send** (overrides to the agent, advisory text to `/api/messages`). Fine on one laptop, not for a product.
+- **Season changes are events, not state** (since 3 Nov 2026). To change the season, add an event kind in `web/src/lib/events.ts` and handle it in `foldEvents`; never set `overrides` directly. The season record is an append-only, hash-chained Postgres table: embedded (PGlite, `web/data/pg`) unless `DATABASE_URL` is set. Rows cannot be deleted to "clean up" (the triggers refuse it); Desk → Reset adds a reset event instead.
+- **Not yet authenticated.** Anyone on the network can post events or messages, and `/api/messages` still sends the text a client posts. Accounts and roles are the next slice of Phase 1.
 
 ## 11. Open questions that need a person, not code
 
