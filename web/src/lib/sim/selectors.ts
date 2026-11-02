@@ -133,14 +133,60 @@ export function waterShareByVillage(s: Season, day: number) {
 
 export type Ripple = { label: string; items: string[] };
 
+const sameEntry = (x: PlotEvent, e: PlotEvent) => x.plot === e.plot && x.day === e.day && x.hour === e.hour && x.type === e.type;
+
+/** Entries a farmer logged on the phone that are in season `b` and not in `a`. */
+export function loggedSince(a: Season, b: Season) {
+  const before = a.events.filter((e) => e.logged);
+  return b.events.filter((e) => e.logged && !before.some((x) => sameEntry(x, e)));
+}
+
+/** What one logged entry changed: the booked work it replaced, the water it kept, the harvest it moved. */
+function loggedRipple(a: Season, b: Season, e: PlotEvent): string[] {
+  const id = b.plots[e.plot].id;
+  const out: string[] = [];
+  const booked = (s: Season) => s.eventsByPlot[e.plot].filter((x) => x.type === "spray" && !x.logged && x.day >= e.day && x.day <= e.day + 3).length;
+  if (e.type === "spray") {
+    if (e.washedOff) {
+      const next = b.eventsByPlot[e.plot].find((x) => x.type === "spray" && !x.logged && x.day > e.day);
+      out.push(`${id}: ${b.weather[e.day].rainMm.toFixed(0)} mm of rain on ${fmtDay(e.day)} washes the spray off${next ? `; repeat booked for ${fmtDay(next.day)} at 06:00` : ""}`);
+    } else {
+      const done = booked(a) - booked(b);
+      const sick = a.infected[e.day][e.plot] === 2;
+      const treats = sick && b.infected[e.day][e.plot] === 3;
+      const effect = treats ? "; it treats the blight already on the plot" : sick ? "; blight is already on the plot and a preventive spray will not treat it" : "; canopy covered for 10 days";
+      out.push(`${id} logged ${e.product} on ${fmtDay(e.day)}${effect}${done > 0 ? "; the spray booked for the next three days is already done" : ""}`);
+      if (treats) return out;
+    }
+  } else if (e.type === "irrigate-skip") {
+    out.push(`${id} skipped a watering on ${fmtDay(e.day)}: ${(e.litresSaved / 1000).toFixed(1)} kL stays in the village aquifer`);
+  } else if (e.type === "irrigate") {
+    out.push(`${id} watered ${(e.litres / 1000).toFixed(1)} kL by drip on ${fmtDay(e.day)}; the next watering is planned from there`);
+  } else if (e.type === "pick") {
+    const was = a.eventsByPlot[e.plot].find((x) => x.type === "pick" && x.picking === e.picking);
+    out.push(`${id} picked ${e.crates} crates, grade ${e.grade}, on ${fmtDay(e.day)}${was && was.type === "pick" && (was.day !== e.day || was.crates !== e.crates) ? ` (planned: ${was.crates} crates on ${fmtDay(was.day)})` : ""}`);
+    const wk = weekOf(e.day);
+    const v = b.plots[e.plot].village;
+    const da = a.harvestByWeek[wk]?.[v] ?? 0, db = b.harvestByWeek[wk]?.[v] ?? 0;
+    if (da !== db) out.push(`Harvest Wave: ${geo.villages[v].name} picks ${db} crates that week (was ${da})`);
+  }
+  const end = Math.min(SEASON_DAYS - 1, e.day + 21);
+  if (a.infected[end][e.plot] > 0 && b.infected[end][e.plot] === 0) out.push(`${id}: blight kept out of the plot for the next three weeks`);
+  else if (a.infected[end][e.plot] === 2 && b.infected[end][e.plot] === 3) out.push(`${id}: blight on the plot treated`);
+  return out;
+}
+
 /** What changed between two versions of the season from `day` onward, in plain words. */
 export function diffSeasons(a: Season, b: Season, day: number, label: string): Ripple {
   const items: string[] = [];
   const hero = b.heroPlot;
   const heroId = b.plots[hero].id;
-  const sprays = (s: Season) => s.eventsByPlot[hero].filter((e) => e.type === "spray" && e.day >= day).map((e) => e.day);
+  const fresh = loggedSince(a, b);
+  const sprays = (s: Season) => s.eventsByPlot[hero].filter((e) => e.type === "spray" && e.day >= day && !e.logged).map((e) => e.day);
   const sa = sprays(a), sb = sprays(b);
-  if (sa.join() !== sb.join() && sb.length) items.push(`${heroId} curative spray set for ${sb[0] - day === 1 ? "tomorrow" : `${fmtDay(sb[0])}`} at 06:00, first dry, calm morning`);
+  // A spray she logged explains its own changes below; this line is for sprays the system books.
+  if (sa.join() !== sb.join() && sb.length && !fresh.some((e) => e.plot === hero && e.type === "spray")) items.push(`${heroId} curative spray set for ${sb[0] - day === 1 ? "tomorrow" : `${fmtDay(sb[0])}`} at 06:00, first dry, calm morning`);
+  for (const e of fresh) items.push(...loggedRipple(a, b, e));
   const riskA = riskCounts(a, day), riskB = riskCounts(b, day);
   const warnA = riskA[2] + riskA[3], warnB = riskB[2] + riskB[3];
   if (warnA !== warnB || riskA[1] !== riskB[1]) items.push(`Pest Radar: ${warnB} ${warnB === 1 ? "hex" : "hexes"} on warning (was ${warnA}), ${riskB[1]} on watch (was ${riskA[1]})`);
@@ -150,7 +196,8 @@ export function diffSeasons(a: Season, b: Season, day: number, label: string): R
   if (skips(b) > skips(a)) items.push(`Irrigation skipped on ${skips(b) - skips(a)} more plots; ${((b.waterSavedByDay[Math.min(SEASON_DAYS - 1, day + 2)] - a.waterSavedByDay[Math.min(SEASON_DAYS - 1, day + 2)]) / 1e6).toFixed(2)} ML stays in the ground`);
   const picksMoved = b.events.filter((e) => e.type === "advisory" && e.day >= day && e.text.startsWith("Rain of 8 mm")).length - a.events.filter((e) => e.type === "advisory" && e.day >= day && e.text.startsWith("Rain of 8 mm")).length;
   if (picksMoved > 0) items.push(`${picksMoved} pickings brought forward ahead of rain`);
-  const gradeOf = (s: Season) => s.eventsByPlot[hero].find((e) => e.type === "pick")?.type === "pick" ? (s.eventsByPlot[hero].find((e) => e.type === "pick") as Extract<PlotEvent, { type: "pick" }>).grade : undefined;
+  // The engine's expected grade; a picking she logged states its own grade.
+  const gradeOf = (s: Season) => s.eventsByPlot[hero].find((e): e is Extract<PlotEvent, { type: "pick" }> => e.type === "pick" && !e.logged)?.grade;
   if (gradeOf(a) !== gradeOf(b)) items.push(`${heroId} expected grade ${gradeOf(a)} → ${gradeOf(b)} at harvest`);
   const runsA = a.runs.filter((r) => r.day >= day).length, runsB = b.runs.filter((r) => r.day >= day).length;
   if (runsA !== runsB) items.push(`Pooled runs re-planned: ${runsB} ahead (was ${runsA})`);

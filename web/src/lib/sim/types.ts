@@ -39,7 +39,8 @@ export type WeatherDay = {
   observed?: boolean;
 };
 
-type EventBase = { id: string; plot: number; day: number; hour: number; by: Provenance };
+/** `logged` marks an entry the farmer made herself on the phone, not one the simulation wrote for her. */
+type EventBase = { id: string; plot: number; day: number; hour: number; by: Provenance; logged?: true };
 
 export type PlotEvent = EventBase &
   (
@@ -133,4 +134,20 @@ export type Overrides = {
   slips?: SaleSlip[];
   /** Preventive advisories the officer sent from the spread forecast: app users in these cells spray before the weather turns. */
   advisories?: { day: number; hexes: number[] }[];
+  /** Work the farmer logged on the phone; each replaces what the simulation would have written for her. */
+  entries?: FarmerEntry[];
 };
+
+type EntryBase = { id: string; plot: number; day: number; hour: number };
+
+/** What a farmer can log in two taps: a spray, a watering (or a watering skipped), a picking. */
+export type FarmerEntry = EntryBase &
+  (
+    | { kind: "spray"; spray: "preventive" | "curative" }
+    /** `litres` is left out when the farmer did not measure; the engine uses ET0 × Kc for the plot. */
+    | { kind: "irrigate"; skipped: boolean; litres?: number }
+    | { kind: "pick"; crates: number; grade: "A" | "B" | "C" }
+  );
+
+/** An entry before the store gives it an id (Omit, distributed over the kinds). */
+export type FarmerEntryDraft = FarmerEntry extends infer E ? (E extends FarmerEntry ? Omit<E, "id"> : never) : never;

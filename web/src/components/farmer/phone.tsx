@@ -15,6 +15,7 @@ import { useDesk } from "@/lib/store";
 import { SyncBridge } from "@/lib/sync";
 import { AskSheet } from "./ask-sheet";
 import { HarvestDate } from "./harvest-date";
+import { LogWork } from "./log-work";
 import { LotPassports } from "./lot-passports";
 import { NeighbourPulse } from "./neighbour-pulse";
 import { Passbook } from "./passbook";
@@ -96,6 +97,10 @@ export function Phone() {
 
         <div className="mt-3.5">
           <TodaySlip plot={plot} />
+        </div>
+
+        <div className="mt-4">
+          <LogWork plot={plot} />
         </div>
 
         <div className="mt-4">

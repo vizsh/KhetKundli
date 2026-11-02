@@ -5,7 +5,7 @@ import { post, SELF, type Escalation, type FarmMessage } from "@/lib/channel";
 import { clampDay, fmtDay, realToday, SEASON_DAYS, TODAY } from "@/lib/sim/calendar";
 import { generateSeason } from "@/lib/sim/season";
 import { diffSeasons, type Ripple } from "@/lib/sim/selectors";
-import type { MarketId, Overrides, SaleSlip, Season } from "@/lib/sim/types";
+import type { FarmerEntry, FarmerEntryDraft, MarketId, Overrides, SaleSlip, Season } from "@/lib/sim/types";
 import type { LiveDaily, LiveHourly } from "@/lib/sim/weather";
 import type { Ensemble, EnsembleForecast, Storm, WindGrid } from "@/lib/spread";
 
@@ -78,6 +78,10 @@ type DeskState = {
   resetDemo: () => void;
   escalate: (question: string, extra?: { context?: string[]; topic?: Escalation["topic"] }) => Escalation;
   fileSlip: (slip: SaleSlip) => void;
+  /** The farmer logs work she did (a spray, a watering, a picking); it replaces what the simulation planned. */
+  logEntry: (entry: FarmerEntryDraft) => FarmerEntry;
+  /** Undo an entry logged by mistake. */
+  removeEntry: (id: string) => void;
   replyTo: (id: string, text: string) => void;
   receiveEscalation: (item: Escalation) => void;
   receiveReply: (id: string, reply: NonNullable<Escalation["reply"]>) => void;
@@ -196,6 +200,24 @@ export const useDesk = create<DeskState>((set, get) => {
       const { overrides } = get();
       const slips = [...(overrides.slips ?? []).filter((s) => s.id !== slip.id && !(s.plot === slip.plot && s.day === slip.day)), slip];
       local({ ...overrides, slips }, `Sale slip of ${fmtDay(slip.day)} read and checked on Sunita's phone`);
+    },
+    logEntry: (draft) => {
+      const { overrides, season } = get();
+      const entry = { ...draft, id: `L${Date.now().toString(36)}` } as FarmerEntry;
+      // One entry of a kind per plot and day: logging again corrects the first one.
+      const entries = [...(overrides.entries ?? []).filter((e) => !(e.plot === entry.plot && e.day === entry.day && e.kind === entry.kind)), entry];
+      const f = season.plots[entry.plot].farmer;
+      const who = f.name.split(" ")[0];
+      const what = entry.kind === "spray" ? `a ${entry.spray} spray` : entry.kind === "pick" ? `a picking of ${entry.crates} crates` : entry.skipped ? "a watering skipped" : "a watering";
+      local({ ...overrides, entries }, `${who} logged ${what} on ${fmtDay(entry.day)} from ${f.woman ? "her" : "his"} phone`);
+      return entry;
+    },
+    removeEntry: (id) => {
+      const { overrides, season } = get();
+      const entry = overrides.entries?.find((e) => e.id === id);
+      if (!entry) return;
+      const who = season.plots[entry.plot].farmer.name.split(" ")[0];
+      local({ ...overrides, entries: overrides.entries!.filter((e) => e.id !== id) }, `${who} removed an entry from ${fmtDay(entry.day)}`);
     },
     escalate: (question, extra) => {
       const { season, t } = get();

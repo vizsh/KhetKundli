@@ -32,7 +32,8 @@ export type TodayAction = {
 
 /** The single thing the farmer should do, from her own plot record. */
 export function todayAction(s: Season, plot: number, day: number): TodayAction {
-  const events = s.eventsByPlot[plot];
+  // What she already logged is done; the slip shows the next thing to do.
+  const events = s.eventsByPlot[plot].filter((e) => !e.logged);
   const upcoming = events.filter((e) => e.day >= day && e.day <= day + 3);
   const spray = upcoming.find((e): e is Extract<PlotEvent, { type: "spray" }> => e.type === "spray" && !e.washedOff);
   if (spray) {

@@ -14,6 +14,10 @@ Status on 20 October 2026, after commit `e9fa3bd`. KhetKundli will not be regist
 | **B1 Pomegranate Scan Lens** | A MobileNetV3 trained on this laptop's GPU on 5,099 pomegranate fruit photos (CC BY 4.0) replaces the scripted result, with its test accuracy shown in the app | `ml/scanlens/train_pomegranate.py`, `public/models/pomegranate/` |
 | Also | `/status` page (A7); every agent answer logged (A6, without the review screen yet); the landing page's scroll story rebuilt: visuals fit the screen, a season rail with chapters and months, ← → keys, and a new chapter where the local agent answers live | `app/status`, `components/pitch/season-story.tsx` |
 
+## 0.1 Done on 3 November: the farmer logs her own work
+
+**A2 Farmer entries.** The phone's *What I did* sheet (KK-4) logs a spray (Bordeaux or copper hydroxide, morning, afternoon or evening), a watering or a skipped watering, or a picking (crates and grade). Each is an `entries` override: the engine writes it in ballpoint, marked *logged*, in place of what it had planned (a booked spray within three days is dropped as done, the nearest scheduled watering or planned picking is replaced), and its consequences follow (protection, treatment, a repeat after a washed-off spray, Water Commons, Harvest Wave, runs, grade). The phone shows *What changed*; the desk gets the ripple; the agent's record and spray-window tools treat a logged spray as done and give the 15-day repeat; the relay validates entries; undo removes one. Code: `src/lib/sim/season.ts`, `selectors.ts` (`loggedSince`), `components/farmer/log-work.tsx`, `app/api/sync/route.ts`. Still open: logging by voice, and several phones as different farmers (A3).
+
 ## 1. The bar: what "extremely good, locally functional" means
 
 | Test | Today | Target |

@@ -115,6 +115,17 @@ try {
   const card = await page.waitForSelector("[aria-label='Your season card'] img", { timeout: 15000 }).then(() => true, () => false);
   check("phone: season share card renders", card);
   await page.evaluate(() => document.querySelector("[aria-label='Your season card'] button[aria-label='Close']")?.click());
+
+  // Farmer entries: she logs a skipped watering; her record and the desk both follow it.
+  await sleep(500);
+  await clickText(page, "[role=tab]", "Watered");
+  await sleep(300);
+  await clickText(page, "[role=radio]", "I skipped it");
+  await clickText(page, "button", "Write in my record");
+  const logged = await page.waitForFunction(() => /What changed[^]*skipped a watering/.test(document.body.textContent ?? ""), { timeout: 8000, polling: 200 }).then(() => true, () => false);
+  check("phone: logged work enters the record", logged, (await page.evaluate(() => document.body.textContent?.match(/What changed.{0,160}/)?.[0])) ?? "");
+  const deskSaw = await desk.waitForFunction(() => document.body.textContent?.includes("Sunita logged a watering skipped"), { timeout: 10000, polling: 200 }).then(() => true, () => false);
+  check("sync: desk follows the farmer's entry", deskSaw);
 } catch (err) {
   check("smoke run completed", false, String(err).slice(0, 200));
 } finally {

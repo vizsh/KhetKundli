@@ -20,6 +20,11 @@ const hh = (h: number) => `${String(Math.round(h)).padStart(2, "0")}:00`;
 const num = (v: unknown, d: number) => (typeof v === "number" && Number.isFinite(v) ? v : typeof v === "string" && v.trim() && !Number.isNaN(Number(v)) ? Number(v) : d);
 
 export function describeEvent(e: PlotEvent, s: Season): string {
+  const line = eventLine(e, s);
+  return e.logged && !line.includes("Logged on the phone") ? `${line} [logged by the farmer on ${s.plots[e.plot].farmer.woman ? "her" : "his"} phone]` : line;
+}
+
+function eventLine(e: PlotEvent, s: Season): string {
   const when = `${fmtDay(e.day)} ${hh(e.hour)}`;
   switch (e.type) {
     case "spray": return `Spray ${when}: ${e.product}, ${e.dose}${e.washedOff ? `, washed off by ${s.weather[e.day].rainMm.toFixed(0)} mm of rain that day` : ""} (${e.reason})`;
@@ -99,9 +104,12 @@ export const TOOLS: Record<string, Tool> = {
   spray_window: {
     spec: fn("spray_window", "The next morning when a spray will set (rain under 1 mm, rain chance under 45%, wind under 15 km/h, max under 36 °C), and any spray already planned in the record."),
     run: ({ season: s, plot, day }) => {
-      const planned = s.eventsByPlot[plot].find((e): e is Extract<PlotEvent, { type: "spray" }> => e.type === "spray" && e.day >= day && !e.washedOff);
+      // A spray the farmer logged is done, not planned; it starts the 15-day repeat.
+      const planned = s.eventsByPlot[plot].find((e): e is Extract<PlotEvent, { type: "spray" }> => e.type === "spray" && e.day >= day && !e.washedOff && !e.logged);
+      const done = s.eventsByPlot[plot].findLast((e): e is Extract<PlotEvent, { type: "spray" }> => e.type === "spray" && e.logged === true && e.day <= day && e.day >= day - 15 && !e.washedOff);
       const window = firstSprayWindow(s.weather, day + (planned && planned.day === day ? 0 : 1));
       const facts: Fact[] = [];
+      if (done) facts.push({ id: done.id, source: "record", text: `Already done: ${describeEvent(done, s)}; the next routine spray is due ${fmtDay(Math.min(SEASON_DAYS - 1, done.day + 15))}` });
       if (planned) facts.push({ id: planned.id, source: "record", text: `Planned in the record: ${describeEvent(planned, s)}` });
       facts.push({ id: "window", source: "weather", text: window === null ? "No sprayable morning in the next six days" : `First sprayable morning: ${fmtDay(window)} at 06:00` });
       for (let d = day; d <= Math.min(SEASON_DAYS - 1, day + 4); d++) facts.push(weatherFact(s, d));

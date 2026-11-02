@@ -102,6 +102,7 @@ export function PlotExtract({ className }: { className?: string }) {
               <span className={cn((e.type === "scan" && e.finding === "bacterial-blight") || (e.type === "spray" && e.washedOff) ? "[&_*]:!text-alert" : "")}>
                 <Ink by={e.by}>{describe(e)}</Ink>
                 {e.by === "verified" ? <Stamp size="xs" rotate={-4} press={false} className="ml-2 align-middle">Verified</Stamp> : null}
+                {e.logged ? <span className="typed ml-2 align-middle text-[10.5px] text-stamp">logged on phone</span> : null}
               </span>
             </li>
           ))}

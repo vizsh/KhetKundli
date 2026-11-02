@@ -9,6 +9,19 @@ import { accept, relay, snapshot } from "@/lib/server/relay";
  */
 const KINDS = new Set(["overrides", "time", "escalation", "reply", "reset", "receipt"]);
 
+const int = (v: unknown, lo: number, hi: number) => Number.isInteger(v) && (v as number) >= lo && (v as number) <= hi;
+
+/** A farmer's logged entry: a known kind, a plot, a season day and an hour, and sane amounts. */
+function validEntry(e: unknown): boolean {
+  if (!e || typeof e !== "object") return false;
+  const x = e as Record<string, unknown>;
+  if (typeof x.id !== "string" || x.id.length > 40 || !int(x.plot, 0, 999) || !int(x.day, 0, 400) || !int(x.hour, 0, 23)) return false;
+  if (x.kind === "spray") return x.spray === "preventive" || x.spray === "curative";
+  if (x.kind === "irrigate") return typeof x.skipped === "boolean" && (x.litres === undefined || int(x.litres, 0, 1_000_000));
+  if (x.kind === "pick") return int(x.crates, 1, 1000) && (x.grade === "A" || x.grade === "B" || x.grade === "C");
+  return false;
+}
+
 function valid(msg: unknown): msg is SyncMsg {
   if (!msg || typeof msg !== "object") return false;
   const m = msg as { kind?: unknown; from?: unknown };
@@ -16,6 +29,11 @@ function valid(msg: unknown): msg is SyncMsg {
   if (m.kind === "escalation") {
     const item = (msg as { item?: Escalation }).item;
     return Boolean(item && typeof item.id === "string" && typeof item.question === "string" && item.question.length <= 500);
+  }
+  if (m.kind === "overrides") {
+    const entries = (msg as { overrides?: { entries?: unknown } }).overrides?.entries;
+    if (entries === undefined) return true;
+    return Array.isArray(entries) && entries.length <= 500 && entries.every(validEntry);
   }
   if (m.kind === "reply") {
     const r = msg as { id?: unknown; reply?: { text?: unknown } };

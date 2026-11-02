@@ -16,7 +16,7 @@ import {
   VEHICLE,
   WEIGHMENT_PER_CRATE,
 } from "./rules";
-import type { MarketId, Overrides, Plot, PlotEvent, Provenance, Run, Season, WeatherDay } from "./types";
+import type { FarmerEntry, MarketId, Overrides, Plot, PlotEvent, Provenance, Run, Season, WeatherDay } from "./types";
 import { generateWeather, type LiveDaily } from "./weather";
 
 export type SeasonInput = { seed?: number; overrides?: Overrides; live?: LiveDaily[] };
@@ -131,6 +131,12 @@ export function generateSeason(input: SeasonInput = {}): Season {
   const seeds = [46, 53, 58, 64, 71, 79].map((day) => ({ day, plot: srng.int(0, n - 1) })).filter((s) => s.plot !== hero);
   const scanOverrides = new Map<number, NonNullable<Overrides["scans"]>>();
   for (const s of ov.scans ?? []) scanOverrides.set(s.day, [...(scanOverrides.get(s.day) ?? []), s]);
+  // What farmers logged on their phones, checked against the season so a bad entry cannot break it.
+  const entries = (ov.entries ?? []).filter((e) => plots[e.plot] && e.day >= 0 && e.day < SEASON_DAYS);
+  const sprayEntries = new Map<number, Extract<FarmerEntry, { kind: "spray" }>[]>();
+  for (const e of entries) if (e.kind === "spray") sprayEntries.set(e.day, [...(sprayEntries.get(e.day) ?? []), e]);
+  // The last day each plot logged a spray that set: a booked spray inside three days of it is already done.
+  const loggedSpray = new Int16Array(n).fill(-99);
 
   const detect = (p: number, day: number, confidence: number, offline: boolean, by: Provenance) => {
     say(p, day, by === "verified" ? 11 : 9, by, { type: "scan", finding: "bacterial-blight", confidence, offline });
@@ -164,7 +170,8 @@ export function generateSeason(input: SeasonInput = {}): Season {
       if (state[p] === 1 && --latentLeft[p] <= 0) state[p] = 2;
     }
     for (const s of seeds) if (s.day === d && state[s.plot] === 0) { state[s.plot] = 1; latentLeft[s.plot] = 12; }
-    if (d === 128 && state[hero] === 0) { state[hero] = 1; latentLeft[hero] = 11; }
+    // The hero's scripted infection, unless a spray she logged still protects the canopy that day.
+    if (d === 128 && state[hero] === 0 && protectedUntil[hero] < d) { state[hero] = 1; latentLeft[hero] = 11; }
 
     for (let p = 0; p < n; p++) {
       if (state[p] !== 0 || p === hero) continue;
@@ -208,7 +215,22 @@ export function generateSeason(input: SeasonInput = {}): Season {
       }
     }
 
+    for (const en of sprayEntries.get(d) ?? []) {
+      const washed = weather[d].rainMm >= 5;
+      const spec = SPRAYS[en.spray];
+      say(en.plot, d, en.hour, "human", { type: "spray", product: spec.product, dose: spec.dose, washedOff: washed, reason: "Logged on the phone", logged: true });
+      if (washed) {
+        queueSpray(firstSprayWindow(weather, d + 1) ?? d + 2, en.plot, en.spray, "Repeat: the spray she logged washed off");
+        continue;
+      }
+      loggedSpray[en.plot] = d;
+      // Copper protects a healthy canopy either way; on a symptomatic plot only the curative spray treats it.
+      if (state[en.plot] === 2 && en.spray === "curative") state[en.plot] = 3;
+      else if (state[en.plot] !== 2) protectedUntil[en.plot] = Math.max(protectedUntil[en.plot], d + 10);
+    }
+
     for (const job of sprayQueue.get(d) ?? []) {
+      if (d - loggedSpray[job.plot] <= 3 && !(job.kind === "curative" && state[job.plot] === 2)) continue;
       const washed = weather[d].rainMm >= 5;
       const spec = SPRAYS[job.kind];
       say(job.plot, d, 6, "human", { type: "spray", product: spec.product, dose: spec.dose, washedOff: washed, reason: job.reason });
@@ -236,12 +258,30 @@ export function generateSeason(input: SeasonInput = {}): Season {
   const waterSaved = new Float64Array(SEASON_DAYS);
   const faced = new Float64Array(SEASON_DAYS);
   const followed = new Float64Array(SEASON_DAYS);
+  const irrigEntries = entries.filter((e): e is Extract<FarmerEntry, { kind: "irrigate" }> => e.kind === "irrigate");
   plots.forEach((p, i) => {
     const lastPick = p.harvestStart + PICK_OFFSETS[PICK_OFFSETS.length - 1];
-    for (let d = p.baharStart + 20; d <= Math.min(lastPick, SEASON_DAYS - 2); d += 3) {
-      const stage = stageOn(d, p.baharStart, p.harvestStart, lastPick);
+    // Three days of crop water need (ET0 × Kc) over the plot, at drip efficiency.
+    const need = (d: number) => {
       const et = weather[d].et0 + (weather[d - 1]?.et0 ?? 0) + (weather[d - 2]?.et0 ?? 0);
-      const litres = Math.round(et * KC[stage] * p.acres * 4047 * 0.55);
+      return Math.round(et * KC[stageOn(d, p.baharStart, p.harvestStart, lastPick)] * p.acres * 4047 * 0.55);
+    };
+    const own = irrigEntries.filter((e) => e.plot === i);
+    for (const en of own) {
+      const litres = en.litres ?? need(en.day);
+      if (en.skipped) {
+        waterSaved[en.day] += litres;
+        faced[en.day] += 1;
+        followed[en.day] += 1;
+        say(i, en.day, en.hour, "human", { type: "irrigate-skip", litresSaved: litres, reason: "Logged on the phone", logged: true });
+      } else {
+        say(i, en.day, en.hour, "human", { type: "irrigate", litres, logged: true });
+      }
+    }
+    for (let d = p.baharStart + 20; d <= Math.min(lastPick, SEASON_DAYS - 2); d += 3) {
+      // What she logged replaces the scheduled watering nearest to it.
+      if (own.some((e) => Math.abs(e.day - d) <= 1)) continue;
+      const litres = need(d);
       if (weather[d].rainMm >= 10 || (weather[d - 1]?.rainMm ?? 0) >= 10) continue;
       const rainNext = weather[d + 1].rainMm >= 5;
       if (rainNext) faced[d] += 1;
@@ -301,7 +341,37 @@ export function generateSeason(input: SeasonInput = {}): Season {
     const everInfected = infected[Math.min(SEASON_DAYS - 1, p.harvestStart)][i];
     const grade = everInfected === 2 ? "C" : everInfected === 3 ? "B" : "A";
     const loss = grade === "C" ? 0.6 : grade === "B" ? 0.88 : 1;
+    // A picking she logged takes the place of the planned picking nearest to it (within 12 days),
+    // with her date, crates and grade; one far from any planned picking is an extra picking.
+    const claimed = new Map<number, Extract<FarmerEntry, { kind: "pick" }>>();
+    const extra: Extract<FarmerEntry, { kind: "pick" }>[] = [];
+    for (const en of entries.filter((e): e is Extract<FarmerEntry, { kind: "pick" }> => e.kind === "pick" && e.plot === i).sort((a, b) => a.day - b.day)) {
+      let best = -1;
+      PICK_OFFSETS.forEach((off, k) => {
+        const gap = Math.abs(p.harvestStart + off - en.day);
+        if (!claimed.has(k) && gap <= 12 && (best < 0 || gap < Math.abs(p.harvestStart + PICK_OFFSETS[best] - en.day))) best = k;
+      });
+      if (best >= 0) claimed.set(best, en);
+      else extra.push(en);
+    }
+    const book = (day: number, crates: number, g: "A" | "B" | "C") => {
+      harvestByWeek[weekOf(day)][p.village] += crates;
+      let market: MarketId = "phaltan";
+      if (i === hero && ov.heroMarket) market = ov.heroMarket;
+      else if (g === "A") {
+        const sale = Math.min(SEASON_DAYS - 1, day + 1);
+        const net = (id: MarketId) => prices[id][sale] * CRATE_KG * (1 - COMMISSION) - mk[id].freightPerCrate;
+        market = (["phaltan", "pune", "vashi"] as MarketId[]).reduce((a, b) => (net(b) > net(a) ? b : a));
+      }
+      bookings.push({ plot: i, day, crates, market, hub, grade: g });
+    };
     PICK_OFFSETS.forEach((off, k) => {
+      const en = claimed.get(k);
+      if (en) {
+        say(i, en.day, en.hour, "human", { type: "pick", picking: k + 1, crates: en.crates, grade: en.grade, logged: true });
+        if (en.day < SEASON_DAYS - 1) book(en.day, en.crates, en.grade);
+        return;
+      }
       let day = p.harvestStart + off;
       if (day >= SEASON_DAYS - 1) return;
       const rainSoon = Math.max(weather[day].rainMm, weather[day + 1]?.rainMm ?? 0) >= 8;
@@ -312,15 +382,11 @@ export function generateSeason(input: SeasonInput = {}): Season {
       }
       const crates = Math.max(1, Math.round(((p.expectedTonnes * PICK_SHARE[k] * 1000) / CRATE_KG) * loss));
       say(i, day, 8, "human", { type: "pick", picking: k + 1, crates, grade });
-      harvestByWeek[weekOf(day)][p.village] += crates;
-      let market: MarketId = "phaltan";
-      if (i === hero && ov.heroMarket) market = ov.heroMarket;
-      else if (grade === "A") {
-        const sale = Math.min(SEASON_DAYS - 1, day + 1);
-        const net = (id: MarketId) => prices[id][sale] * CRATE_KG * (1 - COMMISSION) - mk[id].freightPerCrate;
-        market = (["phaltan", "pune", "vashi"] as MarketId[]).reduce((a, b) => (net(b) > net(a) ? b : a));
-      }
-      bookings.push({ plot: i, day, crates, market, hub, grade });
+      book(day, crates, grade);
+    });
+    extra.forEach((en, j) => {
+      say(i, en.day, en.hour, "human", { type: "pick", picking: PICK_OFFSETS.length + j + 1, crates: en.crates, grade: en.grade, logged: true });
+      if (en.day < SEASON_DAYS - 1) book(en.day, en.crates, en.grade);
     });
   });
 

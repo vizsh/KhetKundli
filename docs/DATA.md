@@ -61,7 +61,7 @@ type WindGrid = {
 ### Plot event (the record)
 
 ```ts
-type PlotEvent = { id; plot; day; hour; by: "computed" | "human" | "verified" } & (
+type PlotEvent = { id; plot; day; hour; by: "computed" | "human" | "verified"; logged?: true } & ( // logged: the farmer entered it on the phone
   | { type: "bahar"; note }
   | { type: "irrigate"; litres } | { type: "irrigate-skip"; litresSaved; reason }
   | { type: "scan"; finding; confidence; offline }
@@ -83,8 +83,17 @@ type Overrides = {
   heroPickShift?: number; heroMarket?: MarketId;        // the farmer's harvest choice
   slips?: SaleSlip[];                                   // checked sale slips
   advisories?: { day; hexes: number[] }[];              // officer's warnings from the spread forecast
+  entries?: FarmerEntry[];                              // work the farmer logged on the phone
 };
+
+type FarmerEntry = { id; plot; day; hour } & (
+  | { kind: "spray"; spray: "preventive" | "curative" }  // product and dose come from the spray table
+  | { kind: "irrigate"; skipped: boolean; litres? }     // litres left out: ET0 × Kc for the plot
+  | { kind: "pick"; crates; grade: "A" | "B" | "C" }
+);
 ```
+
+How the engine applies an entry: a **spray** is written at her hour; if it sets (under 5 mm of rain that day) it protects a healthy canopy for 10 days or, if curative, treats a symptomatic plot, and any spray the system had booked for the plot in the next three days is dropped as already done; if it washes off, a repeat is booked for the next sprayable morning. A **watering** (or a skipped one, which counts towards Water Commons) replaces the scheduled watering nearest to it. A **picking** takes the place of the planned picking nearest to it within 12 days, with her date, crates and grade, so Harvest Wave, the pooled runs and the sale follow it; one far from any planned picking is added as an extra. The relay checks every entry's kind, plot, day, hour and amounts before accepting it.
 
 ## Privacy
 

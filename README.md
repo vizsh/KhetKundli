@@ -34,6 +34,7 @@ Built by Team Outliers for the Phaltan Hackathon (agriculture track). The season
 | Farmer | **Photo check** before a scan (sharp? lit?), live on the camera; **Listen** to the officer's reply aloud | On the phone |
 | Farmer | **Works with no signal**: scans, questions and slips wait in the phone's outbox and go in order when signal returns; the header says *Synced*, *Sending* or *Offline · 2 to send* | IndexedDB outbox, hybrid logical clocks, an idempotent relay |
 | Farmer | **Marathi slips**: labels and Devanagari digits read with the Marathi model; a misread is corrected only when the line proves itself ("63 x 5" must be 315), and totals are never guessed | Tesseract English + Marathi on the phone |
+| Farmer | **What I did**: log a spray, a watering (or one skipped) or a picking in two taps; it replaces what the simulation planned, the phone shows what changed, the desk gets the ripple and the agent answers from it; undo removes it | Her entries are real; the rest of the record is simulated |
 | Farmer | **Share my season**: the kundli wheel and the season so far as one image for WhatsApp | Drawn on the phone |
 | Officer | **Pest Radar** with a **live wind field** and a **72-hour spread forecast**: where reported blight can travel, hour by hour, and who to warn | 9-point live wind grid; recorded weather for any past day |
 | Officer | **Warn downwind**: one tap sends a preventive advisory to the plots in the plume, by app or SMS, and the season re-plans | Simulated outcome, shown as a ripple |
@@ -111,7 +112,7 @@ npm run demo         # checks the local models, database and saved forecast, war
 `npm run demo -- --https` gives phones on the Wi-Fi a secure origin (camera, microphone) with a self-signed certificate for this laptop's addresses; nothing is installed into Windows' trust store, and the phone accepts a one-time warning. `npm run demo -- --offline` runs with no internet: weather, wind and the ensemble come from the forecast saved on the last online run, and the desk says *saved forecast · offline*. `/status` shows the models, the database, the saved forecast and the screens connected. `npm run dev` still works for development.
 
 ```bash
-npm run smoke        # 22 end-to-end checks in Chrome (dev server running)
+npm run smoke        # 24 end-to-end checks in Chrome (dev server running)
 npm run test:slips   # reads the three specimen slips (English and Marathi) in Node and checks the parser
 npm run backtest     # scores the spread forecast over the recorded season
 npm run eval:agent   # the reasoning agent end to end on the local model (Ollama with llama3.1:8b and nomic-embed-text)

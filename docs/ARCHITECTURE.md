@@ -67,7 +67,7 @@ The prototype runs on one laptop, so its backend is local and restart-proof rath
 ## Principles in the code
 
 - **One clock.** `t` is a float of season days (day 0 = 1 June 2026; the fraction is the hour). The date stamp, season track, kundli wheel, map, registers and forecast all read it. On load it rolls to the real date in IST.
-- **Overrides, not mutations.** Anything that changes the season (a scan, demo rain, a picking date and market, an officer's advisory, a sale slip) is an entry in `Overrides`. The season is regenerated from `(seed, recorded weather, overrides)` and `diffSeasons(before, after, day)` writes the ripple. Same inputs, same season, on every device.
+- **Overrides, not mutations.** Anything that changes the season (a scan, demo rain, a picking date and market, an officer's advisory, a sale slip, work the farmer logged) is an entry in `Overrides`. The season is regenerated from `(seed, recorded weather, overrides)` and `diffSeasons(before, after, day)` writes the ripple. Same inputs, same season, on every device.
 - **Causal isolation.** Randomness is drawn per `(plot, day, salt)` with a hash, not from a shared stream, so an injected event changes only what it causes. `scripts/simtest.ts` asserts that a scan far from the hero leaves other plots unchanged.
 - **Provenance is visible.** Every event carries `by`: `computed` (typed), `human` (ballpoint) or `verified` (stamp), and the views draw it in that ink.
 - **Doses from rules only.** `src/lib/sim/rules.ts` is the single spray table.
@@ -230,7 +230,7 @@ The service worker (production builds) precaches the phone page, the leaf model,
 | Command | What it proves |
 | --- | --- |
 | `npm run backtest` | Spread-forecast skill over the recorded season: ROC AUC, precision and recall of the warn cells, against distance-only and oracle baselines |
-| `npm run smoke` | 22 checks in real Chrome, including the pomegranate model finding blight on a held-out photo, the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
+| `npm run smoke` | 24 checks in real Chrome, including the pomegranate model finding blight on a held-out photo, a farmer's logged watering reaching her record and the desk, the share card, the Marathi slip and an offline question held in the outbox and delivered on reconnect: two on-device scans, a voice answer citing the recorded washed-off spray, the Marathi answer, phone-to-desk ripple, recorded season loaded, live 9-point wind grid, demo rain entering the 72-hour forecast, the 51-member ensemble, a storm drawn with the brush, a lot passport with its export check and QR, the neighbour pulse, escalation and reply across browser profiles, slip OCR finding ₹1,863, slip ripple and dispute in the inbox |
 | `npm run test:slips` | The three specimen slips (two English, one Marathi) read in Node; gross, net, charge count and the amount above the card |
 | `npx tsx --tsconfig tsconfig.json scripts/simtest.ts` | Engine statistics and causal isolation |
 | `npx tsc --noEmit`, `npx eslint src`, `npm run build` | Types, lint, production build |
