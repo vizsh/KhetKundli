@@ -11,7 +11,7 @@ Last updated: **3 November 2026**, after Phase 1 slice 2 (accounts, roles, autho
 | Phase | Slice | State |
 | --- | --- | --- |
 | 1 · A record you can trust | 1 · The season record as events (append-only, hash-chained, per-event sync) | ✅ Done, `6f96543` |
-| | 2 · Accounts, roles, authorisation; inbox and messages in Postgres; send by batch id; backups and a restore drill | ✅ Done (this commit) |
+| | 2 · Accounts, roles, authorisation; inbox and messages in Postgres; send by batch id; backups and a restore drill | ✅ Done, `07288d4` |
 | | 3 · Consent, server-side projections, the last of SQLite, real-Postgres CI, structured logs | ⏳ Next |
 | 2 · Real channels, real data | Job runner, DLT SMS, WhatsApp, enrolment, live ingest, staging | ⬜ Not started (people work must start now: §4) |
 | 3 · A pilot that proves impact | Impact ledger, field data, fitted models, security review, operations | ⬜ Not started |
@@ -102,4 +102,4 @@ Each is deliberate and has a closing item.
 
 | Date | Commit | What changed here |
 | --- | --- | --- |
-| 3 Nov 2026 | Phase 1 slice 2 (this commit) | File created. Slice 2 done: accounts (OTP), sessions per surface, roles, authorisation on every route, Postgres inbox, messages and batches, send by batch id, backups and a restore drill, 29 unit tests, `api-check` (16), smoke with sign-in |
+| 3 Nov 2026 | `07288d4` | File created. Slice 2 done: accounts (OTP), sessions per surface, roles, authorisation on every route, Postgres inbox, messages and batches, send by batch id, backups and a restore drill, 29 unit tests, `api-check` (16), smoke with sign-in |
