@@ -135,6 +135,7 @@ For a real phone, scan the QR code `npm run demo` prints (same Wi-Fi). For live 
 | --- | --- |
 | [docs/CONTEXT.md](docs/CONTEXT.md) | **Start here.** The handover: what it is, the words you need, decisions and why, what is real, history, how to run it, gotchas, open questions |
 | [docs/PRODUCT-PLAN.md](docs/PRODUCT-PLAN.md) | From prototype to a real product, backend first: features that show real impact, the target architecture, three phases with acceptance tests, what people must unblock |
+| [docs/TECHNICAL.md](docs/TECHNICAL.md) | **The technical guide**: the stack, the system architecture, the journey from sign-in to sale as diagrams and screenshots, the engine, the record, sync, accounts and policy, the models, every screen, the data model, the API, tests, running and configuring |
 | [docs/SCENARIOS.md](docs/SCENARIOS.md) | **Scenario trials**: the product played out with farmers, officers, the market and adversaries (44 scenarios, an advocate and a skeptic each, grounded in the code), the verdicts, nine themes, a fix tailored to each user, and what must happen before any real farmer is enrolled. Full reports in [docs/scenarios/](docs/scenarios/) |
 | [docs/REMAINING.md](docs/REMAINING.md) | **The living list of what is left**, in order, with what *done* means for each item, what waits on people, and the limitations chosen for now. Updated with every commit |
 | [docs/GAPS.md](docs/GAPS.md) | Every gap between the prototype and a product, with severity, evidence in the code and the phase that closes it |
