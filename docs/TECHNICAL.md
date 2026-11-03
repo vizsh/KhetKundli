@@ -219,7 +219,7 @@ sequenceDiagram
 
   S->>P: Open the app, enter mobile number
   P->>R: POST /api/v1/auth/otp
-  R-->>P: code (on screen in demo; FPO desk or SMS in pilot)
+  R-->>P: code (on screen in demo, FPO desk or SMS in pilot)
   S->>P: Enter code
   P->>R: POST /api/v1/auth/verify → session cookie kk_phone
   R-->>P: SSE /api/sync: every season event since the last reset
@@ -238,13 +238,13 @@ sequenceDiagram
   R->>R: contract ✓ · policy (her plot) ✓ · append + hash chain
   R-->>O: accepted (per event)
   R-->>D: SSE events → desk regenerates → ripple
-  D->>K: Radar cell turns red; 72-hour plume over the next villages
+  D->>K: Radar cell turns red, 72-hour plume over the next villages
 
   K->>D: Prepare tonight's batch
   D->>R: POST /api/agent/advisories → stored batch (who, why, Marathi text)
   K->>D: Untick two plots, approve
   D->>R: POST /api/messages {batchId}
-  R-->>P: SSE message → banner; phone sends "delivered", then "read"
+  R-->>P: SSE message → banner, phone sends "delivered", then "read"
   R-->>D: receipts
 
   S->>P: Ask by voice: "पुढची फवारणी कधी करू?"
@@ -256,7 +256,7 @@ sequenceDiagram
   P->>R: event → Harvest Wave and runs re-plan on the desk
   S->>P: Photograph the patti at the adatiya's shop
   P->>P: Tesseract on the phone → parse → check against the rate card
-  P->>R: file the slip (event); escalate a dispute (inbox)
+  P->>R: file the slip (event), escalate a dispute (inbox)
 
   B->>R: Scan the lot QR → /lot/…
   R-->>B: origin cell, sprays, water, export pre-harvest check
@@ -314,8 +314,8 @@ Every change to the season is one immutable **season event** (`web/src/lib/event
 ```mermaid
 classDiagram
   class SeasonEvent {
-    id: UUIDv7 (made on the device)
-    hlc: hybrid logical clock stamp
+    id: UUIDv7, made on the device
+    hlc: clock stamp, hybrid logical
     by: device id
     v: schema version
     label: text other screens show
@@ -403,7 +403,7 @@ sequenceDiagram
   Note over A: demo: code on screen<br/>pilot: FPO desk or SMS
   B->>A: POST verify {phone, code}
   A->>DB: count the try atomically (max 5) → compare in constant time → consume once
-  A->>DB: device + session (sha256 of token; 30 days farmer, 12 h staff)
+  A->>DB: device + session (sha256 of token, 30 days farmer, 12 h staff)
   A-->>B: Set-Cookie kk_phone or kk_desk (http-only, SameSite=Lax)
   B->>A: every request: X-KK-Surface → cookie → person → policy
 ```
