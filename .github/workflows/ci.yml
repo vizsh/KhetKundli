@@ -23,6 +23,7 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npx eslint src
       - run: npm test

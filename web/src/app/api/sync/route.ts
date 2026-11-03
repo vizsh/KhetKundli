@@ -2,7 +2,7 @@ import { connection } from "next/server";
 import type { Escalation, SyncMsg } from "@/lib/channel";
 import { MAX_BATCH } from "@/lib/events";
 import { parseLotId } from "@/lib/lot";
-import { actorOf, limited, refuse, tooMany } from "@/lib/server/auth";
+import { actorOf, limited, readJson, refuse, tooMany } from "@/lib/server/auth";
 import { can } from "@/lib/server/authz";
 import { accept, relay, snapshot, type Subscriber } from "@/lib/server/relay";
 import { heroPlot } from "@/lib/server/seed";
@@ -89,7 +89,9 @@ export async function GET(req: Request) {
 export async function POST(request: Request) {
   const actor = await actorOf(request);
   if (!actor) return refuse("Sign in first.");
-  const msg: unknown = await request.json().catch(() => null);
+  const read = await readJson(request);
+  if (!read.ok) return read.response;
+  const msg: unknown = read.body;
   if (!valid(msg)) return Response.json({ ok: false, error: "unrecognised message" }, { status: 400 });
   // The clock moves often and is not stored; everything else is limited per person.
   if (msg.kind !== "time") {

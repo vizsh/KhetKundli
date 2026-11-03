@@ -83,7 +83,8 @@ test("at most three codes per number in ten minutes", async () => {
 test("an unregistered number gets the same answer and no code", async () => {
   const r = await id.requestOtp("9876500000", T);
   assert.deepEqual(r, { ok: true });
-  assert.equal((await sql.query("select * from otp_codes where phone = '+919876500000'")).length, 0);
+  // A row is counted (so the limit does not reveal who is enrolled), but its hash matches no code.
+  assert.equal((await sql.query("select * from otp_codes where phone = '+919876500000'")).length, 1);
 });
 
 test("a session ends when it expires", async () => {

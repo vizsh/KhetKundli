@@ -1,6 +1,6 @@
 import { connection } from "next/server";
 import { MAX_BATCH } from "@/lib/events";
-import { actorOf, limited, refuse, tooMany } from "@/lib/server/auth";
+import { actorOf, limited, readJson, refuse, tooMany } from "@/lib/server/auth";
 import { can } from "@/lib/server/authz";
 import { eventStore } from "@/lib/server/event-store";
 import { acceptEvents } from "@/lib/server/relay";
@@ -30,7 +30,9 @@ export async function POST(req: Request) {
   if (denied) return refuse(denied);
   const wait = limited(`events:${actor!.person.id}`, 120, 60_000);
   if (wait) return tooMany(wait);
-  const body = (await req.json().catch(() => null)) as { from?: unknown; label?: unknown; events?: unknown } | null;
+  const read = await readJson(req);
+  if (!read.ok) return read.response;
+  const body = read.body as { from?: unknown; label?: unknown; events?: unknown } | null;
   if (!body || !Array.isArray(body.events) || body.events.length < 1 || body.events.length > MAX_BATCH) {
     return Response.json({ error: `send { from, label, events } with 1 to ${MAX_BATCH} events` }, { status: 400 });
   }

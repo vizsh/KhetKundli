@@ -57,11 +57,15 @@ export function refuse(reason: string) {
  * Enough for one server; Phase 2 moves it to Postgres with the job runner.
  */
 const windows = new Map<string, { start: number; n: number }>();
+let lastPurge = 0;
 export function limited(key: string, max: number, windowMs: number, now = Date.now()): number | null {
   const w = windows.get(key);
   if (!w || now - w.start >= windowMs) {
     windows.set(key, { start: now, n: 1 });
-    if (windows.size > 20_000) for (const [k, v] of windows) if (now - v.start >= windowMs) windows.delete(k);
+    if (windows.size > 20_000 && now - lastPurge > 10_000) {
+      lastPurge = now;
+      for (const [k, v] of windows) if (now - v.start >= windowMs) windows.delete(k);
+    }
     return null;
   }
   w.n += 1;
@@ -72,5 +76,42 @@ export function tooMany(retryAfterMs: number) {
   return Response.json({ error: "Too many requests. Try again shortly." }, { status: 429, headers: { "Retry-After": String(Math.ceil(retryAfterMs / 1000)) } });
 }
 
-/** The caller's address, for limits on requests made before signing in. */
-export const addressOf = (req: Request) => req.headers.get("x-forwarded-for")?.split(",")[0].trim() || req.headers.get("x-real-ip") || "local";
+
+/**
+ * The caller's address, for limits on requests made before signing in. A forwarded address is believed
+ * only behind a proxy we run (KHETKUNDLI_TRUSTED_PROXY=1, e.g. Caddy on the VPS); otherwise any client
+ * could pick its own address and walk around the limits, so all direct callers share one key.
+ */
+export function clientAddress(req: Request): string {
+  if (process.env.KHETKUNDLI_TRUSTED_PROXY === "1") {
+    const fwd = req.headers.get("x-forwarded-for")?.split(",").at(-1)?.trim();
+    if (fwd) return fwd;
+  }
+  return "direct";
+}
+
+/** The largest body any route accepts: a full batch of 200 season events fits in well under this. */
+export const MAX_BODY_BYTES = 256 * 1024;
+
+/**
+ * Read a POST body as JSON, safely: refused if it comes from another site (a browser always sends
+ * Origin on a cross-site POST), if it is larger than the limit, or if it is not JSON. Returns the value
+ * or a ready response.
+ */
+export async function readJson(req: Request, maxBytes = MAX_BODY_BYTES): Promise<{ ok: true; body: unknown } | { ok: false; response: Response }> {
+  const origin = req.headers.get("origin");
+  if (origin) {
+    let same = false;
+    try { same = new URL(origin).host === (req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? new URL(req.url).host); } catch { same = false; }
+    if (!same) return { ok: false, response: Response.json({ error: "Requests from another site are not accepted." }, { status: 403 }) };
+  }
+  const declared = Number(req.headers.get("content-length") ?? 0);
+  if (declared > maxBytes) return { ok: false, response: Response.json({ error: "Request too large." }, { status: 413 }) };
+  const text = await req.text().catch(() => "");
+  if (text.length > maxBytes) return { ok: false, response: Response.json({ error: "Request too large." }, { status: 413 }) };
+  try {
+    return { ok: true, body: text ? JSON.parse(text) : {} };
+  } catch {
+    return { ok: false, response: Response.json({ error: "Not JSON." }, { status: 400 }) };
+  }
+}

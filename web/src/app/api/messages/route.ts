@@ -1,5 +1,5 @@
 import { connection } from "next/server";
-import { actorOf, refuse } from "@/lib/server/auth";
+import { actorOf, readJson, refuse } from "@/lib/server/auth";
 import { can } from "@/lib/server/authz";
 import { identity } from "@/lib/server/seed";
 import { broadcast, messagesFor, saveReceipt, sendBatch } from "@/lib/server/relay";
@@ -26,7 +26,9 @@ export async function POST(req: Request) {
   const actor = await actorOf(req);
   const denied = can(actor, "send-advisories");
   if (denied) return refuse(denied);
-  const body = (await req.json().catch(() => ({}))) as { batchId?: unknown; exclude?: unknown };
+  const read = await readJson(req, 64 * 1024);
+  if (!read.ok) return read.response;
+  const body = read.body as { batchId?: unknown; exclude?: unknown };
   if (typeof body.batchId !== "string" || body.batchId.length > 64) return Response.json({ error: "send { batchId }" }, { status: 400 });
   const exclude = Array.isArray(body.exclude) ? body.exclude.filter((x): x is number => Number.isInteger(x)).slice(0, 1000) : [];
   const r = await sendBatch(body.batchId, exclude, actor!.person.id);

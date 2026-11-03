@@ -1,5 +1,6 @@
 import type { SeasonEvent } from "@/lib/events";
 import type { Person, Role } from "./identity";
+import { isPilot } from "./mode";
 
 /**
  * Who may do what. Pure functions over the signed-in person, so the whole policy is tested as a
@@ -44,8 +45,11 @@ export function can(a: Actor, action: Action, plot?: number): string | null {
   const role = a.person.role;
   switch (action) {
     case "read-season":
-    case "time":
       return role === "buyer" ? "Buyers see lot passports, not the season." : null;
+    case "time":
+      // The shared clock is a demo control: staff move it on a demo laptop; in a pilot nobody does.
+      if (isPilot()) return "The clock follows the real date.";
+      return isStaff(a) ? null : "Only the officer or the FPO moves the shared clock.";
     case "ask":
     case "escalate":
       if (isStaff(a)) return null;
@@ -60,6 +64,8 @@ export function can(a: Actor, action: Action, plot?: number): string | null {
     case "status":
       return isStaff(a) ? null : "Only the extension officer or the FPO can do this.";
     case "reset":
+      if (isPilot()) return "Reset is a demo control and does not exist in a pilot.";
+      return isStaff(a) ? null : "Only the FPO admin or the officer can do this.";
     case "backup":
       return isStaff(a) ? null : "Only the FPO admin or the officer can do this.";
   }
@@ -93,8 +99,10 @@ export function canRecord(a: Actor, e: SeasonEvent, ctx: { heroPlot: number; tar
     case "harvest":
       return owns(a, ctx.heroPlot) || isStaff(a) ? null : "The picking date belongs to the plot's farmer.";
     case "advisory":
+      return isStaff(a) ? null : "Only the extension officer or the FPO can do this.";
     case "rain":
     case "reset":
+      if (isPilot()) return "Demo controls do not exist in a pilot.";
       return isStaff(a) ? null : "Only the extension officer or the FPO can do this.";
     case "retract":
       if (ctx.targetAuthor === undefined) return "Nothing to undo with that id.";

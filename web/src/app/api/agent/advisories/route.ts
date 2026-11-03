@@ -1,6 +1,6 @@
 import { advisoryBatch, type Selection } from "@/lib/agent/pipelines";
 import { seasonFor } from "@/lib/agent/season-server";
-import { actorOf, refuse } from "@/lib/server/auth";
+import { actorOf, readJson, refuse } from "@/lib/server/auth";
 import { can } from "@/lib/server/authz";
 import { saveBatch, serverOverrides } from "@/lib/server/relay";
 import { clampDay } from "@/lib/sim/calendar";
@@ -14,7 +14,9 @@ export async function POST(req: Request) {
   const actor = await actorOf(req);
   const denied = can(actor, "prepare-advisories");
   if (denied) return refuse(denied);
-  const body = (await req.json().catch(() => ({}))) as { day?: number; selection?: Selection };
+  const read = await readJson(req);
+  if (!read.ok) return read.response;
+  const body = read.body as { day?: number; selection?: Selection };
   // Who to warn is decided from the server's own record, never from the request.
   const season = await seasonFor(new URL(req.url).origin, await serverOverrides());
   const sel: Selection = body.selection?.by === "hexes" && Array.isArray(body.selection.hexes) ? { by: "hexes", hexes: body.selection.hexes.map(Number).filter(Number.isInteger).slice(0, 400) }

@@ -1,7 +1,7 @@
 import { runAgent, type AgentStep, type Audience } from "@/lib/agent/agent";
 import { seasonFor } from "@/lib/agent/season-server";
 import { logAnswer } from "@/lib/server/agent-log";
-import { actorOf, limited, refuse, tooMany } from "@/lib/server/auth";
+import { actorOf, limited, readJson, refuse, tooMany } from "@/lib/server/auth";
 import { can } from "@/lib/server/authz";
 import { serverOverrides } from "@/lib/server/relay";
 import { clampDay } from "@/lib/sim/calendar";
@@ -19,7 +19,9 @@ export async function POST(req: Request) {
   if (!actor) return refuse("Sign in first.");
   const wait = limited(`ask:${actor.person.id}`, 20, 60_000);
   if (wait) return tooMany(wait);
-  const body = (await req.json().catch(() => ({}))) as Body;
+  const read = await readJson(req, 16 * 1024);
+  if (!read.ok) return read.response;
+  const body = read.body as Body;
   const question = String(body.question ?? "").trim().slice(0, 500);
   if (!question) return Response.json({ error: "question required" }, { status: 400 });
   const origin = new URL(req.url).origin;

@@ -22,7 +22,7 @@ const people: Record<string, Actor> = {
 // ✓ allowed · ✗ refused · columns: nobody, farmer (own plot), farmer (other plot), officer, fpo_admin, buyer
 const MATRIX: Record<Action, string> = {
   "read-season":        "✗ ✓ ✓ ✓ ✓ ✗",
-  "time":               "✗ ✓ ✓ ✓ ✓ ✗",
+  "time":               "✗ ✗ ✗ ✓ ✓ ✗",
   "ask":                "✗ ✓ ✗ ✓ ✓ ✗",
   "escalate":           "✗ ✓ ✗ ✓ ✓ ✗",
   "receipt":            "✗ ✓ ✗ ✓ ✓ ✗",

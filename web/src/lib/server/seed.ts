@@ -1,15 +1,17 @@
 import { geo } from "@/lib/geo";
 import { generateSeason } from "@/lib/sim/season";
 import { database } from "./pg";
-import { Identity, type Person } from "./identity";
+import { Identity, normalizePhone, type Person } from "./identity";
+import { isPilot } from "./mode";
 
 /**
  * The demo's people. All synthetic, like the 192 simulated farmers; the phone numbers are test numbers
  * (+91 90000 xxxxx) that belong to nobody. Plots are the engine's plot numbers, chosen from the
  * deterministic season, so the same people own the same plots on every machine.
  *
- * Seeding happens once, when the people table is empty, unless KHETKUNDLI_SEED_DEMO=0 (a real
- * deployment enrols people at the FPO desk instead).
+ * Seeding happens once, when the people table is empty, and only in demo mode. A pilot never seeds
+ * demo people: its first FPO admin comes from KHETKUNDLI_BOOTSTRAP_ADMIN ("+91XXXXXXXXXX,Name"), and
+ * everyone else is enrolled at the FPO desk.
  */
 export const DEMO_PHONES = {
   sunita: "+919000000001",
@@ -35,6 +37,12 @@ export function demoPeople(): Omit<Person, "id">[] {
 
 export async function seedDemo(identity: Identity) {
   const [{ n }] = await identity.sql.query<{ n: string }>("select count(*) as n from people");
+  if (isPilot()) {
+    const [phone, ...name] = (process.env.KHETKUNDLI_BOOTSTRAP_ADMIN ?? "").split(",");
+    const staff = await identity.sql.query("select 1 from people where role in ('officer', 'fpo_admin') limit 1");
+    if (!staff.length && normalizePhone(phone)) await identity.upsertPerson({ phone, name: name.join(",").trim() || "FPO admin", nameMr: "", role: "fpo_admin", plots: [] });
+    return false;
+  }
   if (Number(n) > 0 || process.env.KHETKUNDLI_SEED_DEMO === "0") return false;
   for (const p of demoPeople()) await identity.upsertPerson(p);
   return true;

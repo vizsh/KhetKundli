@@ -1,4 +1,5 @@
 import { createHash, randomBytes, randomInt, timingSafeEqual } from "node:crypto";
+import { otpSink } from "./mode";
 import type { Sql } from "./sql";
 
 /**
@@ -10,8 +11,8 @@ import type { Sql } from "./sql";
  * - Session tokens are 32 random bytes; only their sha256 is stored. They last 30 days and can be revoked.
  * - The answer to "send me a code" is the same whether or not the number is registered, so the form
  *   cannot be used to find out who is enrolled.
- * - Until an SMS sender is registered (Phase 2), the code is shown on screen: the `screen` sink, which
- *   `/status` reports. It must be switched off (KHETKUNDLI_OTP_SINK=sms) before real farmers use it.
+ * - Where the code goes is set in mode.ts: on screen (demo only), to the FPO desk for assisted
+ *   sign-in, or by SMS once a sender is registered (Phase 2).
  */
 
 export type Role = "farmer" | "officer" | "fpo_admin" | "buyer";
@@ -23,8 +24,28 @@ export const OTP_MAX_ATTEMPTS = 5;
 export const OTP_MAX_PER_WINDOW = 3;
 export const OTP_WINDOW_MS = 10 * 60 * 1000;
 export const SESSION_TTL_MS = 30 * 24 * 3600 * 1000;
+/** Staff sessions are short: an office laptop left open should not stay signed in for a month. */
+export const STAFF_SESSION_TTL_MS = 12 * 3600 * 1000;
+export const sessionTtl = (role: Role) => (role === "officer" || role === "fpo_admin" ? STAFF_SESSION_TTL_MS : SESSION_TTL_MS);
 
-export const otpSink = (): "screen" | "sms" => (process.env.KHETKUNDLI_OTP_SINK === "sms" ? "sms" : "screen");
+export { otpSink };
+
+/**
+ * Codes waiting for the FPO desk to read out (the `desk` sink), in this process's memory only, gone after
+ * 5 minutes or once used. A staff member's own code goes to the server log instead, for the operator.
+ */
+const deskCodes = new Map<string, { code: string; name: string; expires: number }>();
+function deliverToDesk(phone: string, person: Person, code: string, now: number) {
+  if (person.role === "officer" || person.role === "fpo_admin") {
+    console.info(`[khetkundli] sign-in code for ${person.name} (…${phone.slice(-4)}): ${code}`);
+    return;
+  }
+  deskCodes.set(phone, { code, name: person.name, expires: now + OTP_TTL_MS });
+}
+export function waitingCodes(now = Date.now()) {
+  for (const [k, v] of deskCodes) if (v.expires < now) deskCodes.delete(k);
+  return [...deskCodes].map(([phone, v]) => ({ phoneTail: phone.slice(-4), name: v.name, code: v.code, expiresInS: Math.round((v.expires - now) / 1000) }));
+}
 
 /** An Indian mobile number in one form, +91 and ten digits starting 6 to 9; null if it is not one. */
 export function normalizePhone(raw: unknown): string | null {
@@ -102,44 +123,60 @@ export class Identity {
   }
 
   /**
-   * Make a code for a number. Returns the code only for the on-screen sink and only for a registered
-   * number; the caller shows the same answer either way.
+   * Make a code for a number. The issue limit is checked and the code stored under a lock on the number,
+   * so parallel requests cannot get past it. An unregistered number is answered the same way, and
+   * counts towards the same limit (with a code nobody can use), so neither the answer nor the limit
+   * says who is enrolled. Returns the code only for the on-screen sink (demo mode).
    */
   async requestOtp(rawPhone: unknown, now = Date.now()): Promise<{ ok: true; code?: string } | { ok: false; reason: string; retryAfterMs?: number }> {
     const phone = normalizePhone(rawPhone);
     if (!phone) return { ok: false, reason: "Enter a 10-digit mobile number." };
-    const recent = await this.sql.query<{ created_at: string }>("select created_at from otp_codes where phone = $1 and created_at > $2 order by created_at", [phone, new Date(now - OTP_WINDOW_MS).toISOString()]);
-    if (recent.length >= OTP_MAX_PER_WINDOW) {
-      await this.log("otp_rate_limited", phone, false);
-      return { ok: false, reason: "Too many codes for this number. Wait a few minutes and try again.", retryAfterMs: new Date(recent[0].created_at).getTime() + OTP_WINDOW_MS - now };
-    }
     const person = await this.personByPhone(phone);
+    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
+    const hash = person ? await this.codeHash(phone, code) : randomBytes(32).toString("hex");
+    const issued = await this.sql.tx(async (q) => {
+      await q.query("select pg_advisory_xact_lock(hashtext($1))", [phone]);
+      const recent = await q.query<{ created_at: string }>("select created_at from otp_codes where phone = $1 and created_at > $2 order by created_at", [phone, new Date(now - OTP_WINDOW_MS).toISOString()]);
+      if (recent.length >= OTP_MAX_PER_WINDOW) return { ok: false as const, retryAfterMs: new Date(recent[0].created_at).getTime() + OTP_WINDOW_MS - now };
+      await q.query("insert into otp_codes (phone, code_hash, created_at, expires_at) values ($1, $2, $3, $4)", [phone, hash, new Date(now).toISOString(), new Date(now + OTP_TTL_MS).toISOString()]);
+      return { ok: true as const };
+    });
+    if (!issued.ok) {
+      await this.log("otp_rate_limited", phone, false);
+      return { ok: false, reason: "Too many codes for this number. Wait a few minutes and try again.", retryAfterMs: issued.retryAfterMs };
+    }
     if (!person) {
       await this.log("otp_unknown_number", phone, false);
       return { ok: true };
     }
-    const code = String(randomInt(0, 1_000_000)).padStart(6, "0");
-    await this.sql.query("insert into otp_codes (phone, code_hash, created_at, expires_at) values ($1, $2, $3, $4)", [phone, await this.codeHash(phone, code), new Date(now).toISOString(), new Date(now + OTP_TTL_MS).toISOString()]);
-    await this.log("otp_sent", phone, true, person.id, otpSink());
-    return otpSink() === "screen" ? { ok: true, code } : { ok: true };
+    const sink = otpSink();
+    await this.log("otp_sent", phone, true, person.id, sink);
+    if (sink === "desk") deliverToDesk(phone, person, code, now);
+    return sink === "screen" ? { ok: true, code } : { ok: true };
   }
 
-  /** Check a code and open a session on this device. The newest unexpired code for the number counts. */
+  /**
+   * Check a code and open a session on this device. The newest code for the number counts. The try is
+   * counted atomically before the code is compared, so parallel guesses cannot exceed the limit.
+   */
   async verifyOtp(rawPhone: unknown, rawCode: unknown, device: { label: string; userAgent: string }, now = Date.now()):
     Promise<{ ok: true; token: string; person: Person; expiresAt: string } | { ok: false; reason: string }> {
     const phone = normalizePhone(rawPhone);
     const code = typeof rawCode === "string" ? rawCode.replace(/\s/g, "") : "";
     if (!phone || !/^\d{6}$/.test(code)) return { ok: false, reason: "Enter the 6-digit code." };
-    const row = (await this.sql.query<{ id: string; code_hash: string; expires_at: string; attempts: number; consumed_at: string | null }>(
-      "select id, code_hash, expires_at, attempts, consumed_at from otp_codes where phone = $1 order by created_at desc, id desc limit 1",
+    const fail = async (reason: string, detail: string) => { await this.log("otp_failed", phone, false, null, detail); return { ok: false as const, reason }; };
+    const latest = (await this.sql.query<{ id: string; expires_at: string; consumed_at: string | null }>(
+      "select id, expires_at, consumed_at from otp_codes where phone = $1 order by created_at desc, id desc limit 1",
       [phone],
     ))[0];
-    const fail = async (reason: string, detail: string) => { await this.log("otp_failed", phone, false, null, detail); return { ok: false as const, reason }; };
-    if (!row || row.consumed_at) return fail("Ask for a new code.", "no live code");
-    if (new Date(row.expires_at).getTime() < now) return fail("That code has expired. Ask for a new one.", "expired");
-    if (row.attempts >= OTP_MAX_ATTEMPTS) return fail("Too many wrong tries. Ask for a new code.", "attempts");
-    await this.sql.query("update otp_codes set attempts = attempts + 1 where id = $1", [row.id]);
-    const expected = Buffer.from(row.code_hash, "hex");
+    if (!latest || latest.consumed_at) return fail("Ask for a new code.", "no live code");
+    if (new Date(latest.expires_at).getTime() < now) return fail("That code has expired. Ask for a new one.", "expired");
+    const counted = (await this.sql.query<{ code_hash: string }>(
+      "update otp_codes set attempts = attempts + 1 where id = $1 and attempts < $2 and consumed_at is null returning code_hash",
+      [latest.id, OTP_MAX_ATTEMPTS],
+    ))[0];
+    if (!counted) return fail("Too many wrong tries. Ask for a new code.", "attempts");
+    const expected = Buffer.from(counted.code_hash, "hex");
     const given = Buffer.from(await this.codeHash(phone, code), "hex");
     if (expected.length !== given.length || !timingSafeEqual(expected, given)) return fail("That code is not right.", "wrong code");
     const person = await this.personByPhone(phone);
@@ -147,12 +184,17 @@ export class Identity {
 
     const token = randomBytes(32).toString("base64url");
     const deviceId = `D${randomBytes(6).toString("hex")}`;
-    const expiresAt = new Date(now + SESSION_TTL_MS).toISOString();
-    await this.sql.tx(async (q) => {
-      await q.query("update otp_codes set consumed_at = $2 where id = $1", [row.id, new Date(now).toISOString()]);
+    const expiresAt = new Date(now + sessionTtl(person.role)).toISOString();
+    // Consume the code exactly once: of two parallel right answers, only one opens a session.
+    const won = await this.sql.tx(async (q) => {
+      const used = await q.query("update otp_codes set consumed_at = $2 where id = $1 and consumed_at is null returning id", [latest.id, new Date(now).toISOString()]);
+      if (!used.length) return false;
       await q.query("insert into devices (id, label, user_agent) values ($1, $2, $3)", [deviceId, device.label.slice(0, 80), device.userAgent.slice(0, 300)]);
       await q.query("insert into sessions (token_hash, person_id, device_id, expires_at) values ($1, $2, $3, $4)", [sha256(token), person.id, deviceId, expiresAt]);
+      return true;
     });
+    if (!won) return fail("Ask for a new code.", "already used");
+    deskCodes.delete(phone);
     await this.log("signed_in", phone, true, person.id, deviceId);
     return { ok: true, token, person, expiresAt };
   }
@@ -168,6 +210,13 @@ export class Identity {
     if (!row || row.revoked_at || new Date(row.expires_at).getTime() < now) return null;
     const person = await this.personByPhone(row.phone);
     return person ? { person, deviceId: row.device_id, tokenHash, expiresAt: new Date(row.expires_at).toISOString() } : null;
+  }
+
+  /** Sign this person out on every device (a lost phone, a departing officer). */
+  async revokeAll(personId: string) {
+    const rows = await this.sql.query("update sessions set revoked_at = now() where person_id = $1 and revoked_at is null returning token_hash", [personId]);
+    await this.sql.query("insert into auth_log (event, person_id, ok, detail) values ('signed_out_everywhere', $1, true, $2)", [personId, String(rows.length)]);
+    return rows.length;
   }
 
   async revoke(token: string) {

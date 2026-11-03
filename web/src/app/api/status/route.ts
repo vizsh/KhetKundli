@@ -4,7 +4,8 @@ import { AGENT_MODEL, EMBED_MODEL, health } from "@/lib/agent/llm";
 import { actorOf, refuse } from "@/lib/server/auth";
 import { can } from "@/lib/server/authz";
 import { DB_FILE, db, eventCount, listSnapshots } from "@/lib/server/db";
-import { otpSink } from "@/lib/server/identity";
+import { waitingCodes } from "@/lib/server/identity";
+import { mode, otpSink } from "@/lib/server/mode";
 import { database } from "@/lib/server/pg";
 import { eventStore } from "@/lib/server/event-store";
 import { relay } from "@/lib/server/relay";
@@ -36,7 +37,7 @@ export async function GET(req: Request) {
     mode: { offline: OFFLINE, node: process.version },
     models: { server: h.up ? "up" : "down", agent: AGENT_MODEL, agentReady: h.models.includes(AGENT_MODEL), embed: EMBED_MODEL, embedReady: h.models.some((m) => m.startsWith(EMBED_MODEL)), routerAccuracy: embedModel.ensembleHeldOutAccuracy, knowledgePassages: KB_INFO.passages },
     database: { file: DB_FILE, events: eventCount(), messages, delivered, read, agentAnswers: one("select count(*) as n from agent_log"), inbox },
-    access: { otpSink: otpSink(), people, sessions },
+    access: { mode: mode(), otpSink: otpSink(), people, sessions, waitingCodes: otpSink() === "desk" ? waitingCodes() : [] },
     record: store && chain
       ? { database: store.sql.kind, events: chain.count, chainOk: chain.ok, head: chain.ok ? chain.head.slice(0, 16) : null, brokenAt: chain.ok ? null : chain.seq }
       : { database: "unavailable", events: 0, chainOk: false, head: null, brokenAt: null },
