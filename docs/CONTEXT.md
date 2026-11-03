@@ -189,6 +189,7 @@ Checks: `npm test` (29 unit and property tests on embedded Postgres), `npm run t
 | The gaps, honestly | [GAPS.md](GAPS.md) |
 | The plan to make it a real product (backend first, three phases) | [PRODUCT-PLAN.md](PRODUCT-PLAN.md) |
 | What is left, in order, and what *done* means | [REMAINING.md](REMAINING.md) |
+| Whether it works for real people, scenario by scenario, and what breaks | [SCENARIOS.md](SCENARIOS.md) |
 | A guided tour of the code and how to extend it | [CODEBASE.md](CODEBASE.md) |
 | The system design and the sync protocol | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | The models and their equations | [MODELS.md](MODELS.md) |

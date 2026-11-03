@@ -13,7 +13,9 @@ Effort figures are estimates for one to two developers. Nothing below has been a
 
 Deviations from the plan, and why: the code stays in `web/` for now (moved to packages when the worker arrives in Phase 2, so the split happens once); tests use Node's test runner, because vitest would not install with this machine's npm; embedded Postgres stands in for a server until a `DATABASE_URL` is configured (the Postgres 17 service on the laptop needs a role and database the user creates).
 
-**Next slice (3):** consent events and server-side projections, the agent log and forecasts into Postgres, CI on a real Postgres, structured logs, household switching, a signed daily digest. The ordered list, with what *done* means for each item, is [REMAINING.md](REMAINING.md).
+**Scenario trials (3 Nov 2026):** playing the product out with farmers, officers, the market and adversaries found that none of 44 scenarios fully works for its user yet, and named a cheap hardening batch that must come before any real farmer is enrolled. It is slice 2.5 in [REMAINING.md](REMAINING.md); the trials and the fixes per user are in [SCENARIOS.md](SCENARIOS.md).
+
+**Then slice 3:** consent events and server-side projections, the agent log and forecasts into Postgres, CI on a real Postgres, structured logs, household switching, a signed daily digest. The ordered list, with what *done* means for each item, is [REMAINING.md](REMAINING.md).
 
 
 ---

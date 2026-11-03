@@ -2,6 +2,8 @@
 
 An honest register of what is missing, wrong or only simulated, written on 3 November 2026 (commit `cd40d62`) when the goal changed from "an excellent local prototype" to "an actual product with a real demonstration". Each gap has an id, its severity for a real product, the evidence in the code, and the phase of [PRODUCT-PLAN.md](PRODUCT-PLAN.md) that closes it.
 
+**Scenario trials (3 Nov 2026).** A second way of finding gaps, by playing out real users' situations: [SCENARIOS.md](SCENARIOS.md), and §7 below.
+
 **Progress.** Phase 1 slice 1 (3 November 2026) closed G-B1, G-B8, G-B12, G-T1 and G-T2. Slice 2 (the same day) closed G-B3 and G-B4, and narrowed G-B5, G-B7, G-B9, G-B10 and G-P1. Each row says what remains; the ordered list of remaining work is [REMAINING.md](REMAINING.md).
 
 Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · **S2** blocks a credible pilot · **S3** weakens the product or the demo.
@@ -86,7 +88,25 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 | G-O5 | **No support process** (who answers the farmer's phone call when the app is wrong). | S2 | 3 |
 | G-O6 | **Licence questions**: the tomato/capsicum model ("other" on Hugging Face); the pomegranate dataset is CC BY 4.0 (credit required). | S3 | 2 |
 
-## 7. What is already solid (keep it)
+## 7. Found by the scenario trials (3 November 2026)
+
+Four scenario trials ([SCENARIOS.md](SCENARIOS.md)) played the product out with farmers, officers, the market and adversaries, scenario by scenario, against the code at `cd03f34`. Of 44 scenarios, none fully worked for its user, 15 partly worked and 29 failed. They found 93 gap ids not in this register (some name the same problem seen from two worlds, such as X-6 and O-1), with ids by world: **F-** farmer ([scenarios/farmer.md](scenarios/farmer.md)), **O-** institutions ([scenarios/institutions.md](scenarios/institutions.md)), **M-** market ([scenarios/markets.md](scenarios/markets.md)), **X-** adversaries and failures ([scenarios/adversaries.md](scenarios/adversaries.md)). The reports hold the evidence (file and line) and the tailored fix for each. Grouped by theme, with the S1 items named:
+
+| Theme | S1 gaps | Others | Where it is fixed |
+| --- | --- | --- | --- |
+| 1 · Anyone can sign in as anyone (people list served publicly with the on-screen code sink; spoofable rate-limit address; non-atomic code limits) | X-6/O-1, X-2, X-3, X-10 | X-18, X-21, X-22, F-8, F-9, O-12 | REMAINING 2.5.1, 2.5.2 |
+| 2 · A farmer's work can be lost (rejected events deleted from the outbox; shared phone; bad receipt blocks the queue; clocks; reset ordering; schema versions; record not kept offline) | X-25/F-2, X-7, X-8, X-31, F-1, F-3, F-20 | X-39, F-22, F-23 | REMAINING 2.5.3, 2.5.4 |
+| 3 · The record states what nobody confirmed (simulated sprays and sales in human or verified ink; scan verdicts from the simulator; two-product spray log; demo facts in the chain) | X-1/O-2, F-4/O-6, M-5, F-5 | M-8 (provenance), F-19, X-20, X-34/O-10 | REMAINING 2.5.6, 1.3, 2.7 |
+| 4 · Privacy and market intelligence (public lot stream with slips and gat number; every farmer gets every plot's events; cells of one plot; plain backups; names in immutable labels) | M-1/X-4, X-26, M-2, O-11 | X-11, X-13, X-14, X-19, O-15, F-18 | REMAINING 2.5.5, 2.5.8, 1.3.1, 1.3.2 |
+| 5 · The officer's accountability (one-click send; no recall; Reset deletes the advice log; selection ignores stage and PHI; simulated receipts; inbox cannot triage) | O-3, O-4, O-5/X-35, O-8/X-23, O-9 | O-13, O-14, O-16, O-17/X-17, O-18, X-5, X-15 | REMAINING 2.5.7, 1.3.11 |
+| 6 · Guidance in the field must state how sure it is (stale forecast shown live; fruit model behind "Scan a leaf"; undated advisories; market advice with perfect foresight and one "best" for everyone) | F-6, F-7, M-6 | F-12, F-14, F-15, M-7 | REMAINING 2.5.9, 2.12 |
+| 7 · The money loop stops at the screen (slip check flags lawful levies; no case or evidence; hero-only picking; runs only on screen; no payments; no farm-gate sales; no grade evidence; no payer) | M-3 | M-4, M-8, M-9, M-10, M-11 | REMAINING 2.13, 3.8 |
+| 8 · Running it for real (next dev, no supervisor; full snapshot per reconnect; uncached season per lot request; no backup before migrations; mutable model URLs; 46 MB precache) | — | X-12, X-27, X-28, X-30, X-33, X-36, X-29, X-32, F-16, F-17, F-21 | REMAINING 2.5.8, 2.11 |
+| 9 · The desk is a demo cockpit, not an office (no enrolment; unsafe person model; no staff lifecycle, audit view, exports or data-request register; spray table as code) | O-7 | O-11, O-12, O-13, O-14, O-16 | REMAINING 2.5, 2.7, 2.14 |
+
+The trials confirmed these existing gaps and raised two: **G-B15** (one global clock) is S1 on farmer phones, because any farmer can move every screen's day (O-17, X-17); **G-B5** (consent) now also covers public lot pages and minimum-k aggregation.
+
+## 8. What is already solid (keep it)
 
 - The deterministic engine and its causal isolation (`simtest.ts`).
 - Hybrid logical clocks, the IndexedDB outbox and the idempotent relay: the right shape, to be moved to per-event sync.
@@ -95,8 +115,9 @@ Severity: **S1** blocks any real use or can lose or corrupt a farmer's data · *
 - Offline-first scan and slip check on the device.
 - 24 end-to-end smoke checks, the backtest, the agent evaluation, router parity.
 
-## 8. The five gaps that matter most
+## 9. The five gaps that matter most
 
+0. **Slice 2.5 from the scenario trials** comes first: the sign-in exposure, the lossless outbox, the public lot stream and the truthful record (SCENARIOS.md, *What has to happen before any real farmer is enrolled*).
 1. **G-B2 + G-B5**: server-side projections with consent, so a farmer no longer receives other farmers' raw events.
 2. **G-P1**: several people on one shared phone (accounts and roles are done).
 3. **G-C1**: a real SMS that arrives on a real farmer's phone, DLT-registered.
